@@ -7,7 +7,7 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 ## Status
 
-Milestones M0 (foundations) and M1 (reference-first outage path) are built and tested. M2 is in progress: its first six slices (the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits) are built; the rest of M2 and everything after it is not.
+Milestones M0 (foundations) and M1 (reference-first outage path) are built and tested. M2 is in progress: seven of its nine slices are built (the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey); the supervisor console, the evaluations and everything after M2 are not.
 
 **Works today**
 
@@ -22,6 +22,8 @@ Milestones M0 (foundations) and M1 (reference-first outage path) are built and t
 - **Guided troubleshooting.** With the node confirmed clear and the customer's line passing its test, a customer who asks gets the steps from the guide for **their own router model**, quoted verbatim with guide, section and version. The model comes from the service record, never from the message. Factory reset is never offered; steps are given once, then a person takes over.
 - **Service credits.** When an outage a customer waited on is resolved, a credit is worked out in code from the versioned policy file (never by a model, never from what the customer wrote) and offered in the same message. It is proposed with its amount frozen; an agent, or a supervisor above INR 500, approves that exact request through the API; only then does the executor apply it to Billing, one customer at a time and never twice. The customer is told the outcome, and the contact stays open until it is settled.
 - **Technician visits.** A visit is offered only when the customer's own line still fails its test after the hold, on a node proven clear. The customer is shown the earliest free slots and chooses one; the reply is read by rules and narrowly, so "I can't do 2" or "ok, how much is it?" books nothing and is asked again. The executor books the visit after looking at the node, the line's last test and Field Service's bookings for itself, and declines when any of it has changed: an outage declared in the meantime means no visit, however the customer answered. One visit per service.
+- **A customer who disputes the outage.** Evidence decides. While an outage is active on the customer's node, nothing is arranged for their own equipment, however sure they are that the router is at fault: they are told the outage with its evidence, why a restart, a replacement or a technician would not help while it lasts, and that their line is tested the moment it is over. If they say it again, a person takes the contact, with the evidence.
+- **Mobile, as a thin path.** A tower outage is told, ticketed, restored and credited (by the mobile rule of the policy) like a broadband outage, in words that never mention a router. There is no remote test of a mobile connection here and no guide for a phone: on a working tower the customer is told what the network shows and a person takes over.
 - **Degraded mode.** When nothing can be verified: reference still issued, no all-clear, no device steps; the status is re-checked on a timer and a person takes over if it stays unverified.
 - Per-contact audit trail, API with roles, per-caller rate limits, demo console.
 
@@ -29,7 +31,7 @@ Milestones M0 (foundations) and M1 (reference-first outage path) are built and t
 
 - A screen for approvals (the API exists: `GET /v1/approvals`, `POST /v1/approvals/{id}/decision`). Credits for affected customers who did not contact us.
 - Changing or cancelling a booked visit (a person does that); a visit for a line that passes its test.
-- The "network says outage, customer says device" conflict path; a mobile journey.
+- Anything for mobile beyond the outage path (no tower inference, no device guidance, no SIM or plan checks).
 - A learned embedding model for retrieval (the index uses a deterministic hashing embedder; see "Guide retrieval").
 - Surge test, circuit breaker, dashboards and alerts, evaluation reports.
 - Full console (supervisor queue, simulator controls).

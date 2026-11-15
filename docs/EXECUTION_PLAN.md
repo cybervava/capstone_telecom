@@ -217,7 +217,7 @@ Each task lists its acceptance check. Tests are written first for `domain/` and 
 
 ### M2 Six capabilities (summary)
 
-Built in slices, each committed when its tests and a live run pass: **A** event feed, read model, timers · **B** proactive notifications and restoration · **C** line tests, mapping repair, line-test clustering · **D** guide index and cited troubleshooting · **E** credits, approvals, billing write · **F** dispatch · G conflict path and mobile journey · H supervisor console · I evaluations. A, B, C, D, E and F are done (see the progress log).
+Built in slices, each committed when its tests and a live run pass: **A** event feed, read model, timers · **B** proactive notifications and restoration · **C** line tests, mapping repair, line-test clustering · **D** guide index and cited troubleshooting · **E** credits, approvals, billing write · **F** dispatch · **G** conflict path and mobile journey · H supervisor console · I evaluations. A to G are done (see the progress log); H and I remain.
 
 Event consumer with dedupe, version checks, applied-sequence tracking and heartbeat; alarm state per node; notification fan-out to resolved mappings only, consent checked at send time, one message per customer, outage and template; line-test tool and mapping repair; suspected-fault hold (critical alarm, or several failed line tests on one node) that opens an episode without an outage id; retroactive confirmation when the outage is declared; index build and filtered retrieval; step-by-step guided troubleshooting with citations; credit proposals only after restoration, priced from frozen inputs; approval records carrying the hash the approver saw; billing write under a per-customer lock; dispatch rules (failed re-test, fresh `CONFIRMED_CLEAR` after the hold-down, customer consent, one open visit per service); conflict path for "the network says outage, the customer says device"; handoff queue with summary; one mobile outage journey.
 
@@ -307,10 +307,11 @@ Items 1, 2, 8 and 9 (deck, problem statement, ROI workbook, contribution matrix)
 
 | 15 Nov | **M2 slice E: service credits, approvals, billing write** | **Done.** At restoration a credit is worked out by the policy engine from Billing's record and the NOC's outage times, proposed with its amount frozen, and approved through the API by an agent or, above INR 500, a supervisor (gate input 3: one more hour of outage moves the credit past the limit and the approval to a supervisor). The executor applies it under a per-customer lock, after checking again, on what is true then: the request against its hash, the approval the amount requires, the account for an existing credit, and the billing-cycle cap. The customer is told the outcome of every credit; the contact stays open until then |
 | 15 Nov | **M2 slice F: technician visits** | **Done.** A line that still fails after the hold on a node proven clear is offered a visit with the earliest free slots; the customer's reply is read by rules, narrowly; the chosen slot is proposed as an action tied to the message that chose it, and the executor books it after applying the same rule again to evidence it reads itself (node state, the line's last test, Field Service's bookings). An outage declared after the offer, or between the choice and the booking, means no visit. One booking in progress per service is a database constraint |
+| 15 Nov | **M2 slice G: disputed outage, mobile journey** | **Done.** A customer who says the fault is their own equipment, or asks for a technician, during an outage is told the outage with its evidence and why nothing is arranged for their equipment while it lasts; said again for the same outage, a person takes it. Mobile is a thin path (A9): tower outage told, ticketed, restored and credited by the mobile rule, with no router wording, no line test and no visit; on a working tower a person takes over |
 
 ### Evidence at this point
 
-- `make test-all`: 1,741 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 95% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
+- `make test-all`: 1,774 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 95% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
 - `make smoke` passes against the host processes at 400,000-customer scale (eight journeys with `make demo`, which shortens the hold before a visit to 20 seconds; seven with `make dev`): declared outage → sourced reply, one incident, complaint linked, and 168 neighbours on the node notified once each (none without consent, checked in the gateway's own store); Network API down → the feed still proves the outage; same failure for a customer on another node → no all-clear and no device steps; outage resolved → the waiting customer is told, confirms, the contact closes and the node's incident is resolved; a failing line on a healthy node → held, nothing booked; a passing line on a healthy node → steps from the guide for the customer's own router, with the source; a five-hour outage → credit proposed, approved by an agent through the API, applied to the account once; the held line still failing after the hold → a visit offered with three slots, the customer chooses the second, one appointment booked for exactly that slot.
 - `make smoke` also passes against the container stack (40,000 customers), where the feed consumer runs as its own service. Its first run there failed, usefully: re-seeding the gateway restarts its event sequence and empties its tickets, while the care database still held the cursor and ticket references of the previous gateway. The consumer refused the feed (sequence running backwards) exactly as designed. `make seed` and the container set-up now clear the care platform's runtime state in the same step (`care-admin reset-runtime`, refused unless `CARE_ENV` is `dev` or `test`).
 - The console was checked in a browser at 1440 px and 375 px (M1; unchanged since).
@@ -419,7 +420,21 @@ One independent review, before the commit. It found no way to a visit on stale o
 
 Not changed: the visit is offered on a turn the platform starts itself (the hold running out). The customer was told the answer would come, and it is an offer, not an instruction.
 
+### What the review of M2 slice G changed
+
+One independent review, before the commit. It confirmed that an old dispute cannot hand over or speak on a turn the platform starts, that a dispute counts only against the outage it was made in, and that a mobile contact cannot reach the line hold, the router guide or the visit. Fixed and covered by tests:
+
+| Finding | Fix |
+|---|---|
+| The paragraph for a customer who disputes the outage told a mobile customer that "a technician visit" would not help | The mobile wording speaks of the phone and its settings only |
+| A mobile customer whose network status could not be verified, or whose tower showed no outage, was told about a router, a technician and a line | Every reply on the mobile path takes the service type; a test builds each of them for a mobile service and looks for the broadband words |
+
+Found by an existing test while the slice was written: with no outage id on record, "the outage this customer disputed" and "the current outage" were both nothing, and therefore equal, so a first complaint was handed over as a repeated dispute. A dispute now counts only against an outage that has an id.
+
 ### Known gaps carried into M2 and M3
+
+- After a handoff the workflow no longer speaks. A customer who disputed an outage twice was first told "I'll tell you here when it is resolved"; from the handoff on, that is for the person who holds the contact.
+- A mobile connection has no remote test here, so a defective tower mapping for a mobile service cannot be repaired the way a line test repairs a broadband mapping: it goes to a person.
 
 - A booked visit cannot be changed or cancelled here; the customer is told a person will help. A visit is not offered for a line that passes its test, however the customer describes the fault: that goes to a person after the guide steps.
 - The executor takes the customer's consent and the service's state from the proposal; what it reads again is the network, the line and the bookings.
