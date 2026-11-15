@@ -164,7 +164,7 @@ incidents. Preventing that is the care platform's job, and the tests count on be
 
 | Endpoint | Scope | Behaviour |
 |---|---|---|
-| `POST /notify/v1/messages` | `notify:write` | Idempotent. Body `{"customer_id", "channel", "template_id", "body", "outage_id"}`; `channel` is `sms` or `push`; `outage_id` nullable. `202` `{"message_id": "MSG-…", "status": "ACCEPTED", "created_at"}`. Nothing is sent anywhere |
+| `POST /notify/v1/messages` | `notify:write` | Idempotent. Body `{"customer_id", "channel", "template_id", "body", "outage_id"}`; `channel` is `sms`, `push` or `preferred` (the gateway uses the channel on the customer's consent record; `409 NO_PREFERRED_CHANNEL` when there is none); `outage_id` nullable. `202` `{"message_id": "MSG-…", "status": "ACCEPTED", "created_at"}`. Nothing is sent anywhere. The gateway does **not** check consent: that is the caller's job, at send time |
 | `GET /notify/v1/messages?customer_id=&outage_id=&limit=50` | `notify:write` | `{"messages": […]}` newest first; at least one filter required |
 
 ## Simulator controls — scope `admin`
@@ -183,7 +183,7 @@ Not part of any client system. Used by tests, drills, evaluations and the demo c
 | `POST /admin/v1/chaos` | Body `{"target", "mode", "latency_ms", "error_rate", "hold_seconds", "ttl_seconds"}` — see below. `GET /admin/v1/chaos` lists active rules; `DELETE /admin/v1/chaos` clears all |
 | `GET /admin/v1/customers/search` | Fixture finder using ground truth. Filters: `node_id`, `service_type`, `router_model`, `segment`, `consent` (`true`/`false`), `mapping_defect`, `status`, `min_monthly_fee`, `limit` (≤ 50). Returns `{"customers": [{"customer_id", "service_id", "true_node_id", "mapped_node_ids": […], "router_model", "monthly_fee_inr", "consent", "mapping_defect", "phone"}]}` |
 | `GET /admin/v1/state` | Counters for assertions: rows per write table (`credits`, `appointments`, `incidents`, `incident_complaints`, `complaints`, `messages`) and request counts per API and outcome |
-| `POST /admin/v1/reset` | Clears runtime state (outages, alarms, events, faults injected at runtime, writes, chaos, counters). Reference data stays |
+| `POST /admin/v1/reset` | Clears runtime state (outages, alarms, faults injected at runtime, writes, chaos, request counters). Reference data stays. Declared outages and active alarms are closed on the feed first (`OUTAGE_RESOLVED`, `ALARM_CLEARED`) and the feed's history and sequence are kept, so a feed consumer stays consistent across a reset. An outage the NOC had not detected yet is forgotten without an event |
 
 ### Fault injection
 

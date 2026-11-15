@@ -21,6 +21,7 @@ from mock_oss.middleware import RequestCounters
 from mock_oss.noc import (
     admin_outage_view,
     clear_alarm,
+    close_open_state,
     ensure_detected,
     raise_alarm,
     require_active_node,
@@ -175,6 +176,7 @@ def state(request: Request) -> dict[str, Any]:
 @router.post("/reset")
 def reset(request: Request) -> dict[str, str]:
     with get_db(request).write() as conn:
+        close_open_state(conn, now_iso(request))
         clear_runtime(conn)
     _rules(request).clear()
     _counters(request).reset()

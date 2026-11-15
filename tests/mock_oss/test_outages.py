@@ -179,13 +179,32 @@ def test_feed_rejects_bad_params(client: TestClient, query: str) -> None:
     assert resp.status_code == 422
 
 
-def test_seq_stays_monotonic_across_reset(client: TestClient, admin: Admin) -> None:
+def test_reset_closes_what_was_open_on_the_feed_and_keeps_its_history(
+    client: TestClient, admin: Admin
+) -> None:
+    """A feed consumer must not be left believing in an outage the simulator has forgotten."""
     admin("outages", {"node_id": "BLR-OLT-0001", "cause": "FIBRE_CUT"})
     admin("reset", {})
     admin("outages", {"node_id": "BLR-OLT-0001", "cause": "FIBRE_CUT"})
     body = _events(client)
-    assert [e["seq"] for e in body["events"]] == [3, 4]  # type: ignore[union-attr]
-    assert body["last_seq"] == 4
+    assert [(e["seq"], e["type"]) for e in body["events"]] == [  # type: ignore[union-attr]
+        (1, "ALARM_RAISED"),
+        (2, "OUTAGE_STARTED"),
+        (3, "OUTAGE_RESOLVED"),
+        (4, "ALARM_CLEARED"),
+        (5, "ALARM_RAISED"),
+        (6, "OUTAGE_STARTED"),
+    ]
+    assert body["last_seq"] == 6
+
+
+def test_reset_forgets_an_undetected_outage_without_announcing_it(
+    client: TestClient, admin: Admin
+) -> None:
+    admin("outages", {"node_id": "BLR-OLT-0001", "cause": "FIBRE_CUT", "detect_after_seconds": 600})
+    admin("reset", {})
+    types = [e["type"] for e in _events(client)["events"]]  # type: ignore[union-attr]
+    assert types == ["ALARM_RAISED", "ALARM_CLEARED"]
 
 
 @pytest.fixture

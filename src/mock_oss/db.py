@@ -90,8 +90,9 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS ix_messages_outage ON messages (outage_id)",
 ]
 
-# Runtime tables wiped by /admin/v1/reset. ``counters`` survives so feed seq stays monotonic.
-RESETTABLE = [name for name in RUNTIME_TABLES if name != "counters"]
+# Runtime tables wiped by /admin/v1/reset. The feed is history, not state: ``events`` and the
+# ``counters`` behind its sequence survive, so a consumer's cursor stays valid across a reset.
+RESETTABLE = [name for name in RUNTIME_TABLES if name not in {"counters", "events"}]
 WRITE_TABLES = [
     "credits",
     "appointments",

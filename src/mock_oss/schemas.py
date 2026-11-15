@@ -91,7 +91,8 @@ class ComplaintIn(BaseModel):
 
 class MessageIn(BaseModel):
     customer_id: Text
-    channel: Literal["sms", "push"]
+    # "preferred" asks the gateway to use the channel on the customer's consent record.
+    channel: Literal["sms", "push", "preferred"]
     template_id: Text
     body: LongText
     outage_id: Text | None = None

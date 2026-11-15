@@ -281,6 +281,26 @@ def resolve_outage(conn: sqlite3.Connection, outage_id: str, now: str) -> dict[s
     return admin_outage_view(_outage(conn, outage_id))
 
 
+def close_open_state(conn: sqlite3.Connection, now: str) -> None:
+    """Before a reset: tell the feed that everything the NOC had announced is over.
+
+    A consumer of the feed would otherwise be left believing in outages and alarms that no
+    longer exist. Outages the NOC had not detected yet were never on the feed and are simply
+    forgotten; their alarms were on the feed, so those are cleared.
+    """
+    declared = conn.execute(
+        "SELECT outage_id FROM outages WHERE resolved_at IS NULL AND detected = 1 "
+        "ORDER BY started_at, outage_id"
+    ).fetchall()
+    for row in declared:
+        resolve_outage(conn, row["outage_id"], now)
+    alarms = conn.execute(
+        "SELECT alarm_id FROM alarms WHERE cleared_at IS NULL ORDER BY raised_at, alarm_id"
+    ).fetchall()
+    for row in alarms:
+        clear_alarm(conn, row["alarm_id"], now)
+
+
 def detected_outage_for(conn: sqlite3.Connection, node_id: str, now: str) -> sqlite3.Row | None:
     row: sqlite3.Row | None = conn.execute(
         "SELECT o.* FROM outage_nodes n JOIN outages o ON o.outage_id = n.outage_id "

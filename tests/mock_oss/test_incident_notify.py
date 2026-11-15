@@ -216,3 +216,34 @@ def test_send_message_errors(client: TestClient, overrides: dict[str, str], stat
 def test_list_messages_needs_filter(client: TestClient, query: str) -> None:
     resp = client.get(f"/notify/v1/messages{query}", headers=auth("executor"))
     assert resp.status_code in (400, 422)
+
+
+def test_preferred_channel_is_resolved_from_the_customers_consent_record(
+    client: TestClient,
+) -> None:
+    """The caller need not know the channel: the gateway uses the one the customer chose."""
+    for customer_id in ("C0000001", "C0000002"):
+        resp = client.post(
+            "/notify/v1/messages",
+            json=message_body(customer_id=customer_id, channel="preferred"),
+            headers=idem(),
+        )
+        assert resp.status_code == 202
+
+    sms = client.get("/notify/v1/messages?customer_id=C0000001", headers=auth("executor"))
+    push = client.get("/notify/v1/messages?customer_id=C0000002", headers=auth("executor"))
+    assert [m["channel"] for m in sms.json()["messages"]] == ["sms"]
+    assert [m["channel"] for m in push.json()["messages"]] == ["push"]
+
+
+def test_preferred_channel_without_a_usable_channel_is_refused(client: TestClient) -> None:
+    resp = client.post(
+        "/notify/v1/messages",
+        json=message_body(customer_id="C0000003", channel="preferred"),
+        headers=idem(),
+    )
+
+    assert resp.status_code == 409
+    assert resp.json()["error"]["code"] == "NO_PREFERRED_CHANNEL"
+    listed = client.get("/notify/v1/messages?customer_id=C0000003", headers=auth("executor"))
+    assert listed.json()["messages"] == []

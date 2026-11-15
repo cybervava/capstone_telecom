@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from mock_oss.auth import require
 from mock_oss.context import get_db, require_customer
+from mock_oss.crm import consent_of
 from mock_oss.errors import ApiError
 from mock_oss.idempotency import (
     Created,
@@ -40,8 +41,20 @@ def message_view(row: sqlite3.Row) -> dict[str, Any]:
     return {k: row[k] for k in keys}
 
 
+def _channel(body: MessageIn, ctx: WriteContext) -> str:
+    if body.channel != "preferred":
+        return body.channel
+    preferred = str(consent_of(ctx.conn, body.customer_id)["channel"])
+    if preferred not in {"sms", "push"}:
+        raise ApiError(
+            409, "NO_PREFERRED_CHANNEL", f"customer {body.customer_id} has no usable channel"
+        )
+    return preferred
+
+
 def _create(body: MessageIn, ctx: WriteContext) -> Created:
     require_customer(ctx.conn, body.customer_id)
+    channel = _channel(body, ctx)
     message_id = f"MSG-{uuid.uuid4().hex[:12].upper()}"
     ctx.conn.execute(
         "INSERT INTO messages (message_id, customer_id, channel, template_id, body, outage_id, "
@@ -50,7 +63,7 @@ def _create(body: MessageIn, ctx: WriteContext) -> Created:
         (
             message_id,
             body.customer_id,
-            body.channel,
+            channel,
             body.template_id,
             body.body,
             body.outage_id,
