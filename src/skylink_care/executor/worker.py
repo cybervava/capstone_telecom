@@ -1,0 +1,341 @@
+"""Action executor: the only process that writes to enterprise systems.
+
+It claims actions from the ledger, sends each one exactly as it was frozen at proposal time under
+its own key as the Idempotency-Key, and records the outcome once.
+
+How an answer is read is the heart of this module:
+
+* success                 -> SUCCEEDED
+* a definite rejection    -> FAILED, and a person is told
+* anything else           -> the outcome is unknown: the identical request is replayed later.
+  That covers timeouts and 5xx, but also an answer that could not be parsed, an auth failure and
+  an unexplained conflict, because in none of those cases do we know the write did not land.
+
+Replays are bounded twice: after ``alert_after_attempts`` a person is told while replaying goes
+on, and after ``give_up_after`` the action is closed as FAILED for manual reconciliation.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import signal
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+import structlog
+from pydantic import BaseModel
+
+from skylink_care.adapters.gateway import ExecutorClients, OssGateway
+from skylink_care.adapters.result import Err, ErrorKind, Ok, Result
+from skylink_care.config import get_oss_keys, get_settings
+from skylink_care.db.actions import Action, ActionRepository, ActionStatus
+from skylink_care.db.audit import AuditRepository
+from skylink_care.db.contacts import COMPLAINT_REGISTER
+from skylink_care.db.database import Database
+from skylink_care.db.handoffs import HandoffRepository
+from skylink_care.observability.audit import Auditor
+from skylink_care.observability.logging import configure_logging
+from skylink_care.orchestrator.nodes import INCIDENT_LINK_COMPLAINT, INCIDENT_OPEN, INCIDENT_UPDATE
+
+log = structlog.get_logger(__name__)
+
+ACTOR = "system:executor"
+MAX_BACKOFF_SECONDS = 60.0
+MAX_BACKOFF_DOUBLINGS = 10
+# Rejections that are final: replaying the identical request cannot succeed.
+DEFINITE_REJECTIONS = frozenset({ErrorKind.INVALID, ErrorKind.NOT_FOUND, ErrorKind.GONE})
+# A conflict is final only when the gateway names a business reason for it.
+DEFINITE_CONFLICT_CODES = frozenset(
+    {"IDEMPOTENCY_KEY_REUSED", "COMPLAINT_REF_CONFLICT", "SLOT_FULL", "ACCOUNT_SUSPENDED"}
+)
+# Deferrals are audited for the first attempts and then periodically, to bound the trail.
+AUDIT_EVERY_ATTEMPT_UNTIL = 5
+AUDIT_EVERY_NTH_ATTEMPT = 10
+ACTION_FAILED = "ACTION_FAILED"
+ACTION_DELAYED = "ACTION_DELAYED"
+
+type Handler = Callable[[Action], Awaitable[Result[Any]]]
+
+
+class MissingPrerequisiteError(Exception):
+    """The action depends on another action whose external reference is not available."""
+
+
+class ActionExecutor:
+    def __init__(
+        self,
+        actions: ActionRepository,
+        audit: AuditRepository,
+        handoffs: HandoffRepository,
+        clients: ExecutorClients,
+        *,
+        batch_size: int = 20,
+        visibility_seconds: float = 30.0,
+        poll_seconds: float = 0.25,
+        backoff_base_seconds: float = 2.0,
+        alert_after_attempts: int = 8,
+        give_up_after: timedelta = timedelta(hours=24),
+    ) -> None:
+        self._actions = actions
+        self._audit = audit
+        self._handoffs = handoffs
+        self._clients = clients
+        self._batch_size = batch_size
+        self._visibility_seconds = visibility_seconds
+        self._poll_seconds = poll_seconds
+        self._backoff_base_seconds = backoff_base_seconds
+        self._alert_after_attempts = alert_after_attempts
+        self._give_up_after = give_up_after
+        self._handlers: dict[str, Handler] = {
+            COMPLAINT_REGISTER: self._register_complaint,
+            INCIDENT_OPEN: self._open_incident,
+            INCIDENT_UPDATE: self._update_incident,
+            INCIDENT_LINK_COMPLAINT: self._link_complaint,
+        }
+
+    async def run_forever(self, stop: asyncio.Event) -> None:
+        while not stop.is_set():
+            try:
+                handled = await self.run_once()
+            except Exception:
+                # A failure here (the database, usually) must not end the only writer process.
+                log.exception("executor_loop_error")
+                handled = 0
+            if handled == 0:
+                try:
+                    await asyncio.wait_for(stop.wait(), timeout=self._poll_seconds)
+                except TimeoutError:
+                    continue
+
+    async def run_once(self) -> int:
+        """Execute one batch of runnable actions. Returns how many were attempted."""
+        for blocked in await self._actions.block_orphans():
+            await self._escalate(blocked, ActionStatus.BLOCKED, blocked.last_error or "blocked")
+        claimed = await self._actions.claim_runnable(
+            limit=self._batch_size, visibility_seconds=self._visibility_seconds
+        )
+        await asyncio.gather(*(self._execute_safely(action) for action in claimed))
+        return len(claimed)
+
+    async def _execute_safely(self, action: Action) -> None:
+        """Run one action; an unexpected error becomes "outcome unknown", never a crash."""
+        audit = Auditor(
+            self._audit, contact_id=action.contact_id, correlation_id=action.correlation_id
+        )
+        try:
+            await self._execute(action, audit)
+        except Exception as exc:
+            log.exception("action_execution_error", action_key=action.action_key)
+            try:
+                await self._replay_later(action, audit, f"UNEXPECTED: {exc!r}", unknown=True)
+            except Exception:
+                # Could not even record the deferral. The claim lapses and the action is
+                # replayed under the same key, which is safe.
+                log.exception("action_deferral_failed", action_key=action.action_key)
+
+    async def _execute(self, action: Action, audit: Auditor) -> None:
+        handler = self._handlers.get(action.action_type)
+        if handler is None:
+            await self._finish(action, audit, ActionStatus.FAILED, error="no handler for this type")
+            return
+        try:
+            result = await handler(action)
+        except MissingPrerequisiteError as exc:
+            await self._finish(action, audit, ActionStatus.BLOCKED, error=str(exc))
+            return
+        if isinstance(result, Ok):
+            body = (
+                result.value.model_dump(mode="json") if isinstance(result.value, BaseModel) else {}
+            )
+            await self._finish(
+                action,
+                audit,
+                ActionStatus.SUCCEEDED,
+                external_ref=_external_ref(action.action_type, body),
+                response_body=body,
+                replayed=result.replayed,
+            )
+        elif _is_definite_rejection(result):
+            await self._finish(
+                action, audit, ActionStatus.FAILED, error=f"{result.kind.value}: {result.code}"
+            )
+        else:
+            await self._replay_later(
+                action,
+                audit,
+                f"{result.kind.value}: {result.code or result.message}",
+                unknown=result.kind is not ErrorKind.CIRCUIT_OPEN,
+            )
+
+    async def _replay_later(
+        self, action: Action, audit: Auditor, error: str, *, unknown: bool
+    ) -> None:
+        age = datetime.now(UTC) - action.created_at
+        if age >= self._give_up_after:
+            await self._finish(
+                action,
+                audit,
+                ActionStatus.FAILED,
+                error=f"GAVE_UP after {action.attempts}: {error}",
+            )
+            return
+        doublings = min(max(action.attempts - 1, 0), MAX_BACKOFF_DOUBLINGS)
+        delay = min(self._backoff_base_seconds * 2**doublings, MAX_BACKOFF_SECONDS)
+        if not await self._actions.defer(action.action_id, delay_seconds=delay, error=error):
+            return  # finished by someone else in the meantime
+        if action.attempts == self._alert_after_attempts:
+            await self._escalate(action, ActionStatus.IN_FLIGHT, error, reason=ACTION_DELAYED)
+        if (
+            action.attempts <= AUDIT_EVERY_ATTEMPT_UNTIL
+            or action.attempts % AUDIT_EVERY_NTH_ATTEMPT == 0
+        ):
+            await audit.record(
+                actor=ACTOR,
+                step=f"action:{action.action_type}",
+                outcome="OUTCOME_UNKNOWN" if unknown else "DEFERRED",
+                inputs={"action_key": action.action_key, "attempt": action.attempts},
+                outputs={"error": error, "retry_in_seconds": delay},
+            )
+
+    async def _finish(
+        self,
+        action: Action,
+        audit: Auditor,
+        status: ActionStatus,
+        *,
+        external_ref: str | None = None,
+        response_body: dict[str, Any] | None = None,
+        error: str | None = None,
+        replayed: bool = False,
+    ) -> None:
+        recorded = await self._actions.finish(
+            action.action_id,
+            status,
+            external_ref=external_ref,
+            response_body=response_body,
+            error=error,
+        )
+        if not recorded:
+            return
+        await audit.record(
+            actor=ACTOR,
+            step=f"action:{action.action_type}",
+            outcome=status.value,
+            inputs={
+                "action_key": action.action_key,
+                "attempt": action.attempts,
+                "request_hash": action.request_hash,
+                "requested_by": action.requested_by,
+            },
+            outputs={"external_ref": external_ref, "error": error, "replayed": replayed},
+            policy_version=action.policy_version,
+        )
+        if status is not ActionStatus.SUCCEEDED:
+            await self._escalate(action, status, error or status.value)
+
+    async def _escalate(
+        self, action: Action, status: ActionStatus, error: str, *, reason: str = ACTION_FAILED
+    ) -> None:
+        """A write did not happen, or is taking too long: make sure a person finds out."""
+        log.error(
+            "action_needs_attention",
+            action_key=action.action_key,
+            action_type=action.action_type,
+            status=status.value,
+            attempts=action.attempts,
+            error=error,
+        )
+        if action.contact_id is None:
+            return
+        await self._handoffs.open(
+            action.contact_id,
+            reason=reason,
+            summary=(
+                f"Reason: {reason}. Enterprise write {action.action_type}"
+                f" ({action.action_key}) is {status.value} after {action.attempts}"
+                f" attempt(s): {error}. Check the target system before repeating it by hand."
+            ),
+            priority=2,
+        )
+
+    # --- handlers: each sends the frozen body unchanged ------------------------------------------
+
+    async def _register_complaint(self, action: Action) -> Result[Any]:
+        return await self._clients.incident.register_complaint(
+            action.request_body,
+            idempotency_key=action.action_key,
+            correlation_id=action.correlation_id,
+        )
+
+    async def _open_incident(self, action: Action) -> Result[Any]:
+        return await self._clients.incident.open(
+            action.request_body,
+            idempotency_key=action.action_key,
+            correlation_id=action.correlation_id,
+        )
+
+    async def _update_incident(self, action: Action) -> Result[Any]:
+        return await self._clients.incident.update(
+            await self._incident_id(action),
+            action.request_body,
+            idempotency_key=action.action_key,
+            correlation_id=action.correlation_id,
+        )
+
+    async def _link_complaint(self, action: Action) -> Result[Any]:
+        return await self._clients.incident.link_complaint(
+            await self._incident_id(action),
+            action.request_body,
+            idempotency_key=action.action_key,
+            correlation_id=action.correlation_id,
+        )
+
+    async def _incident_id(self, action: Action) -> str:
+        if action.depends_on is None:
+            raise MissingPrerequisiteError("action has no incident to refer to")
+        prerequisite = await self._actions.get(action.depends_on)
+        if prerequisite is None or not prerequisite.external_ref:
+            raise MissingPrerequisiteError("the incident has no external reference yet")
+        return prerequisite.external_ref
+
+
+def _is_definite_rejection(error: Err) -> bool:
+    if error.kind in DEFINITE_REJECTIONS:
+        return True
+    return error.kind is ErrorKind.CONFLICT and error.code in DEFINITE_CONFLICT_CODES
+
+
+def _external_ref(action_type: str, body: dict[str, Any]) -> str | None:
+    if action_type in {INCIDENT_OPEN, INCIDENT_UPDATE}:
+        return str(body["incident_id"]) if body.get("incident_id") else None
+    if action_type == COMPLAINT_REGISTER:
+        return str(body["complaint_ref"]) if body.get("complaint_ref") else None
+    return None
+
+
+async def _main() -> None:
+    settings = get_settings()
+    configure_logging()
+    database = await Database.open(settings.database_conninfo(), max_size=settings.db_pool_max)
+    gateway = OssGateway(settings.oss_base_url, get_oss_keys())
+    try:
+        executor = ActionExecutor(
+            ActionRepository(database),
+            AuditRepository(database),
+            HandoffRepository(database),
+            gateway.for_executor(),
+        )
+        stop = asyncio.Event()
+        loop = asyncio.get_running_loop()
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(signum, stop.set)
+        log.info("executor_started")
+        await executor.run_forever(stop)
+    finally:
+        await gateway.aclose()
+        await database.close()
+
+
+def run() -> None:
+    asyncio.run(_main())
