@@ -12,11 +12,13 @@ from uuid import UUID
 
 from skylink_care.adapters.gateway import OssGateway
 from skylink_care.agents.diagnostics import DiagnosticsAgent, FeedViewSource, LineTestPolicy
+from skylink_care.agents.resolution import ResolutionAgent
 from skylink_care.agents.triage import TriageAgent
 from skylink_care.agents.troubleshooting import TroubleshootingAgent
 from skylink_care.clock import Clock, utc_now
 from skylink_care.config import Settings
 from skylink_care.db.actions import ActionRepository
+from skylink_care.db.approvals import ApprovalRepository
 from skylink_care.db.audit import AuditRepository
 from skylink_care.db.contacts import ContactRepository
 from skylink_care.db.database import Database
@@ -28,6 +30,7 @@ from skylink_care.db.messages import MessageRepository
 from skylink_care.db.read_model import ReadModelRepository
 from skylink_care.db.reference import ReferenceRepository
 from skylink_care.db.timers import TimerRepository
+from skylink_care.domain.credit import load_policy
 from skylink_care.domain.network import DecisionLimits
 from skylink_care.llm.gateway import LLMGateway, build_gateway
 from skylink_care.observability.audit import Auditor
@@ -45,6 +48,7 @@ class OrchestratorRuntime:
     inbox: InboxRepository
     messages: MessageRepository
     actions: ActionRepository
+    approvals: ApprovalRepository
     episodes: EpisodeRepository
     handoffs: HandoffRepository
     audit: AuditRepository
@@ -53,6 +57,7 @@ class OrchestratorRuntime:
     triage: TriageAgent
     diagnostics: DiagnosticsAgent
     troubleshooting: TroubleshootingAgent
+    resolution: ResolutionAgent
     now: Clock
 
     def auditor(self, contact_id: UUID, correlation_id: str) -> Auditor:
@@ -85,6 +90,7 @@ def build_orchestrator_runtime(
         inbox=InboxRepository(database),
         messages=MessageRepository(database),
         actions=ActionRepository(database),
+        approvals=ApprovalRepository(database),
         episodes=EpisodeRepository(database),
         handoffs=HandoffRepository(database),
         audit=AuditRepository(database),
@@ -106,5 +112,13 @@ def build_orchestrator_runtime(
             now,
         ),
         troubleshooting=TroubleshootingAgent(GuideIndex(database, HashingEmbedder())),
+        resolution=ResolutionAgent(
+            gateway.billing_for_resolution(),
+            # Read and validated once, at start-up: a bad policy file must never price a credit.
+            load_policy(settings.credit_policy_path),
+            review_all=settings.credit_review_all,
+            # Credits proposed and not yet settled count towards the billing-cycle cap.
+            ledger=ActionRepository(database),
+        ),
         now=now,
     )

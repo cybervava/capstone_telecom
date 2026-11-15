@@ -256,3 +256,89 @@ def test_checks_clear_notice_asks_and_does_not_instruct() -> None:
     assert "restart" not in reply.text.lower()
     assert "\n1. " not in reply.text
     assert REF in reply.text
+
+
+def test_credit_sentence_states_amount_policy_and_what_happens_next() -> None:
+    waiting = replies.credit_line("120.50", policy_version="v0-placeholder", needs_approval=True)
+    direct = replies.credit_line("50.00", policy_version="v0-placeholder", needs_approval=False)
+
+    assert "service credit of INR 120.50" in waiting
+    assert "(v0-placeholder)" in waiting
+    assert "sent for approval" in waiting
+    assert "It is being applied to your account" in direct
+    assert "approval" not in direct
+
+
+@pytest.mark.parametrize(
+    ("reason", "phrase"),
+    [
+        ("BELOW_MINIMUM_DURATION", "shorter than the minimum the policy covers"),
+        ("PLANNED_WORK", "planned maintenance that was announced in advance is not covered"),
+        ("ALREADY_CREDITED", "a credit for this outage is already on your account"),
+        ("CAP_REACHED", "reached the limit for this billing cycle"),
+        ("SOMETHING_NEW", "does not meet the conditions of the policy"),
+    ],
+)
+def test_customer_who_asked_is_told_why_no_credit_is_due(reason: str, phrase: str) -> None:
+    line = replies.no_credit_line(reason, policy_version="v0-placeholder")
+
+    assert phrase in line
+    assert "(v0-placeholder)" in line
+    assert "a member of our team will review it" in line
+    assert reason not in line  # never the internal code
+
+
+def test_restored_reply_carries_the_credit_sentence_before_the_reference() -> None:
+    line = replies.credit_line("120.50", policy_version="v0-placeholder", needs_approval=True)
+
+    reply = replies.outage_restored(
+        REF, outage_id="OUT-1", resolved_at=NOW, service_type="broadband", about_credit=line
+    )
+
+    assert reply.text.index("service credit of INR 120.50") < reply.text.index(REF)
+
+
+@pytest.mark.parametrize(
+    ("build", "phrase"),
+    [
+        (
+            lambda: replies.credit_applied(REF, amount_inr="120.50", credit_ref="CR-9"),
+            "INR 120.50 for your outage has been applied to your account (credit reference CR-9)",
+        ),
+        (lambda: replies.credit_already_there(REF), "already on your account"),
+        (lambda: replies.credit_not_applied(REF), "has not been applied"),
+        (lambda: replies.credit_unconfirmed(REF), "could not confirm that the service credit"),
+        (lambda: replies.closing_after_credit(REF), "open until the service credit is settled"),
+    ],
+)
+def test_credit_outcome_messages_carry_the_reference(build: object, phrase: str) -> None:
+    reply = build()  # type: ignore[operator]
+
+    assert phrase in reply.text
+    assert REF in reply.text
+    assert reply.text.startswith(replies.AI_DISCLOSURE)
+
+
+def test_unconfirmed_credit_is_not_said_to_be_applied_or_not_applied() -> None:
+    text = replies.credit_unconfirmed(REF).text
+
+    assert "could not confirm" in text
+    assert "has not been applied" not in text
+    assert "check your account" in text
+
+
+def test_credit_already_on_record_is_described_by_its_own_amount() -> None:
+    assert "INR 75.00 for this outage is already being processed" in (
+        replies.credit_in_progress_line("75.00")
+    )
+    assert "INR 75.00 for this outage has already been applied" in (
+        replies.credit_already_applied_line("75.00")
+    )
+    for line in (
+        replies.CREDIT_WITH_ANOTHER_CONTACT,
+        replies.CREDIT_ALREADY_ON_ACCOUNT,
+        replies.CREDIT_NOT_APPLIED_EARLIER,
+        replies.CREDIT_AMOUNT_REVIEW,
+    ):
+        assert line.startswith(" ")  # each is added to the message about the restoration
+        assert line.endswith(".")

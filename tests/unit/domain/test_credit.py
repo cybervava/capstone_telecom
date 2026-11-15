@@ -11,7 +11,7 @@ engine, so a wrong formula cannot agree with itself:
 """
 
 from dataclasses import replace
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -23,8 +23,11 @@ from skylink_care.domain.credit import (
     CreditPolicy,
     CreditReason,
     approval_level,
+    billing_cycle_start,
     evaluate_credit,
     load_policy,
+    required_approval,
+    within_cycle_cap,
 )
 from skylink_care.domain.models import ServiceType
 
@@ -269,6 +272,107 @@ def test_ineligible_decision_needs_no_approval(policy: CreditPolicy) -> None:
     decision = evaluate_credit(policy, make_input(planned=True))
 
     assert approval_level(decision, review_all=True) is ApprovalLevel.NONE
+
+
+# --- the rules that must also hold when a credit is applied -------------------------------
+
+
+@pytest.mark.parametrize(
+    ("amount", "review_all", "level"),
+    [
+        ("500.00", True, ApprovalLevel.AGENT),
+        ("500.00", False, ApprovalLevel.NONE),
+        ("500.01", True, ApprovalLevel.SUPERVISOR),
+        ("500.01", False, ApprovalLevel.SUPERVISOR),
+    ],
+)
+def test_approval_an_amount_requires_is_worked_out_from_the_amount_alone(
+    policy: CreditPolicy, amount: str, review_all: bool, level: ApprovalLevel
+) -> None:
+    assert required_approval(policy, Decimal(amount), review_all=review_all) is level
+
+
+@pytest.mark.parametrize("review_all", [True, False])
+def test_both_ways_of_asking_who_must_approve_agree(policy: CreditPolicy, review_all: bool) -> None:
+    for fee, minutes in (("3999.00", 600), ("9999.00", 1560), ("999.00", 300)):
+        decision = evaluate_credit(policy, make_input(fee=fee, minutes=minutes))
+
+        assert decision.eligible
+        assert approval_level(decision, review_all=review_all) is required_approval(
+            policy, decision.amount_inr, review_all=review_all
+        )
+
+
+def test_supervisor_approval_covers_what_needs_an_agent_and_not_the_reverse() -> None:
+    assert ApprovalLevel.SUPERVISOR.covers(ApprovalLevel.AGENT)
+    assert ApprovalLevel.AGENT.covers(ApprovalLevel.AGENT)
+    assert not ApprovalLevel.AGENT.covers(ApprovalLevel.SUPERVISOR)
+    assert not ApprovalLevel.NONE.covers(ApprovalLevel.AGENT)
+    assert ApprovalLevel.AGENT.stricter(ApprovalLevel.SUPERVISOR) is ApprovalLevel.SUPERVISOR
+    assert ApprovalLevel.AGENT.stricter(ApprovalLevel.NONE) is ApprovalLevel.AGENT
+
+
+@pytest.mark.parametrize(
+    ("credited", "amount", "fits"),
+    [
+        ("0.00", "999.00", True),  # the placeholder cap is one monthly fee
+        ("0.00", "999.01", False),
+        ("900.00", "99.00", True),
+        ("900.00", "99.01", False),
+        ("1200.00", "0.01", False),  # already past the cap
+    ],
+)
+def test_cap_check_at_application_matches_the_cap_used_for_pricing(
+    policy: CreditPolicy, credited: str, amount: str, fits: bool
+) -> None:
+    assert (
+        within_cycle_cap(
+            policy,
+            service_type=ServiceType.BROADBAND,
+            monthly_fee_inr=Decimal("999.00"),
+            credited_in_cycle_inr=Decimal(credited),
+            amount_inr=Decimal(amount),
+        )
+        is fits
+    )
+
+
+def test_credit_priced_at_what_the_cap_leaves_fits_under_it(policy: CreditPolicy) -> None:
+    """Whatever the engine prices with a cap in play must pass the check at application."""
+    facts = make_input(fee="999.00", minutes=1560, prior="950.00")
+    decision = evaluate_credit(policy, facts)
+    assert decision.calculation.cap_applied
+
+    assert within_cycle_cap(
+        policy,
+        service_type=facts.service_type,
+        monthly_fee_inr=facts.monthly_fee_inr,
+        credited_in_cycle_inr=facts.prior_outage_credits_in_cycle_inr,
+        amount_inr=decision.amount_inr,
+    )
+
+
+def test_service_the_policy_does_not_cover_fits_under_no_cap(policy: CreditPolicy) -> None:
+    uncovered = policy.model_copy(update={"services": {}})
+
+    assert not within_cycle_cap(
+        uncovered,
+        service_type=ServiceType.BROADBAND,
+        monthly_fee_inr=Decimal("999.00"),
+        credited_in_cycle_inr=Decimal("0.00"),
+        amount_inr=Decimal("1.00"),
+    )
+
+
+@pytest.mark.parametrize(
+    ("now", "start"),
+    [
+        (datetime(2026, 11, 9, 18, 29, tzinfo=UTC), date(2026, 10, 10)),  # 9 Nov 23:59 IST
+        (datetime(2026, 11, 9, 18, 30, tzinfo=UTC), date(2026, 11, 10)),  # 10 Nov 00:00 IST
+    ],
+)
+def test_billing_cycle_turns_at_midnight_in_india(now: datetime, start: date) -> None:
+    assert billing_cycle_start(now, 10) == start
 
 
 # --- policy file -------------------------------------------------------------------------------

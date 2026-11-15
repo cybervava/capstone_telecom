@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     # The knowledge pack; its router guides are indexed with `care-admin index-guides`.
     knowledge_dir: Path = Path("data/knowledge")
     credit_review_all: bool = True
+    # A credit nobody approves or rejects within this time ends unapplied and goes to a person.
+    approval_ttl_seconds: int = Field(default=72 * 3600, gt=0)
 
     status_max_age_seconds: int = Field(default=60, gt=0)
     feed_max_age_seconds: int = Field(default=90, gt=0)

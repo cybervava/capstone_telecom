@@ -42,6 +42,7 @@ class Route(StrEnum):
     GUIDE = "guide"
     RESTORED = "restored"
     KEEP_WAITING = "keep_waiting"
+    CREDIT_RESULT = "credit_result"
     CLOSE = "close"
     HANDOFF = "handoff"
     AWAIT = "await_event"
@@ -94,6 +95,16 @@ class ContactState(TypedDict, total=False):
     # guide steps, after a clear check). Only then does "it works now" close the contact. Any
     # later news about the network withdraws the question.
     asked_if_working: bool
+    # The service credits proposed for this contact, one per outage, in the order proposed:
+    # action id and key, the amount as frozen in the proposal, and whether it is still
+    # unsettled. A contact is not closed while a credit of its own is unsettled.
+    credits: list[dict[str, Any]]
+    close_when_credit_settles: bool
     # Guide steps the customer has been given (the citation). Given once; if they do not help,
     # a person takes over rather than the same steps being repeated.
     guidance_told: str | None
+
+
+def pending_credits(state: ContactState) -> list[dict[str, Any]]:
+    """The credits of this contact whose outcome the customer has not been told yet."""
+    return [credit for credit in state.get("credits") or [] if credit.get("pending")]

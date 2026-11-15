@@ -30,9 +30,9 @@ from skylink_care.db.line_tests import PASS as LINE_PASSED
 from skylink_care.db.timers import CLOSE_QUIET
 from skylink_care.domain.models import NetworkState
 from skylink_care.domain.network import DecisionReason
+from skylink_care.orchestrator.credit_nodes import CreditNodes
 from skylink_care.orchestrator.evidence import decision_to_state, outage_from_state, parse_time
 from skylink_care.orchestrator.handover import handoff_summary
-from skylink_care.orchestrator.node_support import NodeSupport
 from skylink_care.orchestrator.state import ContactState, Phase, Trigger
 
 # How much of what the customer wrote is used to find the guide section.
@@ -55,7 +55,7 @@ _TOLD_THE_NEWS: dict[str, Any] = {
 }
 
 
-class NetworkNodes(NodeSupport):
+class NetworkNodes(CreditNodes):
     async def diagnose(self, state: ContactState) -> dict[str, Any]:
         contact = await self._contact(state)
         service = state.get("service") or {}
@@ -350,11 +350,15 @@ class NetworkNodes(NodeSupport):
         outage_id = state.get("resolved_outage_id") or state.get("told_outage_id")
         outage = await self._rt.read_model.get_outage(outage_id) if outage_id else None
         resolved_at = outage.resolved_at if outage else None
+        # A credit is assessed only for an outage the NOC has recorded as resolved: its amount
+        # depends on when the outage ended, and that time must not be a guess.
+        about_credit, credit = await self._offer_credit(contact, state, outage)
         reply = replies.outage_restored(
             contact.complaint_ref,
             outage_id=outage_id,
             resolved_at=resolved_at,
             service_type=(state.get("service") or {}).get("service_type"),
+            about_credit=about_credit,
         )
         await self._say(contact, state, reply, author="agent:resolution")
         await self._rt.timers.cancel(contact.contact_id)
@@ -373,6 +377,7 @@ class NetworkNodes(NodeSupport):
         return {
             **_TOLD_THE_NEWS,
             **armed,
+            **credit,
             "phase": Phase.REPLIED.value,
             "told_outage_id": None,
             "asked_if_working": True,

@@ -14,9 +14,13 @@ How an answer is read is the heart of this module:
 Replays are bounded twice: after ``alert_after_attempts`` a person is told while replaying goes
 on, and after ``give_up_after`` the action is closed as FAILED for manual reconciliation.
 
-A customer notification is the one write with a condition attached. Consent is read from the CRM
+A customer notification is a write with a condition attached. Consent is read from the CRM
 immediately before sending, not when the message was proposed, and a message that may not or
-should no longer be sent ends as SKIPPED: finished on purpose, with nobody to alert.
+should no longer be sent ends as SKIPPED: finished on purpose, with nobody to alert. A service
+credit has more conditions, and its own module (``executor.credits``).
+
+The clock for giving up starts when an action became runnable. For one that needed an approval
+that is the approval, which may come days after the proposal.
 """
 
 from __future__ import annotations
@@ -24,7 +28,6 @@ from __future__ import annotations
 import asyncio
 import signal
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
 
@@ -37,6 +40,8 @@ from skylink_care.clock import Clock, utc_now
 from skylink_care.config import get_oss_keys, get_settings
 from skylink_care.db.actions import (
     COMPLAINT_REGISTER,
+    CREDIT_APPLY,
+    GAVE_UP,
     INCIDENT_LINK_COMPLAINT,
     INCIDENT_OPEN,
     INCIDENT_UPDATE,
@@ -45,9 +50,19 @@ from skylink_care.db.actions import (
     ActionRepository,
     ActionStatus,
 )
+from skylink_care.db.approvals import ApprovalRepository
 from skylink_care.db.audit import AuditRepository
 from skylink_care.db.database import Database
 from skylink_care.db.handoffs import HandoffRepository
+from skylink_care.domain.credit import CreditPolicy, load_policy
+from skylink_care.executor.credits import CreditApplier
+from skylink_care.executor.outcomes import (
+    MissingPrerequisiteError,
+    NotAttempted,
+    Outcome,
+    Refused,
+    Skipped,
+)
 from skylink_care.guardrails.pii import redact_for_log
 from skylink_care.observability.audit import Auditor
 from skylink_care.observability.logging import configure_logging
@@ -75,28 +90,11 @@ TOO_LATE = "TOO_LATE"
 NO_PREFERRED_CHANNEL = "NO_PREFERRED_CHANNEL"
 # Outcomes after which nobody has to be alerted.
 SETTLED_QUIETLY = frozenset({ActionStatus.SUCCEEDED, ActionStatus.SKIPPED})
+# Actions whose outcome the customer's conversation is waiting to hear.
+WAKES_CONTACT = frozenset({CREDIT_APPLY})
 
 
-@dataclass(frozen=True)
-class Skipped:
-    """The action was deliberately not performed. It is finished and nobody needs to act."""
-
-    reason: str
-
-
-@dataclass(frozen=True)
-class NotAttempted:
-    """A check that has to precede the write could not be made, so nothing was sent."""
-
-    error: Err
-
-
-type Outcome = Result[Any] | Skipped | NotAttempted
 type Handler = Callable[[Action], Awaitable[Outcome]]
-
-
-class MissingPrerequisiteError(Exception):
-    """The action depends on another action whose external reference is not available."""
 
 
 class ActionExecutor:
@@ -114,9 +112,17 @@ class ActionExecutor:
         alert_after_attempts: int = 8,
         give_up_after: timedelta = timedelta(hours=24),
         notification_ttl: timedelta = timedelta(minutes=30),
+        approvals: ApprovalRepository | None = None,
+        credit_policy: CreditPolicy | None = None,
+        credit_review_all: bool = True,
         now: Clock = utc_now,
+        approval_clock: Clock | None = None,
     ) -> None:
         self._actions = actions
+        self._approvals = approvals
+        # Business time: an approval's expiry and a billing cycle are stamped by other systems
+        # and judged by this clock. Ages of ledger rows are judged by ``now``.
+        self._approval_now = approval_clock or now
         self._audit = audit
         self._handoffs = handoffs
         self._clients = clients
@@ -128,13 +134,29 @@ class ActionExecutor:
         self._give_up_after = give_up_after
         self._notification_ttl = notification_ttl
         self._now = now
-        self._handlers: dict[str, Handler] = {
+        credits = CreditApplier(
+            actions,
+            approvals,
+            clients.billing,
+            credit_policy,
+            review_all=credit_review_all,
+            now=self._approval_now,
+        )
+        self._handlers = self._handlers_with(credits)
+
+    def _handlers_with(self, credits: Handler) -> dict[str, Handler]:
+        return {
             COMPLAINT_REGISTER: self._register_complaint,
             INCIDENT_OPEN: self._open_incident,
             INCIDENT_UPDATE: self._update_incident,
             INCIDENT_LINK_COMPLAINT: self._link_complaint,
             NOTIFY_SEND: self._send_notification,
+            CREDIT_APPLY: credits,
         }
+
+    def handler(self, action_type: str) -> Handler | None:
+        """What executes actions of this type."""
+        return self._handlers.get(action_type)
 
     async def run_forever(self, stop: asyncio.Event) -> None:
         while not stop.is_set():
@@ -152,6 +174,7 @@ class ActionExecutor:
 
     async def run_once(self) -> int:
         """Execute one batch of runnable actions. Returns how many were attempted."""
+        await self._expire_approvals()
         for blocked in await self._actions.block_orphans():
             try:
                 await self._escalate(blocked, ActionStatus.BLOCKED, blocked.last_error or "blocked")
@@ -164,6 +187,18 @@ class ActionExecutor:
         )
         await asyncio.gather(*(self._execute_safely(action) for action in claimed))
         return len(claimed)
+
+    async def _expire_approvals(self) -> None:
+        """An approval nobody gave in time ends its action; the waiting contact is woken."""
+        if self._approvals is None:
+            return
+        try:
+            expired = await self._approvals.expire_due(self._approval_now())
+        except Exception:
+            log.exception("approval_expiry_failed")
+            return
+        if expired:
+            log.warning("approvals_expired", count=expired)
 
     async def _execute_safely(self, action: Action) -> None:
         """Run one action; an unexpected error becomes "outcome unknown", never a crash."""
@@ -202,6 +237,8 @@ class ActionExecutor:
             )
         elif isinstance(outcome, NotAttempted):
             await self._after_error(action, audit, outcome.error, sent=False)
+        elif isinstance(outcome, Refused):
+            await self._finish(action, audit, ActionStatus.FAILED, error=outcome.reason)
         elif isinstance(outcome, Ok):
             body = (
                 outcome.value.model_dump(mode="json")
@@ -239,13 +276,14 @@ class ActionExecutor:
     async def _replay_later(
         self, action: Action, audit: Auditor, error: str, *, unknown: bool
     ) -> None:
-        age = self._now() - action.created_at
+        # From when it became runnable: an approval may have taken longer than the whole window.
+        age = self._now() - (action.ready_at or action.created_at)
         if age >= self._give_up_after:
             await self._finish(
                 action,
                 audit,
                 ActionStatus.FAILED,
-                error=f"GAVE_UP after {action.attempts}: {error}",
+                error=f"{GAVE_UP} after {action.attempts}: {error}",
             )
             return
         doublings = min(max(action.attempts - 1, 0), MAX_BACKOFF_DOUBLINGS)
@@ -283,6 +321,7 @@ class ActionExecutor:
             external_ref=external_ref,
             response_body=response_body,
             error=error,
+            wake_contact=action.action_type in WAKES_CONTACT,
         )
         if not recorded:
             return
@@ -432,6 +471,8 @@ def _external_ref(action_type: str, body: dict[str, Any]) -> str | None:
         return str(body["complaint_ref"]) if body.get("complaint_ref") else None
     if action_type == NOTIFY_SEND:
         return str(body["message_id"]) if body.get("message_id") else None
+    if action_type == CREDIT_APPLY:
+        return str(body["credit_id"]) if body.get("credit_id") else None
     return None
 
 
@@ -446,6 +487,11 @@ async def _main() -> None:
             AuditRepository(database),
             HandoffRepository(database),
             gateway.for_executor(),
+            approvals=ApprovalRepository(database),
+            # Read at start, like every other process: a bad policy file stops the executor
+            # before it can apply anything.
+            credit_policy=load_policy(settings.credit_policy_path),
+            credit_review_all=settings.credit_review_all,
         )
         stop = asyncio.Event()
         loop = asyncio.get_running_loop()

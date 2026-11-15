@@ -10,12 +10,16 @@ Order of operations (fixed, and stated in the policy document):
     amount  = max(amount, minimum_credit)                  floor
     amount  = min(amount, cap - prior_credits_in_cycle)    billing-cycle cap
     amount  = round to the policy quantum
+
+The two rules that also have to hold at the moment a credit is applied, which may be days after
+it was worked out, are exposed on their own: who must have approved an amount
+(``required_approval``) and whether it still fits under the cap (``within_cycle_cap``).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 from pathlib import Path
@@ -24,9 +28,12 @@ from typing import Literal, Self
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from skylink_care.clock import IST
 from skylink_care.domain.models import ServiceType
 
 ZERO = Decimal("0.00")
+# The reason code under which Billing records a credit for an outage.
+OUTAGE_CREDIT = "OUTAGE_CREDIT"
 
 
 class CreditReason(StrEnum):
@@ -45,6 +52,16 @@ class ApprovalLevel(StrEnum):
     NONE = "none"
     AGENT = "agent"
     SUPERVISOR = "supervisor"
+
+    def covers(self, needed: ApprovalLevel) -> bool:
+        """An approval at this level is enough where ``needed`` is asked for."""
+        return _RANK[self] >= _RANK[needed]
+
+    def stricter(self, other: ApprovalLevel) -> ApprovalLevel:
+        return self if _RANK[self] >= _RANK[other] else other
+
+
+_RANK = {ApprovalLevel.NONE: 0, ApprovalLevel.AGENT: 1, ApprovalLevel.SUPERVISOR: 2}
 
 
 # --- policy (validated at the file boundary) ---------------------------------------------------
@@ -183,6 +200,52 @@ def approval_level(decision: CreditDecision, *, review_all: bool) -> ApprovalLev
     return ApprovalLevel.AGENT if review_all else ApprovalLevel.NONE
 
 
+def required_approval(
+    policy: CreditPolicy, amount_inr: Decimal, *, review_all: bool
+) -> ApprovalLevel:
+    """Who must have approved a credit of this amount, worked out from the amount alone.
+
+    The executor asks this immediately before it applies a credit, so that the answer does not
+    rest on what was recorded when the credit was proposed.
+    """
+    if amount_inr > policy.approval.supervisor_above_inr:
+        return ApprovalLevel.SUPERVISOR
+    return ApprovalLevel.AGENT if review_all else ApprovalLevel.NONE
+
+
+def within_cycle_cap(
+    policy: CreditPolicy,
+    *,
+    service_type: ServiceType,
+    monthly_fee_inr: Decimal,
+    credited_in_cycle_inr: Decimal,
+    amount_inr: Decimal,
+) -> bool:
+    """Does a credit of this amount still fit under the billing-cycle cap of the service.
+
+    It is the same comparison the engine makes when it prices a credit, on the rounded value an
+    amount is stored as: a credit that was priced at the cap fits, one unit more does not.
+    """
+    rule = policy.services.get(service_type)
+    if rule is None:
+        return False
+    remaining = _cap_remaining(rule, monthly_fee_inr, credited_in_cycle_inr)
+    return amount_inr <= _round(policy, remaining)
+
+
+def cycle_start(today: date, cycle_day: int) -> date:
+    """The first day of the billing cycle that contains ``today`` (cycle days run 1 to 28)."""
+    if today.day >= cycle_day:
+        return today.replace(day=cycle_day)
+    last_of_previous_month = today.replace(day=1) - timedelta(days=1)
+    return last_of_previous_month.replace(day=cycle_day)
+
+
+def billing_cycle_start(now: datetime, cycle_day: int) -> date:
+    """The first day of the customer's current billing cycle, counted in their own time zone."""
+    return cycle_start(now.astimezone(IST).date(), cycle_day)
+
+
 def _validate(facts: CreditInput) -> None:
     if facts.monthly_fee_inr <= 0:
         raise ValueError("monthly_fee_inr must be positive")
@@ -229,8 +292,9 @@ def _price(
     computed = facts.monthly_fee_inr * hours * multiplier / policy.hours_in_month
 
     floored = max(computed, rule.minimum_credit_inr)
-    cap_total = facts.monthly_fee_inr * rule.cap_fraction_of_monthly_fee
-    cap_remaining = max(cap_total - facts.prior_outage_credits_in_cycle_inr, Decimal(0))
+    cap_remaining = _cap_remaining(
+        rule, facts.monthly_fee_inr, facts.prior_outage_credits_in_cycle_inr
+    )
     capped = min(floored, cap_remaining)
     amount = _round(policy, capped)
 
@@ -249,11 +313,18 @@ def _price(
         eligible=True,
         reason=CreditReason.ELIGIBLE,
         amount_inr=amount,
-        requires_supervisor=amount > policy.approval.supervisor_above_inr,
+        requires_supervisor=required_approval(policy, amount, review_all=False)
+        is ApprovalLevel.SUPERVISOR,
         policy_id=policy.policy_id,
         policy_version=policy.version,
         calculation=working,
     )
+
+
+def _cap_remaining(rule: ServiceRule, monthly_fee_inr: Decimal, credited_inr: Decimal) -> Decimal:
+    """What outage credits on the service may still total in the billing cycle."""
+    cap_total = monthly_fee_inr * rule.cap_fraction_of_monthly_fee
+    return max(cap_total - credited_inr, Decimal(0))
 
 
 def _refuse(

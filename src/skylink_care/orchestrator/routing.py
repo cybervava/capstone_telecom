@@ -16,6 +16,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from skylink_care.db.actions import ACTION_FINISHED_EVENT
 from skylink_care.db.inbox import OUTAGE_DECLARED_EVENT, OUTAGE_RESOLVED_EVENT
 from skylink_care.db.line_tests import FAIL as LINE_FAILED
 from skylink_care.db.line_tests import PASS as LINE_PASSED
@@ -23,7 +24,7 @@ from skylink_care.db.timers import TIMER_FIRED_EVENT
 from skylink_care.domain.models import Intent, NetworkState
 from skylink_care.domain.network import DecisionReason
 from skylink_care.llm.base import CONFIDENCE_SCORE
-from skylink_care.orchestrator.state import ContactState, Phase, Route, Trigger
+from skylink_care.orchestrator.state import ContactState, Phase, Route, Trigger, pending_credits
 
 # Loop guard: supervisor passes allowed within one run before a person takes over.
 MAX_STEPS_PER_RUN = 12
@@ -103,6 +104,10 @@ def _on_new_events(state: ContactState) -> Decision:
     theirs = told if told in resolved else (None if told or not resolved else resolved[-1])
     owed = {"resolved_outage_id": theirs} if theirs else {}
 
+    if _credit_has_ended(state, events):
+        # Told first, whatever else arrived with it: the event is consumed by this turn. A
+        # customer message in the same batch is handled straight afterwards.
+        return Decision(Route.CREDIT_RESULT, updates={**spent, **owed})
     if kinds & CUSTOMER_EVENTS:
         updates = {**spent, **owed, "trigger": Trigger.CUSTOMER.value}
         return Decision(Route.TRIAGE, updates=updates)
@@ -120,6 +125,16 @@ def _on_new_events(state: ContactState) -> Decision:
     if recheck_due:
         return Decision(Route.DIAGNOSE, updates={**spent, "trigger": Trigger.RECHECK.value})
     return Decision(Route.AWAIT, updates=spent)
+
+
+def _credit_has_ended(state: ContactState, events: list[dict[str, Any]]) -> bool:
+    """A credit this contact is waiting on was applied, skipped, rejected, expired or failed."""
+    waited_for = {credit.get("action_id") for credit in pending_credits(state)}
+    return any(
+        event.get("event_type") == ACTION_FINISHED_EVENT
+        and (event.get("payload") or {}).get("action_id") in waited_for
+        for event in events
+    )
 
 
 def _outage_ids(events: list[dict[str, Any]], event_type: str) -> list[str]:

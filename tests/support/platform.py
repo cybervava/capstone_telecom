@@ -16,10 +16,12 @@ from mock_oss.clock import ManualClock
 from skylink_care.adapters.gateway import OssGateway
 from skylink_care.config import Settings
 from skylink_care.db.actions import ActionRepository
+from skylink_care.db.approvals import ApprovalRepository
 from skylink_care.db.audit import AuditRepository
 from skylink_care.db.contacts import IntakeResult, NewContact
 from skylink_care.db.database import Database
 from skylink_care.db.handoffs import HandoffRepository
+from skylink_care.domain.credit import load_policy
 from skylink_care.domain.models import Channel
 from skylink_care.executor.worker import ActionExecutor
 from skylink_care.ingest.consumer import FeedConsumer, PollOutcome
@@ -145,6 +147,12 @@ async def platform(
         gateway.for_executor(),
         visibility_seconds=0.2,
         backoff_base_seconds=0.05,
+        approvals=ApprovalRepository(db),
+        credit_policy=load_policy(care_settings.credit_policy_path),
+        credit_review_all=care_settings.credit_review_all,
+        # Approvals expire and billing cycles turn by the clock the tests move; everything else
+        # here uses real time.
+        approval_clock=now,
     )
     ingest = build_consumer(care_settings, db, gateway, now=now)
     return Platform(runtime, worker, executor, checkpointer, ingest, stack_clock)

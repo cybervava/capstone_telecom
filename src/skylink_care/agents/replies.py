@@ -14,12 +14,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
-from zoneinfo import ZoneInfo
 
+from skylink_care.clock import IST
 from skylink_care.domain.models import OutageInfo
 from skylink_care.domain.network import DecisionReason
 
-IST = ZoneInfo("Asia/Kolkata")
 AI_DISCLOSURE = "I'm SkyLink's automated assistant."
 
 _CAUSES = {
@@ -252,6 +251,7 @@ def outage_restored(
     outage_id: str | None,
     resolved_at: datetime | None,
     service_type: str | None,
+    about_credit: str = "",
 ) -> Reply:
     """The outage this customer was waiting on is over.
 
@@ -271,12 +271,121 @@ def outage_restored(
     return Reply(
         f"{AI_DISCLOSURE} {news} Your service should be working again. If it isn't back within"
         f" 10 minutes, restart your {device} once. If it still doesn't work after that, reply"
-        f" here and I'll have your line checked. Your complaint reference is {complaint_ref}.",
+        f" here and I'll have your line checked.{about_credit}"
+        f" Your complaint reference is {complaint_ref}.",
         "outage_restored.v1",
         {
             "outage_id": outage_id,
             "resolved_at": resolved_at.isoformat() if resolved_at else None,
         },
+    )
+
+
+def credit_line(amount_inr: str, *, policy_version: str, needs_approval: bool) -> str:
+    """One sentence about the credit, added to the message that reports the restoration."""
+    if needs_approval:
+        return (
+            f" For this outage you are due a service credit of INR {amount_inr} under our"
+            f" service credit policy ({policy_version}). It has been sent for approval and I'll"
+            " confirm here once it has been applied to your account."
+        )
+    return (
+        f" For this outage you are due a service credit of INR {amount_inr} under our service"
+        f" credit policy ({policy_version}). It is being applied to your account and I'll"
+        " confirm here once that is done."
+    )
+
+
+def no_credit_line(reason: str, *, policy_version: str) -> str:
+    """Why no credit is due, for a customer who asked. Stated as policy, not as a judgement."""
+    wording = {
+        "BELOW_MINIMUM_DURATION": "the outage was shorter than the minimum the policy covers",
+        "PLANNED_WORK": "planned maintenance that was announced in advance is not covered",
+        "ALREADY_CREDITED": "a credit for this outage is already on your account",
+        "CAP_REACHED": "the credits on your account have reached the limit for this billing cycle",
+        "SERVICE_SUSPENDED": "the service was not active during the outage",
+    }.get(reason, "the outage does not meet the conditions of the policy")
+    return (
+        f" You asked about a credit: under our service credit policy ({policy_version}) none is"
+        f" due for this outage, because {wording}. If you think that is wrong, reply here and a"
+        " member of our team will review it."
+    )
+
+
+CREDIT_UNDER_REVIEW = (
+    " I could not check your account for a service credit just now; a member of our team will"
+    " review it and contact you."
+)
+# A credit for this service and outage is on record already. What is on record is what is said.
+CREDIT_WITH_ANOTHER_CONTACT = (
+    " A service credit for this outage is already being processed for your account."
+)
+CREDIT_ALREADY_ON_ACCOUNT = " A service credit for this outage is already on your account."
+CREDIT_NOT_APPLIED_EARLIER = (
+    " A service credit for this outage was looked at earlier and has not been applied; a member"
+    " of our team will review it and contact you."
+)
+CREDIT_AMOUNT_REVIEW = " A member of our team will review the amount for this outage."
+
+
+def credit_in_progress_line(amount_inr: str) -> str:
+    return (
+        f" A service credit of INR {amount_inr} for this outage is already being processed and"
+        " I'll confirm here once it has been applied to your account."
+    )
+
+
+def credit_already_applied_line(amount_inr: str) -> str:
+    return (
+        f" A service credit of INR {amount_inr} for this outage has already been applied to"
+        " your account."
+    )
+
+
+def credit_applied(complaint_ref: str, *, amount_inr: str, credit_ref: str | None) -> Reply:
+    reference = f" (credit reference {credit_ref})" if credit_ref else ""
+    return Reply(
+        f"{AI_DISCLOSURE} The service credit of INR {amount_inr} for your outage has been"
+        f" applied to your account{reference}. It will show on your next bill. Your complaint"
+        f" reference is {complaint_ref}.",
+        "credit_applied.v1",
+        {"amount_inr": amount_inr, "credit_ref": credit_ref},
+    )
+
+
+def credit_already_there(complaint_ref: str) -> Reply:
+    return Reply(
+        f"{AI_DISCLOSURE} A service credit for this outage is already on your account, so no"
+        f" second one has been added. Your complaint reference is {complaint_ref}.",
+        "credit_already_there.v1",
+    )
+
+
+def credit_not_applied(complaint_ref: str) -> Reply:
+    """Rejected, expired or failed. The reason is for the person who follows up, not guessed."""
+    return Reply(
+        f"{AI_DISCLOSURE} The service credit for your outage has not been applied. A member of"
+        " our team will review it and contact you; you don't need to do anything."
+        f" Your complaint reference is {complaint_ref}.",
+        "credit_not_applied.v1",
+    )
+
+
+def credit_unconfirmed(complaint_ref: str) -> Reply:
+    """Replaying stopped without an answer from Billing: applied or not, nobody knows yet."""
+    return Reply(
+        f"{AI_DISCLOSURE} I could not confirm that the service credit for your outage has been"
+        " applied. A member of our team will check your account and contact you; you don't need"
+        f" to do anything. Your complaint reference is {complaint_ref}.",
+        "credit_unconfirmed.v1",
+    )
+
+
+def closing_after_credit(complaint_ref: str) -> Reply:
+    return Reply(
+        f"{AI_DISCLOSURE} Thank you. I'll keep complaint {complaint_ref} open until the service"
+        " credit is settled, and confirm here when it is.",
+        "closing_after_credit.v1",
     )
 
 

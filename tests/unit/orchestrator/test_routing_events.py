@@ -496,3 +496,32 @@ def test_it_works_now_closes_nothing_once_the_question_was_withdrawn() -> None:
     state = after_triage(guidance_told="guide-al-ax18 §wifi v1.1", asked_if_working=False)
 
     assert decide_route(state).route is Route.DIAGNOSE
+
+
+# --- service credit ----------------------------------------------------------------------------
+
+CREDIT_ACTION = "11111111-1111-1111-1111-111111111111"
+CREDIT = {"action_id": CREDIT_ACTION, "pending": True}
+
+
+def finished(action_id: str = CREDIT_ACTION) -> dict[str, Any]:
+    return event("action.finished", action_id=action_id, status="SUCCEEDED")
+
+
+def test_end_of_the_credit_the_contact_waits_on_is_told_first() -> None:
+    decision = decide_route(new_turn(finished(), event("customer.message"), credits=[CREDIT]))
+
+    assert decision.route is Route.CREDIT_RESULT
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        new_turn(finished("22222222-2222-2222-2222-222222222222"), credits=[CREDIT]),
+        new_turn(finished(), credits=[{**CREDIT, "pending": False}]),
+        new_turn(finished()),
+    ],
+    ids=["another action", "credit already settled", "no credit on this contact"],
+)
+def test_other_finished_actions_do_not_start_a_credit_message(state: ContactState) -> None:
+    assert decide_route(state).route is Route.AWAIT

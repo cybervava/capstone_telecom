@@ -41,6 +41,7 @@ _SPECIALISTS = (
     Route.GUIDE,
     Route.RESTORED,
     Route.KEEP_WAITING,
+    Route.CREDIT_RESULT,
     Route.CLOSE,
     Route.HANDOFF,
 )

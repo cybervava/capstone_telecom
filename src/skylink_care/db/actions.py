@@ -11,9 +11,11 @@ Three properties are enforced in this module rather than left to callers:
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
@@ -29,11 +31,14 @@ _COLUMNS = (
     "action_id, action_key, action_type, lane, contact_id, episode_id, requested_by,"
     " request_body, request_hash, inputs, depends_on, approval_level, status, policy_version,"
     " external_ref, response_body, attempts, available_at, last_error, correlation_id,"
-    " created_at, updated_at"
+    " created_at, updated_at, ready_at"
 )
 _RETURNING = ", ".join(f"actions.{name.strip()}" for name in _COLUMNS.split(","))
 
 ACTION_FINISHED_EVENT = "action.finished"
+# How the error of an action begins when the executor stopped replaying it. Whether the write
+# landed is then not known, which is not the same as knowing that it did not.
+GAVE_UP = "GAVE_UP"
 
 # Action types: the vocabulary shared by whoever proposes a write and the executor that sends it.
 COMPLAINT_REGISTER = "COMPLAINT_REGISTER"
@@ -41,12 +46,14 @@ INCIDENT_OPEN = "INCIDENT_OPEN"
 INCIDENT_UPDATE = "INCIDENT_UPDATE"
 INCIDENT_LINK_COMPLAINT = "INCIDENT_LINK_COMPLAINT"
 NOTIFY_SEND = "NOTIFY_SEND"
+CREDIT_APPLY = "CREDIT_APPLY"
 
 # Lanes: a lower lane is always served first, so a flood of low-priority writes (notifications)
 # can never delay complaint registration or incident tickets.
 REGULATORY_LANE = 1
 INCIDENT_LANE = 2
 LINK_LANE = 3
+CREDIT_LANE = 4
 NOTIFICATION_LANE = 9
 
 
@@ -72,6 +79,7 @@ TERMINAL = frozenset(
         ActionStatus.BLOCKED,
     }
 )
+OPEN = frozenset({ActionStatus.PENDING_APPROVAL, ActionStatus.READY, ActionStatus.IN_FLIGHT})
 
 
 @dataclass(frozen=True)
@@ -114,6 +122,21 @@ class Action:
     correlation_id: str
     created_at: datetime
     updated_at: datetime
+    # When it became runnable: at proposal, or at its approval. None while it awaits approval.
+    ready_at: datetime | None = None
+
+    @property
+    def gave_up(self) -> bool:
+        """The executor stopped replaying it: the write may or may not have landed."""
+        return self.status is ActionStatus.FAILED and (self.last_error or "").startswith(GAVE_UP)
+
+
+@dataclass(frozen=True)
+class OpenCredit:
+    """A credit that is proposed and not yet settled."""
+
+    action_key: str
+    amount_inr: Decimal
 
 
 @dataclass(frozen=True)
@@ -143,8 +166,10 @@ class ActionRepository(Repository):
             cursor = await active.execute(
                 "INSERT INTO actions (action_id, action_key, action_type, lane, contact_id,"  # noqa: S608 - constant column list
                 " episode_id, requested_by, request_body, request_hash, inputs, depends_on,"
-                " approval_level, status, policy_version, correlation_id)"
-                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                " approval_level, status, policy_version, correlation_id, ready_at)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,"
+                # Runnable from the start (the last parameter says so), or not until approved.
+                " CASE WHEN %s THEN clock_timestamp() END)"
                 " ON CONFLICT (action_key) DO NOTHING"
                 f" RETURNING {_COLUMNS}",
                 (
@@ -163,6 +188,7 @@ class ActionRepository(Repository):
                     status.value,
                     new.policy_version,
                     new.correlation_id,
+                    status is ActionStatus.READY,
                 ),
             )
             row = await cursor.fetchone()
@@ -184,8 +210,9 @@ class ActionRepository(Repository):
             await cursor.executemany(
                 "INSERT INTO actions (action_id, action_key, action_type, lane, contact_id,"
                 " episode_id, requested_by, request_body, request_hash, inputs, depends_on,"
-                " approval_level, status, policy_version, correlation_id)"
-                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                " approval_level, status, policy_version, correlation_id, ready_at)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,"
+                " CASE WHEN %s THEN clock_timestamp() END)"
                 " ON CONFLICT (action_key) DO NOTHING",
                 [
                     (
@@ -208,6 +235,7 @@ class ActionRepository(Repository):
                         ).value,
                         new.policy_version,
                         new.correlation_id,
+                        new.approval_level == "none",
                     )
                     for new in proposals
                 ],
@@ -226,6 +254,33 @@ class ActionRepository(Repository):
             row["action_key"]: KeyedAction(row["action_id"], ActionStatus(row["status"]))
             for row in await cursor.fetchall()
         }
+
+    @asynccontextmanager
+    async def customer_lock(self, customer_id: str) -> AsyncIterator[None]:
+        """Serialise money-moving writes for one customer, across every executor.
+
+        Held for the check-then-write of one credit, so two credits for the same customer can
+        never both pass the "not credited yet" check. PostgreSQL releases it when the block
+        ends or the process dies.
+        """
+        async with self._db.transaction() as conn:
+            await conn.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                (f"customer:{customer_id}",),
+            )
+            yield
+
+    async def open_credits(self, service_id: str) -> list[OpenCredit]:
+        """Credits on this service that are proposed and not yet settled, whoever proposed them."""
+        async with self._db.connection() as conn:
+            cursor = await conn.execute(
+                "SELECT action_key, request_body ->> 'amount_inr' AS amount FROM actions"
+                " WHERE action_type = %s AND request_body ->> 'service_id' = %s"
+                " AND status IN ('PENDING_APPROVAL', 'READY', 'IN_FLIGHT')",
+                (CREDIT_APPLY, service_id),
+            )
+            rows = await cursor.fetchall()
+        return [OpenCredit(row["action_key"], _amount(row["amount"])) for row in rows]
 
     async def get(self, action_id: UUID) -> Action | None:
         async with self._db.connection() as conn:
@@ -364,3 +419,12 @@ async def _select_by_key(conn: Connection, action_key: str) -> Action | None:
 
 def _to_action(row: dict[str, Any]) -> Action:
     return Action(**{**row, "status": ActionStatus(row["status"])})
+
+
+def _amount(text: str | None) -> Decimal:
+    """A stored amount. One that cannot be read counts as nothing rather than failing the read."""
+    try:
+        amount = Decimal(str(text))
+    except InvalidOperation:
+        return Decimal(0)
+    return amount if amount.is_finite() and amount > 0 else Decimal(0)

@@ -23,7 +23,7 @@ from skylink_care.orchestrator.handover import clean_summary, handoff_summary, w
 from skylink_care.orchestrator.network_nodes import NetworkNodes
 from skylink_care.orchestrator.node_support import waits_on_network
 from skylink_care.orchestrator.routing import decide_route
-from skylink_care.orchestrator.state import ContactState, Phase, Trigger
+from skylink_care.orchestrator.state import ContactState, Phase, Trigger, pending_credits
 
 
 class Nodes(NetworkNodes):
@@ -63,9 +63,9 @@ class Nodes(NetworkNodes):
 
     async def finish(self, state: ContactState) -> dict[str, Any]:
         if state.get("phase") == Phase.CLOSED.value:
-            await self._rt.contacts.update(
-                UUID(state["contact_id"]), status="CLOSED", closed_at=self._rt.now()
-            )
+            contact_id = UUID(state["contact_id"])
+            await self._rt.timers.cancel(contact_id)
+            await self._rt.contacts.update(contact_id, status="CLOSED", closed_at=self._rt.now())
         return {}
 
     # --- triage and conversation -----------------------------------------------------------------
@@ -127,6 +127,8 @@ class Nodes(NetworkNodes):
             "service": service,
             "intent": intent,
             "message_cursor": message_cursor,
+            # The customer has written again: whatever was about to close is open once more.
+            "close_when_credit_settles": False,
             "phase": Phase.TRIAGED.value,
         }
 
@@ -189,16 +191,35 @@ class Nodes(NetworkNodes):
         return {"phase": Phase.HANDED_OFF.value}
 
     async def close(self, state: ContactState) -> dict[str, Any]:
-        """End the contact: the customer confirmed service is back, or stayed silent."""
+        """End the contact: the customer confirmed service is back, or stayed silent.
+
+        A contact whose service credit is still unsettled is not closed: the customer is owed
+        the outcome. It waits for the credit and closes when that has been told.
+        """
         contact = await self._contact(state)
         confirmed = state.get("trigger") == Trigger.CUSTOMER.value
+        await self._rt.timers.cancel(contact.contact_id)
+        if pending_credits(state):
+            if confirmed:
+                await self._say(
+                    contact,
+                    state,
+                    replies.closing_after_credit(contact.complaint_ref),
+                    author="agent:supervisor",
+                )
+            await self._rt.contacts.update(contact.contact_id, status="AWAITING_APPROVAL")
+            return {
+                "phase": Phase.REPLIED.value,
+                "close_key": None,
+                "asked_if_working": False,
+                "close_when_credit_settles": True,
+            }
         reply = (
             replies.closed_confirmed(contact.complaint_ref)
             if confirmed
             else replies.closed_quiet(contact.complaint_ref)
         )
         await self._say(contact, state, reply, author="agent:supervisor")
-        await self._rt.timers.cancel(contact.contact_id)
         await self._rt.auditor(contact.contact_id, contact.correlation_id).record(
             actor="agent:supervisor",
             step="contact.closed",

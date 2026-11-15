@@ -10,6 +10,8 @@ from skylink_care.guardrails.pii import redact_for_log
 from skylink_care.orchestrator.state import ContactState
 
 MAX_SUMMARY_CHARS = 240
+# The state of a credit whose outcome could not be established.
+UNCONFIRMED = "UNCONFIRMED"
 
 _WORDING = {
     "CUSTOMER_REQUESTED_HUMAN": "You asked to speak to a person.",
@@ -26,6 +28,11 @@ _WORDING = {
     "NETWORK_STATUS_UNVERIFIED": "I still can't verify the network status for your area.",
 }
 _DEFAULT_WORDING = "This needs a member of our team."
+# For a write whose replaying stopped without an answer: it may have landed.
+CHECK_ACCOUNT_FIRST = (
+    "Whether it reached the account is not known: look for a credit under this key on the"
+    " account before applying anything by hand."
+)
 _FLAGS = ("insists_device_fault", "requests_technician", "requests_credit")
 
 
@@ -45,6 +52,19 @@ def clean_summary(text: str) -> str:
     printable = "".join(char if char.isprintable() else " " for char in redacted)
     without_markup = printable.replace("<", "(").replace(">", ")")
     return " ".join(without_markup.split())[:MAX_SUMMARY_CHARS]
+
+
+def _credit_lines(state: ContactState) -> list[str]:
+    """Every credit of the contact and where it stands."""
+    lines = []
+    for credit in state.get("credits") or []:
+        lines.append(
+            f"Service credit: INR {credit.get('amount_inr')} ({credit.get('action_key')}),"
+            f" {credit.get('status') or 'pending'}, approval {credit.get('approval')}."
+        )
+        if credit.get("status") == UNCONFIRMED:
+            lines.append(CHECK_ACCOUNT_FIRST)
+    return lines
 
 
 def handoff_summary(state: ContactState, reason: str) -> str:
@@ -83,6 +103,7 @@ def handoff_summary(state: ContactState, reason: str) -> str:
     mapping_status = (state.get("mapping") or {}).get("status")
     if mapping_status and mapping_status != "RESOLVED":
         parts.append(f"Address mapping: {mapping_status}.")
+    parts.extend(_credit_lines(state))
     if state.get("guidance_told"):
         parts.append(f"Guide steps already given: {state['guidance_told']}.")
     if state.get("line_fault_seen_at"):

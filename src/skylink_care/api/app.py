@@ -24,6 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import Lifespan
 
+from skylink_care.api.approvals import register_approval_routes
 from skylink_care.api.auth import Principal, Role, check_secret, issue_token, require
 from skylink_care.api.ratelimit import RateLimiter
 from skylink_care.api.schemas import (
@@ -36,6 +37,7 @@ from skylink_care.api.schemas import (
     failed,
     ok,
 )
+from skylink_care.clock import Clock, utc_now
 from skylink_care.db.audit import AuditRepository
 from skylink_care.db.contacts import Contact, ContactRepository, NewContact, RequestIdReusedError
 from skylink_care.db.database import Database
@@ -74,6 +76,8 @@ class ApiDeps:
     # Follow-up messages per contact, and further contacts per caller after the first.
     message_limit: RateLimiter | None = None
     contact_limit: RateLimiter | None = None
+    # The clock approvals are offered and decided by.
+    now: Clock = utc_now
 
 
 def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> FastAPI:
@@ -232,6 +236,8 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
         _: Annotated[Principal, Depends(require(*STAFF_SIDE))],
     ) -> dict[str, Any]:
         return ok(jsonable_encoder([item.__dict__ for item in await handoffs.list_open()]))
+
+    register_approval_routes(app, deps.database, deps.now)
 
     if deps.env == "dev":
 
