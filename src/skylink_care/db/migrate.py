@@ -59,8 +59,9 @@ async def migrate(conninfo: str) -> list[str]:
 # append-only and is kept; reference data is reloaded by its own loader; the complaint reference
 # sequence is kept, so a reference is never issued twice.
 _RUNTIME_TABLES = (
-    "approvals, actions, handoffs, inbox, timers, contact_messages, contacts, node_episodes,"
-    " outage_nodes, outages, node_alarms, checkpoint_blobs, checkpoint_writes, checkpoints"
+    "approvals, actions, handoffs, inbox, timers, line_tests, contact_messages, contacts,"
+    " node_episodes, outage_nodes, outages, node_alarms, checkpoint_blobs, checkpoint_writes,"
+    " checkpoints"
 )
 
 

@@ -23,7 +23,10 @@ ALL_CLEAR = re.compile(
 
 async def broadband_customer(simulator: Simulator, **filters: Any) -> dict[str, Any]:
     defaults = {"service_type": "broadband", "mapping_defect": "none", "status": "active"}
-    return await simulator.find_customer(**{**defaults, **filters})
+    customer = await simulator.find_customer(**{**defaults, **filters})
+    # The data pack seeds a few faulty lines. A test that wants one says so itself.
+    await simulator.line_fault(customer["service_id"], fault=False)
+    return customer
 
 
 async def handoff_reasons(platform: Platform) -> list[str]:

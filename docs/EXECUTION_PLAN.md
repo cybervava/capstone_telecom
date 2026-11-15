@@ -217,7 +217,7 @@ Each task lists its acceptance check. Tests are written first for `domain/` and 
 
 ### M2 Six capabilities (summary)
 
-Built in slices, each committed when its tests and a live run pass: **A** event feed, read model, timers · **B** proactive notifications and restoration · C line tests, mapping repair, line-test clustering · D guide index and cited troubleshooting · E credits, approvals, billing write · F dispatch · G conflict path and mobile journey · H supervisor console · I evaluations. A and B are done (see the progress log).
+Built in slices, each committed when its tests and a live run pass: **A** event feed, read model, timers · **B** proactive notifications and restoration · **C** line tests, mapping repair, line-test clustering · D guide index and cited troubleshooting · E credits, approvals, billing write · F dispatch · G conflict path and mobile journey · H supervisor console · I evaluations. A, B and C are done (see the progress log).
 
 Event consumer with dedupe, version checks, applied-sequence tracking and heartbeat; alarm state per node; notification fan-out to resolved mappings only, consent checked at send time, one message per customer, outage and template; line-test tool and mapping repair; suspected-fault hold (critical alarm, or several failed line tests on one node) that opens an episode without an outage id; retroactive confirmation when the outage is declared; index build and filtered retrieval; step-by-step guided troubleshooting with citations; credit proposals only after restoration, priced from frozen inputs; approval records carrying the hash the approver saw; billing write under a per-customer lock; dispatch rules (failed re-test, fresh `CONFIRMED_CLEAR` after the hold-down, customer consent, one open visit per service); conflict path for "the network says outage, the customer says device"; handoff queue with summary; one mobile outage journey.
 
@@ -301,10 +301,12 @@ Items 1, 2, 8 and 9 (deck, problem statement, ROI workbook, contribution matrix)
 | 15 Nov | **M2 slice A: event feed, read model, timers** | **Done.** A fifth process (`care-ingest`) reads the NOC feed with its own read-only key and applies each event, its consequences and the cursor in one transaction. The network decision now has both sources: the feed proves an outage while the Network API is down; a silent, stale, lagging or gapped feed proves nothing. Timers wake a contact later (re-check, quiet close) |
 | 15 Nov | **M2 slice B: proactive notifications and restoration** | **Done.** Declared outage → consent-checked messages to the customers on the node, "resolved" only to those told it started. A suspected fault raises one ticket for the node, which the declared outage upgrades. Waiting customers are told when the outage is confirmed and when it is resolved; the contact closes on their confirmation or after a quiet period |
 
+| 15 Nov | **M2 slice C: remote line tests** | **Done.** A line test names the node that really serves the line, which repairs a missing, ambiguous or stale mapping for the contact (the three defective-mapping journeys now end in the outage reply instead of a human queue). A failed line on a node that looks healthy is watched for the NOC's detection window before any repair is arranged; three distinct lines failing on one node are treated as a suspected node fault with one ticket. Dispatch itself is slice F |
+
 ### Evidence at this point
 
-- `make test-all`: 1,167 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 94% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
-- `make smoke` passes against the host processes at 400,000-customer scale. Four journeys: declared outage → sourced reply, one incident, complaint linked, and 168 neighbours on the node notified once each (none without consent, checked in the gateway's own store); Network API down → the feed still proves the outage; same failure for a customer on another node → no all-clear and no device steps; outage resolved → the waiting customer is told, confirms, the contact closes and the node's incident is resolved.
+- `make test-all`: 1,208 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 94% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
+- `make smoke` passes against the host processes at 400,000-customer scale. Five journeys: declared outage → sourced reply, one incident, complaint linked, and 168 neighbours on the node notified once each (none without consent, checked in the gateway's own store); Network API down → the feed still proves the outage; same failure for a customer on another node → no all-clear and no device steps; outage resolved → the waiting customer is told, confirms, the contact closes and the node's incident is resolved; a failing line on a healthy node → held, nothing booked.
 - `make smoke` also passes against the container stack (40,000 customers), where the feed consumer runs as its own service. Its first run there failed, usefully: re-seeding the gateway restarts its event sequence and empties its tickets, while the care database still held the cursor and ticket references of the previous gateway. The consumer refused the feed (sequence running backwards) exactly as designed. `make seed` and the container set-up now clear the care platform's runtime state in the same step (`care-admin reset-runtime`, refused unless `CARE_ENV` is `dev` or `test`).
 - The console was checked in a browser at 1440 px and 375 px (M1; unchanged since).
 
@@ -346,9 +348,23 @@ The same three independent reviews were run on these slices before they were com
 | "It works now" closed the contact even when the same message asked for a credit or a technician | The contact closes only when nothing else is asked for |
 | A failed audit write could suppress the alert for a failed action; the timer pump and the feed consumer could deadlock on contact rows; an unexpected consumer failure was only in the log | The alert no longer depends on the audit write; contact rows are locked in one order; the failure is recorded in the feed state |
 
+### What the review of M2 slice C changed
+
+One independent correctness review, before the commit. Fixed and covered by tests:
+
+| Finding | Fix |
+|---|---|
+| The marker of a line hold survived an outage and its restoration, so a line fault found hours later skipped the hold and went straight to a repair handoff | The hold ends when the line passes or the customer has been told about an outage or its end; a later fault starts its own hold |
+| Re-checks during the hold counted towards the "status unverified" limit, so one failed status read late in the hold ended it with the wrong reason | Re-checks during a hold are not counted |
+| When the hold ended and the line could not be tested again, the earlier fault was forgotten and the customer was told the line looked fine | No result is not a clean bill of health: the test is retried, then a person takes over with the evidence (`LINE_TEST_UNAVAILABLE`) |
+| A stale word of an outage in the read model spared the line its test although the decision no longer trusted it | The network state is decided first; the line is tested whenever that state is not a proven outage |
+| A mapping that looked sound but named the wrong node was believed over the line test | The line test's node wins when it differs and the reference data knows it as active; an unknown or retired node repairs nothing |
+| One customer with several lines could make a node look faulty; a line since found on another node still counted on the old one | Customers are counted, by the latest test of each of their lines |
+
 ### Known gaps carried into M2 and M3
 
-- The line-test count per node is not yet fed into the network decision (line tests arrive in slice C); until then suspicion rests on alarms only.
+- A line that still fails after the hold goes to a person (`LINE_FAULT`); booking a visit is slice F. A line that passes goes to a person for the equipment check; guided troubleshooting is slice D.
+- A held line is tested again about every two minutes during the hold (bounded by `CARE_LINE_RETEST_SECONDS`), which keeps the per-node picture current at the cost of extra probes.
 - Two outages that overlap on one node get one ticket each, opened one after the other. Each is closed with its own outage and they are never both open for the same outage, but the brief's "one ticket per node" is read here as one per node *episode*.
 - A feed event that cannot be parsed stops the consumer at that event. This fails safe (the read model goes stale and stops being trusted, the error is recorded) but needs a person; there is no dead-letter for feed events yet.
 - A failed action that belongs to no contact (a notification, a ticket update proposed by the feed consumer) is logged as an error and not queued for a person. The operations queue and the alert on it are M3 work.

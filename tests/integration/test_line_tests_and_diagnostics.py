@@ -1,0 +1,382 @@
+"""Line-test records and the diagnostics agent, with Network Monitoring scripted.
+
+The agent's rule: gather evidence, never invent it. A test that could not be run is no result,
+and a node the mapping cannot name is found by asking the line, not by guessing.
+"""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+from uuid import uuid4
+
+from skylink_care.adapters.models import LineTestDto, NodeStatusDto
+from skylink_care.adapters.result import Err, ErrorKind, Ok, Result
+from skylink_care.agents.diagnostics import DiagnosticsAgent, LineTestPolicy, Subject
+from skylink_care.db.audit import AuditRepository
+from skylink_care.db.database import Database
+from skylink_care.db.line_tests import LineTest, LineTestRepository
+from skylink_care.db.read_model import ReadModelRepository
+from skylink_care.db.reference import ReferenceRepository
+from skylink_care.domain.models import MappingStatus, NetworkState
+from skylink_care.domain.network import DecisionLimits, DecisionReason
+from skylink_care.observability.audit import Auditor
+from tests.integration.test_audit_and_reference import seed_reference
+from tests.integration.test_read_model_and_timers import outage_event
+
+NOW = datetime(2026, 11, 15, 4, 35, tzinfo=UTC)
+NODE = "BLR-OLT-0001"
+OTHER = "BLR-OLT-0002"
+LIMITS = DecisionLimits(
+    status_max_age=timedelta(seconds=60),
+    feed_max_age=timedelta(seconds=90),
+    line_test_cluster_threshold=3,
+)
+POLICY = LineTestPolicy(cluster_window=timedelta(minutes=15), retest_after=timedelta(minutes=2))
+
+
+def line_result(
+    service_id: str, result: str, *, node_id: str = NODE, minutes_ago: float = 0
+) -> LineTest:
+    return LineTest(
+        test_id=f"LT-{uuid4().hex[:10]}",
+        service_id=service_id,
+        node_id=node_id,
+        result=result,
+        tested_at=NOW - timedelta(minutes=minutes_ago),
+    )
+
+
+def operational(node_id: str) -> Result[NodeStatusDto]:
+    return Ok(
+        NodeStatusDto(node_id=node_id, status="OPERATIONAL", observed_at=NOW, feed_seq=0),
+        status_code=200,
+    )
+
+
+def in_outage(node_id: str) -> Result[NodeStatusDto]:
+    return Ok(
+        NodeStatusDto.model_validate(
+            {
+                "node_id": node_id,
+                "status": "OUTAGE",
+                "outage": {
+                    "outage_id": "OUT-1",
+                    "version": 1,
+                    "cause": "FIBRE_CUT",
+                    "planned": False,
+                    "started_at": NOW - timedelta(minutes=5),
+                },
+                "observed_at": NOW,
+                "feed_seq": 3,
+            }
+        ),
+        status_code=200,
+    )
+
+
+class ScriptedNetwork:
+    def __init__(
+        self,
+        statuses: dict[str, Result[NodeStatusDto]],
+        line: Result[LineTestDto] | None = None,
+    ) -> None:
+        self._statuses = statuses
+        self._line = line or Err(ErrorKind.UNAVAILABLE, "line tests are down", status_code=503)
+        self.status_calls: list[str] = []
+        self.line_calls: list[str] = []
+
+    async def node_status(self, node_id: str, *, correlation_id: str) -> Result[NodeStatusDto]:
+        self.status_calls.append(node_id)
+        return self._statuses.get(node_id, Err(ErrorKind.TIMEOUT, "no answer"))
+
+    async def line_test(self, service_id: str, *, correlation_id: str) -> Result[LineTestDto]:
+        self.line_calls.append(service_id)
+        return self._line
+
+
+def line_answer(node_id: str, result: str = "PASS", service_id: str = "S1") -> Result[LineTestDto]:
+    return Ok(
+        LineTestDto.model_validate(
+            {
+                "test_id": f"LT-{uuid4().hex[:10]}",
+                "service_id": service_id,
+                "node_id": node_id,
+                "result": result,
+                "checks": {"link": "UP", "sync": True, "packet_loss_pct": 0.1},
+                "tested_at": NOW,
+            }
+        ),
+        status_code=200,
+    )
+
+
+def agent(db: Database, network: ScriptedNetwork) -> DiagnosticsAgent:
+    return DiagnosticsAgent(
+        network,  # type: ignore[arg-type]
+        ReferenceRepository(db),
+        ReadModelRepository(db),
+        LineTestRepository(db),
+        LIMITS,
+        POLICY,
+        lambda: NOW,
+    )
+
+
+def subject(address_id: str = "A-GOOD", service_id: str = "S1") -> Subject:
+    return Subject(
+        contact_id=None,
+        service_id=service_id,
+        service_type="broadband",
+        address_id=address_id,
+    )
+
+
+def auditor(db: Database) -> Auditor:
+    return Auditor(AuditRepository(db), contact_id=None, correlation_id=uuid4().hex)
+
+
+# --- records -------------------------------------------------------------------------------------
+
+
+async def test_failing_lines_are_counted_once_each_by_their_latest_result(db: Database) -> None:
+    tests = LineTestRepository(db)
+    since = NOW - timedelta(minutes=15)
+    for record in (
+        line_result("S1", "FAIL", minutes_ago=9),
+        line_result("S1", "FAIL", minutes_ago=5),  # the same line again: still one line
+        line_result("S2", "FAIL", minutes_ago=8),
+        line_result("S3", "FAIL", minutes_ago=7),
+        line_result("S3", "PASS", minutes_ago=1),  # recovered: no longer failing
+        line_result("S4", "INCONCLUSIVE", minutes_ago=2),
+        line_result("S5", "FAIL", minutes_ago=30),  # before the window
+        line_result("S6", "FAIL", node_id=OTHER, minutes_ago=3),
+    ):
+        await tests.record(record, contact_id=None)
+
+    assert await tests.failing_lines_on_node(NODE, since=since) == 2
+    assert await tests.failing_lines_on_node(OTHER, since=since) == 1
+    assert await tests.failing_lines_on_node("BLR-OLT-0099", since=since) == 0
+
+
+async def test_line_found_on_another_node_since_is_not_counted_on_the_old_one(
+    db: Database,
+) -> None:
+    tests = LineTestRepository(db)
+    since = NOW - timedelta(minutes=15)
+    await tests.record(line_result("S1", "FAIL", minutes_ago=9), contact_id=None)
+    await tests.record(line_result("S1", "FAIL", node_id=OTHER, minutes_ago=2), contact_id=None)
+
+    assert await tests.failing_lines_on_node(NODE, since=since) == 0
+    assert await tests.failing_lines_on_node(OTHER, since=since) == 1
+
+
+async def test_customer_with_several_lines_on_a_node_counts_once(db: Database) -> None:
+    await seed_reference(db)
+    async with db.transaction() as conn:
+        await conn.execute(
+            "INSERT INTO service_index (service_id, customer_id, service_type, address_id, status)"
+            " VALUES ('S10', 'C1', 'broadband', 'A-GOOD', 'active'),"
+            " ('S11', 'C1', 'broadband', 'A-GOOD', 'active')"
+        )
+    tests = LineTestRepository(db)
+    for service_id in ("S1", "S10", "S11"):  # all three belong to customer C1
+        await tests.record(line_result(service_id, "FAIL", minutes_ago=3), contact_id=None)
+    await tests.record(line_result("S-UNLISTED", "FAIL", minutes_ago=3), contact_id=None)
+
+    failing = await tests.failing_lines_on_node(NODE, since=NOW - timedelta(minutes=15))
+
+    assert failing == 2  # customer C1, and the line whose owner is not on record
+
+
+async def test_latest_result_for_a_line_is_found_only_inside_the_window(db: Database) -> None:
+    tests = LineTestRepository(db)
+    older, newer = (
+        line_result("S1", "FAIL", minutes_ago=10),
+        line_result("S1", "PASS", minutes_ago=3),
+    )
+    await tests.record(older, contact_id=None)
+    await tests.record(newer, contact_id=None)
+    await tests.record(newer, contact_id=None)  # the same test stored twice changes nothing
+
+    recent = await tests.latest_for_service("S1", since=NOW - timedelta(minutes=5))
+
+    assert recent == newer
+    assert await tests.latest_for_service("S1", since=NOW - timedelta(minutes=1)) is None
+    assert await tests.latest_for_service("S9", since=NOW - timedelta(hours=1)) is None
+
+
+# --- the agent -----------------------------------------------------------------------------------
+
+
+async def test_clear_node_gets_a_line_test_and_its_result_is_recorded(db: Database) -> None:
+    await seed_reference(db)
+    network = ScriptedNetwork({NODE: operational(NODE)}, line_answer(NODE, "FAIL"))
+
+    diagnosis = await agent(db, network).run(subject(), audit=auditor(db))
+
+    assert diagnosis.decision.state is NetworkState.CONFIRMED_CLEAR
+    assert diagnosis.line_test is not None
+    assert diagnosis.line_test.result == "FAIL"
+    assert diagnosis.failing_lines_on_node == 1
+    assert (network.status_calls, network.line_calls) == ([NODE], ["S1"])
+
+
+async def test_no_line_test_is_run_when_the_live_status_reports_an_outage(db: Database) -> None:
+    await seed_reference(db)
+    network = ScriptedNetwork({NODE: in_outage(NODE)}, line_answer(NODE))
+
+    diagnosis = await agent(db, network).run(subject(), audit=auditor(db))
+
+    assert diagnosis.decision.state is NetworkState.ACTIVE
+    assert (diagnosis.line_test, network.line_calls) == (None, [])
+
+
+async def test_no_line_test_is_run_when_only_the_feed_knows_of_the_outage(db: Database) -> None:
+    await seed_reference(db)
+    model = ReadModelRepository(db)
+    async with db.transaction() as conn:
+        await model.apply(conn, outage_event(1))
+        await model.record_poll(
+            conn, applied_seq=1, source_last_seq=1, heartbeat_at=NOW, polled_at=NOW
+        )
+    network = ScriptedNetwork({}, line_answer(NODE))  # the status call times out
+
+    diagnosis = await agent(db, network).run(subject(), audit=auditor(db))
+
+    assert diagnosis.decision.reason is DecisionReason.FEED_OUTAGE
+    assert network.line_calls == []
+
+
+async def test_missing_mapping_is_repaired_from_the_node_the_line_test_names(db: Database) -> None:
+    await seed_reference(db)
+    network = ScriptedNetwork({OTHER: in_outage(OTHER)}, line_answer(OTHER, "FAIL"))
+
+    diagnosis = await agent(db, network).run(subject("A-NOWHERE"), audit=auditor(db))
+
+    assert (diagnosis.mapping.status, diagnosis.mapping.node_id) == (MappingStatus.REPAIRED, OTHER)
+    assert diagnosis.decision.state is NetworkState.ACTIVE
+    assert network.status_calls == [OTHER]
+    assert network.line_calls == ["S1"]  # the repair test is not repeated for the customer
+
+
+async def test_mapping_to_equipment_the_gateway_calls_retired_is_repaired_the_same_way(
+    db: Database,
+) -> None:
+    """The reference data still lists the node as active; Network Monitoring knows better."""
+    await seed_reference(db)
+    gone: Result[NodeStatusDto] = Err(
+        ErrorKind.GONE, "decommissioned", status_code=410, code="NODE_DECOMMISSIONED"
+    )
+    network = ScriptedNetwork({NODE: gone, OTHER: operational(OTHER)}, line_answer(OTHER))
+
+    diagnosis = await agent(db, network).run(subject(), audit=auditor(db))
+
+    assert (diagnosis.mapping.status, diagnosis.mapping.node_id) == (MappingStatus.REPAIRED, OTHER)
+    assert diagnosis.decision.state is NetworkState.CONFIRMED_CLEAR
+    assert network.status_calls == [NODE, OTHER]
+
+
+async def test_mapping_that_cannot_be_repaired_stays_unresolved(db: Database) -> None:
+    await seed_reference(db)
+    network = ScriptedNetwork({})  # the line test cannot be run either
+
+    diagnosis = await agent(db, network).run(subject("A-AMBIG", "S2"), audit=auditor(db))
+
+    assert diagnosis.mapping.status is MappingStatus.AMBIGUOUS
+    assert diagnosis.decision.reason is DecisionReason.MAPPING_UNRESOLVED
+    assert (diagnosis.line_test, network.status_calls) == (None, [])
+
+
+async def test_recent_result_is_reused_unless_a_fresh_one_is_asked_for(db: Database) -> None:
+    await seed_reference(db)
+    network = ScriptedNetwork({NODE: operational(NODE)}, line_answer(NODE, "PASS"))
+    diagnostics = agent(db, network)
+    earlier = line_result("S1", "FAIL", minutes_ago=1)
+    await LineTestRepository(db).record(earlier, contact_id=None)
+
+    reused = await diagnostics.run(subject(), audit=auditor(db))
+    fresh = await diagnostics.run(subject(), audit=auditor(db), fresh_line_test=True)
+
+    assert reused.line_test == earlier
+    assert fresh.line_test is not None
+    assert fresh.line_test.result == "PASS"
+    assert network.line_calls == ["S1"]  # one real test for two diagnoses
+
+
+async def test_stale_word_of_an_outage_does_not_spare_the_line_its_test(db: Database) -> None:
+    """The feed once knew of an outage but has gone quiet; the live status says clear.
+
+    The decision does not trust the stale feed, so the line's own state is still worth knowing.
+    """
+    await seed_reference(db)
+    model = ReadModelRepository(db)
+    async with db.transaction() as conn:
+        await model.apply(conn, outage_event(1))
+        await model.record_poll(
+            conn,
+            applied_seq=1,
+            source_last_seq=1,
+            heartbeat_at=NOW - timedelta(minutes=30),
+            polled_at=NOW - timedelta(minutes=30),
+        )
+    network = ScriptedNetwork({NODE: operational(NODE)}, line_answer(NODE, "PASS"))
+
+    diagnosis = await agent(db, network).run(subject(), audit=auditor(db))
+
+    assert diagnosis.decision.state is NetworkState.CONFIRMED_CLEAR
+    assert diagnosis.line_test is not None
+    assert network.line_calls == ["S1"]
+
+
+async def test_confident_mapping_the_line_contradicts_is_corrected(db: Database) -> None:
+    """The mapping names a healthy node; the line is really served by one that is in outage."""
+    await seed_reference(db)
+    network = ScriptedNetwork(
+        {NODE: operational(NODE), OTHER: in_outage(OTHER)}, line_answer(OTHER, "FAIL")
+    )
+
+    diagnosis = await agent(db, network).run(subject(), audit=auditor(db))
+
+    assert (diagnosis.mapping.status, diagnosis.mapping.node_id) == (MappingStatus.REPAIRED, OTHER)
+    assert diagnosis.decision.state is NetworkState.ACTIVE
+    assert diagnosis.decision.node_id == OTHER
+    assert network.status_calls == [NODE, OTHER]
+    assert network.line_calls == ["S1"]
+
+
+async def test_node_the_reference_data_does_not_know_repairs_nothing(db: Database) -> None:
+    await seed_reference(db)
+    retired = ScriptedNetwork({}, line_answer("BLR-OLT-0009"))  # known, but decommissioned
+    unknown = ScriptedNetwork({NODE: operational(NODE)}, line_answer("ZZZ-OLT-9999"))
+
+    unresolved = await agent(db, retired).run(subject("A-NOWHERE"), audit=auditor(db))
+    kept = await agent(db, unknown).run(subject(), audit=auditor(db))
+
+    assert unresolved.mapping.status is MappingStatus.MISSING
+    assert unresolved.decision.reason is DecisionReason.MAPPING_UNRESOLVED
+    assert (kept.mapping.status, kept.mapping.node_id) == (MappingStatus.RESOLVED, NODE)
+
+
+async def test_failed_line_test_call_leaves_the_node_evidence_standing(db: Database) -> None:
+    await seed_reference(db)
+    network = ScriptedNetwork({NODE: operational(NODE)})
+
+    diagnosis = await agent(db, network).run(subject(), audit=auditor(db))
+
+    assert diagnosis.line_test is None
+    assert diagnosis.decision.state is NetworkState.CONFIRMED_CLEAR  # the node evidence stands
+    assert network.line_calls == ["S1"]
+
+
+async def test_enough_lines_failing_on_the_node_overrules_a_live_all_clear(db: Database) -> None:
+    await seed_reference(db)
+    tests = LineTestRepository(db)
+    for service_id in ("S7", "S8"):
+        await tests.record(line_result(service_id, "FAIL", minutes_ago=4), contact_id=None)
+    network = ScriptedNetwork({NODE: operational(NODE)}, line_answer(NODE, "FAIL"))
+
+    diagnosis = await agent(db, network).run(subject(), audit=auditor(db))
+
+    assert diagnosis.failing_lines_on_node == 3
+    assert diagnosis.decision.state is NetworkState.UNKNOWN
+    assert diagnosis.decision.reason is DecisionReason.SUSPECTED_NODE_FAULT

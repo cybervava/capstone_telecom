@@ -27,7 +27,8 @@ from skylink_care.db.migrate import migrate
 from skylink_care.db.reference import ReferenceRepository
 
 _MUTABLE_TABLES = (
-    "approvals, actions, handoffs, inbox, timers, contact_messages, contacts, node_episodes,"
+    "approvals, actions, handoffs, inbox, timers, line_tests, contact_messages, contacts,"
+    " node_episodes,"
     " outage_nodes, outages, node_alarms, address_node_map, service_index, nodes"
 )
 # The feed consumer's one state row is reset rather than removed.

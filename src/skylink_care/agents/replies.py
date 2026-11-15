@@ -158,6 +158,50 @@ def no_outage_reported(complaint_ref: str, *, evidence_at: datetime) -> Reply:
     )
 
 
+def line_ok(complaint_ref: str, *, evidence_at: datetime, tested_at: datetime) -> Reply:
+    """CONFIRMED_CLEAR and the customer's own line passed its remote test."""
+    return Reply(
+        f"{AI_DISCLOSURE} I've checked the network: no outage has been reported for your area"
+        f" as of {clock(evidence_at)}, and a remote test of your line at {clock(tested_at)}"
+        " passed. I'm passing you to a support specialist to look at your equipment with you."
+        f" Your complaint reference is {complaint_ref}.",
+        "line_ok.v1",
+        {"evidence_at": evidence_at.isoformat(), "line_tested_at": tested_at.isoformat()},
+    )
+
+
+def line_fault_hold(
+    complaint_ref: str, *, evidence_at: datetime, tested_at: datetime, hold_minutes: int
+) -> Reply:
+    """A failed line on a node that looks healthy. It may be the first sign of a node fault, so
+    nothing is arranged until that has been ruled out."""
+    return Reply(
+        f"{AI_DISCLOSURE} I've checked the network: no outage has been reported for your area"
+        f" as of {clock(evidence_at)}. A remote test of your line at {clock(tested_at)} found a"
+        " fault. Before a repair is arranged I'm checking whether it is part of a wider network"
+        f" problem, which can take up to {hold_minutes} minutes. I'll update you here; you don't"
+        f" need to do anything meanwhile. Your complaint reference is {complaint_ref}.",
+        "line_fault_hold.v1",
+        {
+            "evidence_at": evidence_at.isoformat(),
+            "line_tested_at": tested_at.isoformat(),
+            "hold_minutes": hold_minutes,
+        },
+    )
+
+
+def line_fault(complaint_ref: str, *, tested_at: datetime) -> Reply:
+    """The line still fails after the wait and the node is confirmed clear: it needs a repair."""
+    return Reply(
+        f"{AI_DISCLOSURE} The fault on your line is still there (tested again at"
+        f" {clock(tested_at)}) and no network outage has been reported for your area, so the"
+        " line itself needs a repair. I'm passing you to a specialist to arrange it."
+        f" Your complaint reference is {complaint_ref}.",
+        "line_fault.v1",
+        {"line_tested_at": tested_at.isoformat()},
+    )
+
+
 def outage_restored(
     complaint_ref: str,
     *,

@@ -43,6 +43,8 @@ class MappingStatus(StrEnum):
     MISSING = "MISSING"
     AMBIGUOUS = "AMBIGUOUS"
     STALE = "STALE"
+    # The mapping was defective and a line test named the node that serves the line.
+    REPAIRED = "REPAIRED"
 
 
 @dataclass(frozen=True)
@@ -74,4 +76,5 @@ class NodeMapping:
 
     @property
     def is_resolved(self) -> bool:
-        return self.status is MappingStatus.RESOLVED and self.node_id is not None
+        known = self.status in {MappingStatus.RESOLVED, MappingStatus.REPAIRED}
+        return known and self.node_id is not None

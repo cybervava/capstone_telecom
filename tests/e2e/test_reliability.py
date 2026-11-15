@@ -69,11 +69,11 @@ async def test_a_failed_run_waits_for_its_back_off_instead_of_burning_its_attemp
     calls = {"n": 0}
     real_run = platform.runtime.diagnostics.run
 
-    async def fails_twice(**kwargs: Any) -> Any:
+    async def fails_twice(*args: Any, **kwargs: Any) -> Any:
         calls["n"] += 1
         if calls["n"] <= 2:  # both attempts of the node in the first run
             raise ConnectionError("network blip")
-        return await real_run(**kwargs)
+        return await real_run(*args, **kwargs)
 
     monkeypatch.setattr(platform.runtime.diagnostics, "run", fails_twice)
     intake = await platform.contact(

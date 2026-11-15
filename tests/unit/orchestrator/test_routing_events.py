@@ -404,3 +404,80 @@ def test_it_works_now_with_something_else_asked_for_does_not_close_the_contact(a
     state["intent"] = {**state["intent"], also: True}
 
     assert decide_route(state).route is not Route.CLOSE
+
+
+# --- the customer's own line ---------------------------------------------------------------------
+
+
+def clear(**state: Any) -> ContactState:
+    return diagnosed("CONFIRMED_CLEAR", trigger=Trigger.CUSTOMER, reason="LIVE_CLEAR", **state)
+
+
+@pytest.mark.parametrize(
+    ("state", "route"),
+    [
+        (clear(line_test={"result": "FAIL"}), Route.LINE_HOLD),
+        (clear(line_test={"result": "FAIL"}, line_hold_over=True), Route.CLEAR_REPLY),
+        (clear(line_test={"result": "PASS"}), Route.CLEAR_REPLY),
+        (clear(line_test={"result": "INCONCLUSIVE"}), Route.CLEAR_REPLY),
+        (clear(line_test=None), Route.CLEAR_REPLY),
+        # An outage the customer waited on has ended: that news comes first.
+        (clear(line_test={"result": "FAIL"}, told_outage_id=TOLD), Route.RESTORED),
+    ],
+    ids=[
+        "failing line is held",
+        "still failing when the hold is over",
+        "passing line",
+        "inconclusive test",
+        "no test could be run",
+        "restoration outranks the line",
+    ],
+)
+def test_clear_node_is_followed_by_what_the_line_test_allows(
+    state: ContactState, route: Route
+) -> None:
+    assert decide_route(state, LIMITS).route is route
+
+
+def test_failing_line_never_unlocks_anything_while_the_node_is_not_confirmed_clear() -> None:
+    state = diagnosed(
+        "UNKNOWN",
+        trigger=Trigger.CUSTOMER,
+        reason="NO_FRESH_EVIDENCE",
+        line_test={"result": "FAIL"},
+        line_hold_over=True,
+    )
+
+    assert decide_route(state, LIMITS).route is Route.UNKNOWN_REPLY
+
+
+def test_line_that_cannot_be_retested_after_a_hold_is_watched_then_given_to_a_person() -> None:
+    """A fault was seen; no result now is not a clean bill of health."""
+
+    def after_hold(rechecks: int) -> ContactState:
+        return diagnosed(
+            "CONFIRMED_CLEAR",
+            trigger=Trigger.RECHECK,
+            reason="LIVE_CLEAR",
+            line_test=None,
+            line_hold_until="2026-11-15T04:40:00+00:00",
+            line_hold_over=True,
+            network_rechecks=rechecks,
+        )
+
+    waiting = decide_route(after_hold(1), LIMITS)
+    given_up = decide_route(after_hold(LIMITS.unverified_rechecks), LIMITS)
+
+    assert waiting.route is Route.KEEP_WAITING
+    assert (given_up.route, given_up.handoff_reason) == (Route.HANDOFF, "LINE_TEST_UNAVAILABLE")
+
+
+def test_customer_who_asks_while_the_line_cannot_be_retested_is_still_answered() -> None:
+    state = clear(
+        line_test={"result": "INCONCLUSIVE"},
+        line_hold_until="2026-11-15T04:40:00+00:00",
+        line_hold_over=True,
+        network_rechecks=99,
+    )
+
+    assert decide_route(state, LIMITS).route is Route.LINE_HOLD

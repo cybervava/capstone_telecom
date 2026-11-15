@@ -7,17 +7,18 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 ## Status
 
-Milestones M0 (foundations) and M1 (reference-first outage path) are built and tested. M2 is in progress: its first two slices (the NOC event feed and proactive notifications) are built; the rest of M2 and everything after it is not.
+Milestones M0 (foundations) and M1 (reference-first outage path) are built and tested. M2 is in progress: its first three slices (the NOC event feed, proactive notifications, remote line tests) are built; the rest of M2 and everything after it is not.
 
 | Works today | Not built yet |
 |---|---|
-| Reference-first intake: contact, complaint reference and wake-up event commit in one transaction before any model or dependency call | Remote line tests, mapping repair, guided troubleshooting with retrieval and citations |
+| Reference-first intake: contact, complaint reference and wake-up event commit in one transaction before any model or dependency call | Guided troubleshooting with retrieval and citations |
 | Triage: identity from the signed-in channel, the caller line, or two things the customer knows; intent from masked text | Credit proposals, supervisor approval screen, billing write (the credit **engine** and its tests exist) |
 | Network diagnostics with a three-state decision (`ACTIVE`, `CONFIRMED_CLEAR`, `UNKNOWN`) from two sources: the live status and a read model fed by the NOC event feed. The feed can prove an outage while the Network API is down; neither a silent nor a stale feed is ever an all-clear | Technician dispatch |
 | Outage reply with sourced ETA; one incident per node episode; complaint registered and linked, through an action ledger and a separate executor | The "network says outage, customer says device" conflict path; a mobile journey |
 | A fault that is suspected but not yet declared (equipment alarm, no outage) is raised once for the node and every complaint is linked to that ticket; when the NOC declares the outage the same ticket is upgraded and the waiting customers are told | Surge test, circuit breaker, dashboards and alerts, evaluation reports |
 | Proactive notifications: customers on an affected node are told when an outage is declared and again when it is resolved. Consent is read from the CRM at the moment of sending; one message per customer, outage and kind; nothing personal in the text | Full console (supervisor queue, simulator controls) |
 | Restoration: a waiting customer is told when their outage is resolved and the contact closes when they confirm, or after a quiet period | |
+| Remote line tests: the test names the node that really serves the line, which repairs a missing, ambiguous or stale address mapping; a failed line on a healthy-looking node is watched for the NOC's detection window before any repair is arranged; three lines failing on one node are treated as a node fault before the NOC declares it | |
 | Degraded mode when nothing can be verified: reference still issued, no all-clear, no device steps; the status is re-checked on a timer and a person takes over if it stays unverified | |
 | Per-contact audit trail, API with roles, per-caller rate limits, demo console | |
 
@@ -38,7 +39,7 @@ make install     # installs the locked dependencies
 make up          # PostgreSQL with pgvector, on 127.0.0.1:55432
 make data        # synthetic data pack, 40,000 customers (CUSTOMERS=400000 for full scale)
 make dev         # migrate, seed, then start the gateway, API, orchestrator, executor and feed consumer
-make smoke       # four live journeys over HTTP, with checks
+make smoke       # five live journeys over HTTP, with checks
 ```
 
 Open <http://127.0.0.1:8080/>. Leave the customer ID empty to arrive as an unidentified guest, or enter one; `make smoke` prints an outage being started, and the simulator can find customers for you:
@@ -103,6 +104,8 @@ All settings come from the environment. `.env.example` lists every variable; `ma
 | `OSS_KEY_INGEST` | feed consumer only | Reads the NOC event feed and nothing else |
 | `OSS_KEY_ADMIN` | simulator controls | Scenario and fault injection. No care process holds it |
 | `CARE_STATUS_MAX_AGE_SECONDS`, `CARE_FEED_MAX_AGE_SECONDS` | orchestrator | How old network evidence may be |
+| `CARE_LINE_TEST_CLUSTER_THRESHOLD`, `CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS`, `CARE_LINE_RETEST_SECONDS` | orchestrator | How many lines failing on one node, within what time, count as a node fault; how soon a line may be tested again |
+| `CARE_DISPATCH_HOLD_SECONDS` | orchestrator | How long a failed line on a healthy-looking node is watched before a repair is arranged |
 | `CARE_NETWORK_RECHECK_SECONDS`, `CARE_NETWORK_RECHECK_LIMIT`, `CARE_SUSPECTED_WAIT_SECONDS` | orchestrator | How often an unverified network status is looked at again, and how long before a person takes over |
 | `CARE_OUTAGE_RECHECK_SECONDS` | orchestrator | How often the live status is looked at for a customer waiting on a declared outage, behind the event feed |
 | `CARE_CLOSE_QUIET_SECONDS` | orchestrator | How long a contact waits for the customer before it is closed (assumption; default 24 h) |

@@ -37,6 +37,7 @@ _SPECIALISTS = (
     Route.OUTAGE_REPLY,
     Route.UNKNOWN_REPLY,
     Route.CLEAR_REPLY,
+    Route.LINE_HOLD,
     Route.RESTORED,
     Route.KEEP_WAITING,
     Route.CLOSE,

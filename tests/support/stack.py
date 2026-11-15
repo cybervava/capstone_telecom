@@ -125,6 +125,12 @@ class Simulator:
     async def resolve_outage(self, outage_id: str) -> dict[str, Any]:
         return await self.post(f"/admin/v1/outages/{outage_id}/resolve")
 
+    async def line_fault(self, service_id: str, *, fault: bool, result: str = "FAIL") -> None:
+        """Make one line fail its remote test (or clear a fault, including a seeded one)."""
+        await self.post(
+            "/admin/v1/line-faults", {"service_id": service_id, "fault": fault, "result": result}
+        )
+
     async def fault(self, target: str, mode: str, **options: Any) -> dict[str, Any]:
         return await self.post("/admin/v1/chaos", {"target": target, "mode": mode, **options})
 

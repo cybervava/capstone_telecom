@@ -25,7 +25,10 @@ ALL_CLEAR = re.compile(
 
 async def customer_with(simulator: Simulator, **filters: Any) -> dict[str, Any]:
     defaults = {"service_type": "broadband", "mapping_defect": "none", "status": "active"}
-    return await simulator.find_customer(**{**defaults, **filters})
+    customer = await simulator.find_customer(**{**defaults, **filters})
+    # The data pack seeds a few faulty lines. A test that wants one says so itself.
+    await simulator.line_fault(customer["service_id"], fault=False)
+    return customer
 
 
 async def handoff_reasons(platform: Platform) -> list[str]:
@@ -278,11 +281,37 @@ async def test_outage_not_yet_declared_is_treated_as_suspected_not_clear(
 
 
 @pytest.mark.parametrize("defect", ["missing", "ambiguous", "stale"])
-async def test_defective_mapping_goes_to_a_person_without_guessing(
+async def test_defective_mapping_is_repaired_by_the_line_test_and_the_outage_is_found(
+    platform: Platform, simulator: Simulator, defect: str
+) -> None:
+    """The mapping cannot say which node serves the address; the line itself can."""
+    customer = await customer_with(simulator, mapping_defect=defect)
+    outage = await simulator.start_outage(customer["true_node_id"])
+
+    intake = await platform.contact(
+        "internet down", authenticated_customer_id=customer["customer_id"]
+    )
+    await platform.settle()
+
+    (reply,) = await platform.replies(intake.contact_id)
+    assert outage["outage_id"] in reply
+    contact = await platform.runtime.contacts.get(intake.contact_id)
+    assert contact is not None
+    assert (contact.node_id, contact.network_state) == (customer["true_node_id"], "ACTIVE")
+    assert await handoff_reasons(platform) == []
+    trail = await platform.runtime.audit.for_contact(intake.contact_id)
+    decision = next(record for record in trail if record.step == "diagnostics.decide")
+    assert decision.inputs["mapping_status"] == "REPAIRED"
+    assert any(record.step == "tool:network.line_test" for record in trail)
+
+
+@pytest.mark.parametrize("defect", ["missing", "ambiguous"])
+async def test_defective_mapping_that_cannot_be_repaired_goes_to_a_person_without_guessing(
     platform: Platform, simulator: Simulator, defect: str
 ) -> None:
     customer = await customer_with(simulator, mapping_defect=defect)
     await simulator.start_outage(customer["true_node_id"])
+    await simulator.fault("network", "down")  # no line test can be run either
 
     intake = await platform.contact(
         "internet down", authenticated_customer_id=customer["customer_id"]
@@ -310,10 +339,15 @@ async def test_confirmed_clear_says_none_reported_and_passes_to_a_person(
 
     (reply,) = await platform.replies(intake.contact_id)
     assert "no outage has been reported for your area as of" in reply
+    assert "a remote test of your line" in reply
+    assert "passed" in reply
     contact = await platform.runtime.contacts.get(intake.contact_id)
     assert contact is not None
     assert contact.network_state == "CONFIRMED_CLEAR"
-    assert await handoff_reasons(platform) == ["TROUBLESHOOTING"]
+    (handoff,) = await platform.runtime.handoffs.list_open()
+    assert handoff.reason == "TROUBLESHOOTING"
+    assert "Line test: PASS" in handoff.summary  # the person starts with the evidence
+    assert (await simulator.state())["tables"]["appointments"] == 0
 
 
 # --- identity ------------------------------------------------------------------------------------

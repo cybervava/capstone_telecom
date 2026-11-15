@@ -38,6 +38,7 @@ class Route(StrEnum):
     OUTAGE_REPLY = "outage_reply"
     UNKNOWN_REPLY = "unknown_reply"
     CLEAR_REPLY = "clear_reply"
+    LINE_HOLD = "line_hold"
     RESTORED = "restored"
     KEEP_WAITING = "keep_waiting"
     CLOSE = "close"
@@ -66,6 +67,15 @@ class ContactState(TypedDict, total=False):
     intent: dict[str, Any]
     mapping: dict[str, Any]
     network: dict[str, Any]
+    # The latest remote test of this customer's line, when one could be run.
+    line_test: dict[str, Any] | None
+    # A failed line on a clear node is held until this moment before a repair is arranged: it
+    # may be the first sign of a node fault. ``line_hold_over`` is set by the diagnosis that
+    # finds the moment has passed (and has tested the line afresh).
+    line_hold_until: str | None
+    line_hold_over: bool
+    # When the fault that started the hold was seen, for the person who may take over.
+    line_fault_seen_at: str | None
     episode_id: str | None
     # The outage the customer has been told about and is waiting on.
     told_outage_id: str | None

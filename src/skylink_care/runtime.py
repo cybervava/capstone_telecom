@@ -11,7 +11,7 @@ from datetime import timedelta
 from uuid import UUID
 
 from skylink_care.adapters.gateway import OssGateway
-from skylink_care.agents.diagnostics import DiagnosticsAgent, FeedViewSource
+from skylink_care.agents.diagnostics import DiagnosticsAgent, FeedViewSource, LineTestPolicy
 from skylink_care.agents.triage import TriageAgent
 from skylink_care.clock import Clock, utc_now
 from skylink_care.config import Settings
@@ -22,6 +22,7 @@ from skylink_care.db.database import Database
 from skylink_care.db.episodes import EpisodeRepository
 from skylink_care.db.handoffs import HandoffRepository
 from skylink_care.db.inbox import InboxRepository
+from skylink_care.db.line_tests import LineTestRepository
 from skylink_care.db.messages import MessageRepository
 from skylink_care.db.read_model import ReadModelRepository
 from skylink_care.db.reference import ReferenceRepository
@@ -92,7 +93,12 @@ def build_orchestrator_runtime(
             # What the feed consumer has learnt. With no consumer running its heartbeat ages and
             # the decision stops trusting it, which is exactly the degraded behaviour wanted.
             feed or read_model,
+            LineTestRepository(database),
             decision_limits(settings),
+            LineTestPolicy(
+                cluster_window=timedelta(seconds=settings.line_test_cluster_window_seconds),
+                retest_after=timedelta(seconds=settings.line_retest_seconds),
+            ),
             now,
         ),
         now=now,

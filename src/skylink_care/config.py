@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
 from psycopg.conninfo import make_conninfo
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 AgentIdentity = Literal[
@@ -50,7 +50,12 @@ class Settings(BaseSettings):
 
     status_max_age_seconds: int = Field(default=60, gt=0)
     feed_max_age_seconds: int = Field(default=90, gt=0)
+    # This many lines failing their test on one node is treated as a node fault,
+    # counting each line's latest test within this window.
     line_test_cluster_threshold: int = Field(default=3, ge=2)
+    line_test_cluster_window_seconds: int = Field(default=900, gt=0)
+    # A line is not tested again sooner than this: a test exercises real equipment.
+    line_retest_seconds: int = Field(default=120, ge=0)
     # Dispatch waits this long after the first failed line test: the NOC detection window.
     dispatch_hold_seconds: int = Field(default=600, ge=0)
 
@@ -72,6 +77,17 @@ class Settings(BaseSettings):
 
     llm_provider: Literal["offline", "anthropic"] = "offline"
     llm_model: str = "claude-opus-5-5"
+
+    @model_validator(mode="after")
+    def _windows_fit_together(self) -> Self:
+        # A line held for the whole hold must still be inside the window in which failing lines
+        # on its node are counted, or a real cluster could go unseen.
+        if self.line_test_cluster_window_seconds < self.dispatch_hold_seconds:
+            raise ValueError(
+                "CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS must not be shorter than"
+                " CARE_DISPATCH_HOLD_SECONDS"
+            )
+        return self
 
     def require_jwt_secret(self) -> str:
         if self.jwt_secret is None or not self.jwt_secret.get_secret_value():

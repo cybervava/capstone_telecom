@@ -7,7 +7,9 @@ systems:
 2. another customer on that node while the Network Monitoring API is down (the event feed still
    proves the outage),
 3. a customer on a different node in the same conditions (no proof either way: no all-clear),
-4. the outage is resolved: the waiting customer is told, confirms, and the contact closes.
+4. the outage is resolved: the waiting customer is told, confirms, and the contact closes,
+5. a customer whose own line fails its remote test while the node looks healthy: the fault is
+   watched for the NOC's detection window, and no repair is arranged meanwhile.
 
 Run with:  uv run --env-file .env python scripts/smoke.py
 Exits non-zero if any check fails. It changes simulator state and restores it at the end.
@@ -116,8 +118,8 @@ def decision_reason(api: httpx.Client, contact_id: str) -> str:
     return str(decisions[-1]["outputs"]["reason"]) if decisions else "none"
 
 
-def pick_customers(sim: httpx.Client) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
-    """Two customers on one node and a third on a different node."""
+def pick_customers(sim: httpx.Client) -> tuple[dict[str, Any], ...]:
+    """Two customers on one node, and two more on two other nodes."""
     people = sim.get("/admin/v1/customers/search", params={**SEARCH, "limit": 50}).json()[
         "customers"
     ]
@@ -128,7 +130,10 @@ def pick_customers(sim: httpx.Client) -> tuple[dict[str, Any], dict[str, Any], d
     ).json()["customers"]
     second = next(p for p in same if p["customer_id"] != first["customer_id"])
     elsewhere = next(p for p in people if p["true_node_id"] != node_id)
-    return first, second, elsewhere
+    third_node = next(
+        p for p in people if p["true_node_id"] not in {node_id, elsewhere["true_node_id"]}
+    )
+    return first, second, elsewhere, third_node
 
 
 def declared_outage(
@@ -253,6 +258,26 @@ def restoration(
     check("the node's incident is resolved", [i["status"] for i in incidents] == ["RESOLVED"])
 
 
+def failing_line_is_held(api: httpx.Client, sim: httpx.Client, customer: dict[str, Any]) -> None:
+    sim.post(
+        "/admin/v1/line-faults", json={"service_id": customer["service_id"], "fault": True}
+    ).raise_for_status()
+    headers = token(api, "customer", customer["customer_id"])
+    accepted, _ = open_contact(api, headers, "my broadband is not working")
+    contact = wait_for_replies(api, headers, accepted["contact_id"])
+    reply = outbound(contact)[-1]
+    check("reply reports the failed line test", "found a fault" in reply)
+    check("reply says a wider problem is being ruled out first", "wider network problem" in reply)
+    check("node is confirmed clear", contact["network_state"] == "CONFIRMED_CLEAR")
+    check(
+        "contact is held, not handed to dispatch",
+        wait_for_status(api, headers, accepted["contact_id"], "AWAITING_NETWORK"),
+    )
+    tables = sim.get("/admin/v1/state").json()["tables"]
+    check("no technician booked", tables["appointments"] == 0)
+    say(f"\n     assistant: {reply}")
+
+
 def main() -> int:
     admin_key = os.environ.get("OSS_KEY_ADMIN")
     if not admin_key:
@@ -261,7 +286,7 @@ def main() -> int:
     api = httpx.Client(base_url=API, timeout=10.0)
     sim = httpx.Client(base_url=OSS, timeout=10.0, headers={"X-API-Key": admin_key})
     sim.post("/admin/v1/reset").raise_for_status()
-    first, second, elsewhere = pick_customers(sim)
+    first, second, elsewhere, on_a_healthy_node = pick_customers(sim)
     node_id = first["true_node_id"]
     outage_id = None
     try:
@@ -281,8 +306,15 @@ def main() -> int:
         say("\n4. The outage is resolved")
         sim.delete("/admin/v1/chaos")
         restoration(api, sim, headers, accepted, outage_id)
+
+        say(f"\n5. A failing line on healthy node {on_a_healthy_node['true_node_id']}")
+        failing_line_is_held(api, sim, on_a_healthy_node)
     finally:
         sim.delete("/admin/v1/chaos")
+        sim.post(
+            "/admin/v1/line-faults",
+            json={"service_id": on_a_healthy_node["service_id"], "fault": False},
+        )
         if outage_id:
             sim.post(f"/admin/v1/outages/{outage_id}/resolve")
     say(f"\n{'ALL CHECKS PASSED' if not failures else f'{len(failures)} CHECK(S) FAILED'}")

@@ -3,11 +3,22 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 
 import pytest
 import structlog
 
 from skylink_care.observability.logging import configure_logging
+
+
+@pytest.fixture(autouse=True)
+def _restore_logging() -> Iterator[None]:
+    """``configure_logging`` is process-wide and binds to the stream this test captured.
+
+    Left in place, every later test that logs would write to a stream pytest has closed.
+    """
+    yield
+    structlog.reset_defaults()
 
 
 def test_logged_values_are_redacted(capsys: pytest.CaptureFixture[str]) -> None:

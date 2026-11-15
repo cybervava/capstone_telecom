@@ -17,6 +17,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from skylink_care.db.inbox import OUTAGE_DECLARED_EVENT, OUTAGE_RESOLVED_EVENT
+from skylink_care.db.line_tests import FAIL as LINE_FAILED
+from skylink_care.db.line_tests import PASS as LINE_PASSED
 from skylink_care.db.timers import TIMER_FIRED_EVENT
 from skylink_care.domain.models import Intent, NetworkState
 from skylink_care.domain.network import DecisionReason
@@ -31,6 +33,7 @@ MAX_IDENTITY_ASKS = 3
 MIN_INTENT_CONFIDENCE = 0.5
 CUSTOMER_EVENTS = frozenset({"contact.received", "customer.message"})
 NETWORK_STATUS_UNVERIFIED = "NETWORK_STATUS_UNVERIFIED"
+LINE_TEST_UNAVAILABLE = "LINE_TEST_UNAVAILABLE"
 # With any of these in the same message, "it works now" does not settle the contact.
 _STILL_WANTS_SOMETHING = ("requests_credit", "requests_technician", "insists_device_fault")
 
@@ -184,8 +187,22 @@ def _after_diagnosis(state: ContactState, limits: RoutingLimits) -> Decision:
         # it goes on for as long as the outage does, so it is not counted towards a handoff.
         return Decision(Route.KEEP_WAITING, updates={"network_rechecks": 0})
     if network_state == NetworkState.CONFIRMED_CLEAR.value:
-        # After an outage the customer waited on, a clear network is "service restored".
-        return Decision(Route.RESTORED if (told or resolved) else Route.CLEAR_REPLY)
+        if told or resolved:
+            # After an outage the customer waited on, a clear network is "service restored".
+            return Decision(Route.RESTORED)
+        result = (state.get("line_test") or {}).get("result")
+        if result == LINE_FAILED and not state.get("line_hold_over"):
+            # The node looks healthy but this line fails. That is also what the first minutes of
+            # an undeclared node fault look like, so nothing is arranged until the hold is over.
+            return Decision(Route.LINE_HOLD)
+        if state.get("line_hold_until") and result not in {LINE_FAILED, LINE_PASSED}:
+            # A fault was found on this line and it cannot be tested again just now. That is
+            # not a clean bill of health: try again shortly, and give it to a person if the
+            # test stays unavailable. A customer who asks meanwhile is told where things stand.
+            if by_customer:
+                return Decision(Route.LINE_HOLD)
+            return _keep_waiting(state, limits, reason, give_up=LINE_TEST_UNAVAILABLE)
+        return Decision(Route.CLEAR_REPLY)
 
     # UNKNOWN, or anything unrecognised: never the device flow.
     if by_customer or reason == DecisionReason.MAPPING_UNRESOLVED.value:
@@ -200,9 +217,15 @@ def _after_diagnosis(state: ContactState, limits: RoutingLimits) -> Decision:
     return _keep_waiting(state, limits, reason)
 
 
-def _keep_waiting(state: ContactState, limits: RoutingLimits, reason: str | None) -> Decision:
+def _keep_waiting(
+    state: ContactState,
+    limits: RoutingLimits,
+    reason: str | None,
+    *,
+    give_up: str = NETWORK_STATUS_UNVERIFIED,
+) -> Decision:
     suspected = reason == DecisionReason.SUSPECTED_NODE_FAULT.value
     limit = limits.suspected_rechecks if suspected else limits.unverified_rechecks
     if state.get("network_rechecks", 0) >= limit:
-        return Decision(Route.HANDOFF, NETWORK_STATUS_UNVERIFIED)
+        return Decision(Route.HANDOFF, give_up)
     return Decision(Route.KEEP_WAITING)

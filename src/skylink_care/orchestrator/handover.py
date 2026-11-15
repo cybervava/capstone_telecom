@@ -19,6 +19,10 @@ _WORDING = {
     "LOW_CONFIDENCE": "I want to be sure this is handled correctly.",
     "NO_SERVICE_ON_ACCOUNT": "I couldn't find a service on the account to check.",
     "TROUBLESHOOTING": "Your line needs to be checked.",
+    "LINE_FAULT": "Your line needs a repair.",
+    "LINE_TEST_UNAVAILABLE": (
+        "A test found a fault on your line earlier and I couldn't test it again to confirm."
+    ),
     "NETWORK_STATUS_UNVERIFIED": "I still can't verify the network status for your area.",
 }
 _DEFAULT_WORDING = "This needs a member of our team."
@@ -70,8 +74,19 @@ def handoff_summary(state: ContactState, reason: str) -> str:
             f" outage {outage.get('outage_id') or 'none'},"
             f" evidence at {network.get('evidence_at') or 'n/a'}."
         )
+    line = state.get("line_test") or {}
+    if line:
+        parts.append(
+            f"Line test: {line.get('result')} at {line.get('tested_at')}"
+            f" (serving node {line.get('node_id')})."
+        )
+    mapping_status = (state.get("mapping") or {}).get("status")
+    if mapping_status and mapping_status != "RESOLVED":
+        parts.append(f"Address mapping: {mapping_status}.")
+    if state.get("line_fault_seen_at"):
+        parts.append(f"Line fault first seen at {state['line_fault_seen_at']}; held since.")
     rechecks = state.get("network_rechecks", 0)
-    if rechecks:
+    if rechecks and reason == "NETWORK_STATUS_UNVERIFIED":
         parts.append(f"Network re-checked {rechecks} time(s) without a verified status.")
     flags = [name for name in _FLAGS if intent.get(name)]
     if flags:

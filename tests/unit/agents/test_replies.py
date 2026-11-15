@@ -198,3 +198,31 @@ def test_closing_messages_keep_the_reference_and_say_how_to_come_back(
     assert "quote this reference" in reply.text
     assert reply.text.startswith(replies.AI_DISCLOSURE)
     assert reply.template_id == template_id
+
+
+def test_line_ok_reply_names_both_checks_and_their_times() -> None:
+    reply = replies.line_ok(REF, evidence_at=NOW, tested_at=NOW + timedelta(seconds=30))
+
+    assert "no outage has been reported for your area as of 10:31 IST" in reply.text
+    assert "a remote test of your line at 10:31 IST on 15 Nov passed" in reply.text
+    assert REF in reply.text
+    assert reply.template_id == "line_ok.v1"
+
+
+def test_line_fault_hold_reply_promises_a_check_not_a_technician() -> None:
+    reply = replies.line_fault_hold(REF, evidence_at=NOW, tested_at=NOW, hold_minutes=10)
+
+    assert "found a fault" in reply.text
+    assert "up to 10 minutes" in reply.text
+    assert "you don't need to do anything meanwhile" in reply.text
+    assert "technician" not in reply.text.lower()
+    assert "restart" not in reply.text.lower()
+    assert reply.facts["hold_minutes"] == 10
+
+
+def test_line_fault_reply_says_the_line_was_tested_again() -> None:
+    reply = replies.line_fault(REF, tested_at=NOW)
+
+    assert "still there (tested again at 10:31 IST on 15 Nov)" in reply.text
+    assert "the line itself needs a repair" in reply.text
+    assert REF in reply.text

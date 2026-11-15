@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
 from skylink_care.config import MissingSecretError, OssKeys, Settings
 
@@ -44,3 +45,13 @@ def test_gateway_keys_are_never_read_from_a_dotenv_file(
     monkeypatch.delenv("OSS_KEY_EXECUTOR", raising=False)
 
     assert OssKeys().executor is None
+
+
+def test_cluster_window_shorter_than_the_hold_is_refused() -> None:
+    """A line held for the whole hold must still count towards its node at the end of it."""
+    with pytest.raises(ValidationError, match="CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS"):
+        Settings(
+            db_password="x",
+            line_test_cluster_window_seconds=300,
+            dispatch_hold_seconds=600,
+        )
