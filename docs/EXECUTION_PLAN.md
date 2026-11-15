@@ -50,13 +50,16 @@ Facts on 15 Nov: the project folder contains only [B] and [AP]. The datasets, cr
 | A10 | No churn ML. A transparent repeat-contact flag (≥ 2 contacts in 7 days) may raise human-queue priority only; it never changes entitlement or wait order for service. An ADR records why the ML layer of the reference architecture is deferred | No outcome labels exist; avoids unfair treatment by segment | R1 | — |
 | ▲ A11 | A remote line test reports the node that actually serves the line. It is used to repair missing, ambiguous and stale mappings | Read-only probe; without it defective mappings can never be detected as affected | OSS-BSS architect | Defective mappings go to the human queue instead |
 | ▲ A12 | Network Monitoring exposes active alarms per node, and equipment alarms precede the NOC's outage declaration | This is what closes the 1–10 minute pre-detection window | NOC manager | Fall back to line-test clustering only |
+| ▲ A14 | Proactive messages go only to customers whose consent record allows outage notifications **at the moment of sending**, on the channel that record names. One message per customer, outage and kind (started, resolved); an ETA change sends nothing. "Resolved" goes only to those who were sent "started". An outage learnt more than 15 minutes late is recorded but not announced | Consent can be withdrawn at any time; a late or repeated message is worse than none | Regulatory Affairs, Contact Centre Head | Change the fan-out rule in `ingest/reactions.py` and the two templates |
+| ▲ A15 | No rule for closing a complaint has been supplied. A contact that waits for the customer (after "service restored", or after an unanswered question) is closed after 24 hours of silence, and at once when the customer confirms service is back. A message after closure reopens it for a person | A complaint that never closes is as wrong as one closed too early; the period is one setting | Regulatory Affairs | `CARE_CLOSE_QUIET_SECONDS` |
+| ▲ A16 | While the network status cannot be verified the contact is looked at again every 60 s and handed to a person after 5 looks (5 minutes). A suspected node fault (alarm, no declared outage) waits up to 15 minutes, because the NOC needs minutes to declare; meanwhile one ticket is raised for the node and each complaint is linked to it, instead of one handoff per contact | Queues people only for what cannot settle by itself; all limits are settings | NOC manager, Contact Centre Head | `CARE_NETWORK_RECHECK_*`, `CARE_SUSPECTED_WAIT_SECONDS` |
 | ▲ A13 | A customer who is not signed in and not on a recognised caller line is verified by two things they know: customer ID and the last four digits of the registered mobile, checked by the CRM. A typed ID alone is only a claim: nothing is looked up, disclosed or attached to the contact for it, and a wrong claim gets the same answer whether or not the account exists | Stops the conversation being used to discover accounts or another customer's outage status | Contact Centre Head, Regulatory Affairs | Swap the factor (for example OTP) inside the triage agent |
 
 ---
 
 ## 3. Architecture as built
 
-One repository, one container image, four processes with separate credentials, one database. The mock OSS/BSS gateway stands in for the on-prem boundary.
+One repository, one container image, four care processes with separate credentials (API, orchestrator, executor, feed consumer), one database. The mock OSS/BSS gateway stands in for the on-prem boundary.
 
 ```mermaid
 flowchart LR
@@ -214,6 +217,8 @@ Each task lists its acceptance check. Tests are written first for `domain/` and 
 
 ### M2 Six capabilities (summary)
 
+Built in slices, each committed when its tests and a live run pass: **A** event feed, read model, timers · **B** proactive notifications and restoration · C line tests, mapping repair, line-test clustering · D guide index and cited troubleshooting · E credits, approvals, billing write · F dispatch · G conflict path and mobile journey · H supervisor console · I evaluations. A and B are done (see the progress log).
+
 Event consumer with dedupe, version checks, applied-sequence tracking and heartbeat; alarm state per node; notification fan-out to resolved mappings only, consent checked at send time, one message per customer, outage and template; line-test tool and mapping repair; suspected-fault hold (critical alarm, or several failed line tests on one node) that opens an episode without an outage id; retroactive confirmation when the outage is declared; index build and filtered retrieval; step-by-step guided troubleshooting with citations; credit proposals only after restoration, priced from frozen inputs; approval records carrying the hash the approver saw; billing write under a per-customer lock; dispatch rules (failed re-test, fresh `CONFIRMED_CLEAR` after the hold-down, customer consent, one open visit per service); conflict path for "the network says outage, the customer says device"; handoff queue with summary; one mobile outage journey.
 
 ---
@@ -293,12 +298,15 @@ Items 1, 2, 8 and 9 (deck, problem statement, ROI workbook, contribution matrix)
 | 15 Nov | **M0 Foundations** | **Done.** Gate met: Compose stack healthy; data pack generated (400,000 customers in about 15 s) and loaded (about 5 s); adapters pass contract tests against the mock; mapping profile in `reports/data_profile.md` (coverage: broadband 96.86%, mobile 96.78%) |
 | 15 Nov | **M1 Reference-first outage path** | **Done, except that CI has not run on a runner.** Gate met by tests and by a live run: reference issued at intake (10–20 ms locally); worker killed mid-run repeats nothing; retry returns the same reference; concurrent contacts on one node share one incident; restart between turns resumes the conversation |
 | 15 Nov | M4 items pulled forward | API roles and object-level access, per-agent gateway keys with least privilege per process, PII masking, log and audit redaction, per-caller rate limits, identity verification (A13) |
+| 15 Nov | **M2 slice A: event feed, read model, timers** | **Done.** A fifth process (`care-ingest`) reads the NOC feed with its own read-only key and applies each event, its consequences and the cursor in one transaction. The network decision now has both sources: the feed proves an outage while the Network API is down; a silent, stale, lagging or gapped feed proves nothing. Timers wake a contact later (re-check, quiet close) |
+| 15 Nov | **M2 slice B: proactive notifications and restoration** | **Done.** Declared outage → consent-checked messages to the customers on the node, "resolved" only to those told it started. A suspected fault raises one ticket for the node, which the declared outage upgrades. Waiting customers are told when the outage is confirmed and when it is resolved; the contact closes on their confirmation or after a quiet period |
 
 ### Evidence at this point
 
-- `make test-all`: 974 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 93% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
-- `make smoke` passes against both the host processes at 400,000-customer scale and the container stack: declared outage → sourced reply, one incident, complaint registered and linked; Network API down → reference still issued, no all-clear, handed to a person.
-- The console was checked in a browser at 1440 px and 375 px.
+- `make test-all`: 1,167 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 94% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
+- `make smoke` passes against the host processes at 400,000-customer scale. Four journeys: declared outage → sourced reply, one incident, complaint linked, and 168 neighbours on the node notified once each (none without consent, checked in the gateway's own store); Network API down → the feed still proves the outage; same failure for a customer on another node → no all-clear and no device steps; outage resolved → the waiting customer is told, confirms, the contact closes and the node's incident is resolved.
+- `make smoke` also passes against the container stack (40,000 customers), where the feed consumer runs as its own service. Its first run there failed, usefully: re-seeding the gateway restarts its event sequence and empties its tickets, while the care database still held the cursor and ticket references of the previous gateway. The consumer refused the feed (sequence running backwards) exactly as designed. `make seed` and the container set-up now clear the care platform's runtime state in the same step (`care-admin reset-runtime`, refused unless `CARE_ENV` is `dev` or `test`).
+- The console was checked in a browser at 1440 px and 375 px (M1; unchanged since).
 
 ### What the code reviews changed
 
@@ -320,10 +328,33 @@ Three independent reviews of the code (Python, security, silent failures) were r
 | A channel integration could read every contact; a customer could label a contact with someone else's session | Channel access is limited to contacts it opened; sessions come from the token |
 | A literal `..` in an identifier could address a different API resource | Dots are escaped in path segments |
 
+### What the reviews of M2 slices A and B changed
+
+The same three independent reviews were run on these slices before they were committed. No critical finding; the real ones, now fixed and covered by tests:
+
+| Finding | Fix |
+|---|---|
+| A customer told "outage active" in the instant the NOC resolved it could wait for ever: the resolution event skipped a conversation whose turn was still running, and nothing else would wake it | The event is queued for running turns as well; the turn compares its answer with the read model before it finishes; and every customer waiting on a declared outage has a slow watch on the live status behind the feed |
+| A hole in the feed sequence, or an outage event that could not be applied, was passed over. If the lost event was a resolution, the outage stayed "active" for ever and was trusted | The read model is marked as having a gap and stops being used as evidence (the live status still is) until an operator has reconciled it and clears the mark (`care-admin feed-status`, `feed-clear-gap`). Later events are still applied |
+| A feed whose sequence ran backwards looked healthy while saying nothing new | The page is refused, the error recorded, and the heartbeat not refreshed |
+| A notification replayed after an unanswered first attempt could be recorded as skipped although it had been delivered, which also withheld the "resolved" message | Every decision not to send first asks the gateway whether the earlier attempt went out |
+| Text from the feed (an outage id) went into customer messages unchecked; one event could name any number of nodes | Identifiers must match a strict pattern and every field of a feed event is bounded, on arrival |
+| A timer re-armed by a repeated workflow step could already have fired, leaving the contact waiting on nothing | The timer key includes the inbox position of the turn; a timer that cannot be armed fails the run loudly |
+| An off-topic remark from a customer waiting on an outage moved them to "waiting for the customer", where silence would have closed the contact mid-outage | The wait on the network is kept |
+| A ticket raised by a turn could miss an upgrade or a closure that the feed consumer applied while the turn was running | The turn re-reads the episode after raising the ticket and proposes what the consumer could not |
+| An alarm without a stated severity counted as harmless; an outage named on an aggregation node reached no customer; an update that widened an outage told nobody on the added nodes | Unknown severity counts as critical; aggregation nodes are expanded to the access nodes below them; added nodes are treated as newly declared |
+| "It works now" closed the contact even when the same message asked for a credit or a technician | The contact closes only when nothing else is asked for |
+| A failed audit write could suppress the alert for a failed action; the timer pump and the feed consumer could deadlock on contact rows; an unexpected consumer failure was only in the log | The alert no longer depends on the audit write; contact rows are locked in one order; the failure is recorded in the feed state |
+
 ### Known gaps carried into M2 and M3
 
-- The line-test count per node is not yet fed into the network decision (line tests arrive in M2); until then suspicion rests on alarms only.
-- A contact left in `AWAITING_NETWORK` is not re-checked automatically. A person is told through the handoff queue; the automatic re-check and the restoration follow-up need the event consumer (M2) and timers (M3).
+- The line-test count per node is not yet fed into the network decision (line tests arrive in slice C); until then suspicion rests on alarms only.
+- Two outages that overlap on one node get one ticket each, opened one after the other. Each is closed with its own outage and they are never both open for the same outage, but the brief's "one ticket per node" is read here as one per node *episode*.
+- A feed event that cannot be parsed stops the consumer at that event. This fails safe (the read model goes stale and stops being trusted, the error is recorded) but needs a person; there is no dead-letter for feed events yet.
+- A failed action that belongs to no contact (a notification, a ticket update proposed by the feed consumer) is logged as an error and not queued for a person. The operations queue and the alert on it are M3 work.
+- One event can still queue a message for every customer on up to 2,000 nodes; there is no per-customer frequency cap on proactive messages. Feed events are applied per page, not per event.
+- Every waiting contact re-reads the live status on its own timer. A per-node single-flight cache is M3 work and is needed before the surge test.
+- Fired and cancelled timers are never deleted.
 - The Claude provider is unit-tested against a stand-in client and has not been run against the live API.
-- The CI definition (`.gitlab-ci.yml`) parses but has not run on a runner; image and secret scans are defined there and not yet executed.
+- The CI definition (`.gitlab-ci.yml`) parses but has not run on a runner; image and secret scans are defined there and not yet executed. The repository is on GitHub (decision D6 is open).
 - Each process still uses the same database role; separate roles are an M4 item.

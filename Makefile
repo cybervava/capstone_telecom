@@ -49,14 +49,15 @@ data: ## Generate the synthetic data pack (CUSTOMERS=40000 for dev; 400000 for e
 migrate: ## Apply database migrations
 	uv run --env-file .env care-admin migrate
 
-seed: migrate ## Load reference data into the mock gateway and the care platform
+seed: migrate ## Re-seed the mock gateway and start the care platform from a clean state
 	uv run --env-file .env mock-oss seed --data $(DATA_DIR)
+	uv run --env-file .env care-admin reset-runtime
 	uv run --env-file .env care-admin load-reference --data $(DATA_DIR)
 
 profile: ## Write the mapping-quality profile to reports/data_profile.md
 	uv run --env-file .env care-admin profile
 
-dev: up seed ## Start PostgreSQL, seed, then run the four processes on this machine
+dev: up seed ## Start PostgreSQL, seed (clean state), then run the five processes on this machine
 	./scripts/dev_stack.sh start
 
 stop: ## Stop the local processes

@@ -2,7 +2,8 @@ name: skylink-care
 
 # Local runtime. Values come from .env (create it with `make init`); nothing secret lives in this
 # file. Each process is given only the variables it needs: the API holds no gateway key at all,
-# the orchestrator holds the read-only agent keys, and only the executor holds the write key.
+# the orchestrator holds the read-only agent keys, the feed consumer holds the one key that can
+# read the NOC event feed, and only the executor holds the write key.
 #
 #   make up          PostgreSQL only (processes run on the host with scripts/dev_stack.sh)
 #   make stack-up    everything in containers, including data generation and seeding
@@ -123,12 +124,31 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CARE_STATUS_MAX_AGE_SECONDS: ${CARE_STATUS_MAX_AGE_SECONDS:-60}
       CARE_FEED_MAX_AGE_SECONDS: ${CARE_FEED_MAX_AGE_SECONDS:-90}
+      CARE_NETWORK_RECHECK_SECONDS: ${CARE_NETWORK_RECHECK_SECONDS:-60}
+      CARE_NETWORK_RECHECK_LIMIT: ${CARE_NETWORK_RECHECK_LIMIT:-5}
+      CARE_SUSPECTED_WAIT_SECONDS: ${CARE_SUSPECTED_WAIT_SECONDS:-900}
+      CARE_OUTAGE_RECHECK_SECONDS: ${CARE_OUTAGE_RECHECK_SECONDS:-900}
+      CARE_CLOSE_QUIET_SECONDS: ${CARE_CLOSE_QUIET_SECONDS:-86400}
       # Read-only agent identities. The write key is deliberately absent.
       OSS_KEY_TRIAGE: ${OSS_KEY_TRIAGE:?run make init}
       OSS_KEY_DIAGNOSTICS: ${OSS_KEY_DIAGNOSTICS:?run make init}
       OSS_KEY_RESOLUTION: ${OSS_KEY_RESOLUTION:?run make init}
       OSS_KEY_DISPATCH: ${OSS_KEY_DISPATCH:?run make init}
       OSS_KEY_NOTIFICATION: ${OSS_KEY_NOTIFICATION:?run make init}
+
+  ingest:
+    <<: *care-image
+    profiles: ["stack"]
+    command: ["care-ingest"]
+    depends_on:
+      mock-oss:
+        condition: service_healthy
+    environment:
+      <<: *care-db
+      CARE_OSS_BASE_URL: http://mock-oss:8081
+      CARE_NOTIFY_MAX_EVENT_AGE_SECONDS: ${CARE_NOTIFY_MAX_EVENT_AGE_SECONDS:-900}
+      # Reads the NOC event feed and nothing else.
+      OSS_KEY_INGEST: ${OSS_KEY_INGEST:?run make init}
 
   executor:
     <<: *care-image
