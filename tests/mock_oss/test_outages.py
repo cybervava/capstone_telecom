@@ -5,13 +5,14 @@ from __future__ import annotations
 import asyncio
 import time
 from collections.abc import AsyncIterator, Callable
+from datetime import timedelta
 
 import httpx
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from mock_oss.clock import ManualClock
+from mock_oss.clock import ManualClock, iso
 from tests.mock_oss.conftest import auth
 
 Admin = Callable[..., dict[str, object]]
@@ -256,3 +257,22 @@ async def test_long_poll_sees_detection_from_clock(
     poll = aclient.get("/network/v1/events?after_seq=1&wait_seconds=10", headers=auth("ingest"))
     result, _ = await asyncio.gather(poll, advance())
     assert [e["type"] for e in result.json()["events"]] == ["OUTAGE_STARTED"]
+
+
+def test_backdated_outage_began_in_the_past_and_its_events_say_so(
+    client: TestClient, admin: Admin, clock: ManualClock
+) -> None:
+    now = clock.now()
+    created = admin(
+        "outages", {"node_id": "BLR-OLT-0001", "cause": "FIBRE_CUT", "started_minutes_ago": 300}
+    )
+
+    status = client.get("/network/v1/nodes/BLR-OLT-0001/status", headers=auth("diagnostics")).json()
+    events = _events(client)["events"]
+
+    began = iso(now - timedelta(minutes=300))
+    assert status["status"] == "OUTAGE"
+    assert status["outage"]["outage_id"] == created["outage_id"]
+    assert status["outage"]["started_at"] == began
+    started = next(e for e in events if e["type"] == "OUTAGE_STARTED")  # type: ignore[union-attr]
+    assert (started["started_at"], started["emitted_at"]) == (began, began)

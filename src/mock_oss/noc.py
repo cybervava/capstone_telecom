@@ -183,8 +183,9 @@ def start_outage(
     service_types = sorted({n["service_type"] for n in affected if n["service_type"]})
     day = now.strftime("%Y%m%d")
     outage_id = f"OUT-{day}-{next_counter(conn, f'outage:{day}'):04d}"
-    started = iso(now)
-    detected_at = iso(now + timedelta(seconds=body.detect_after_seconds))
+    began = now - timedelta(minutes=body.started_minutes_ago)
+    started = iso(began)
+    detected_at = iso(began + timedelta(seconds=body.detect_after_seconds))
     eta = iso(now + timedelta(minutes=body.eta_minutes))
     conn.execute(
         "INSERT INTO outages (outage_id, root_node_id, cause, planned, service_types, affected, "
@@ -212,7 +213,7 @@ def start_outage(
         alarm_type = "POWER" if body.cause == "POWER_FAILURE" else "LINK_DOWN"
         alarm_id = raise_alarm(conn, root["node_id"], alarm_type, "critical", started, outage_id)
         conn.execute("UPDATE outages SET alarm_id = ? WHERE outage_id = ?", (alarm_id, outage_id))
-    detect_due(conn, started)
+    detect_due(conn, iso(now))
     return StartedOutage(outage_id, alarm_id, affected_ids)
 
 

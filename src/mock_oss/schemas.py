@@ -104,6 +104,8 @@ class OutageIn(BaseModel):
     planned: bool = False
     eta_minutes: Annotated[int, Field(ge=0, le=60 * 24 * 30)] = 180
     detect_after_seconds: Annotated[float, Field(ge=0, le=86400)] = 0
+    # Backdate the start: the outage began this long ago. Its feed events carry the past time.
+    started_minutes_ago: Annotated[int, Field(ge=0, le=60 * 24 * 60)] = 0
 
 
 class OutageUpdateIn(BaseModel):
