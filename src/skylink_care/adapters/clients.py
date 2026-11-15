@@ -314,3 +314,12 @@ class NotifyWriter(_Client):
             json=body,
             idempotency_key=idempotency_key,
         )
+
+    async def by_key(self, key: str, *, correlation_id: str) -> Result[MessageReceipt]:
+        """The message an idempotency key produced, if any: did an earlier attempt go out?"""
+        return await self._http.call(
+            "GET",
+            f"/notify/v1/messages/by-key/{segment(key)}",
+            MessageReceipt,
+            correlation_id=correlation_id,
+        )

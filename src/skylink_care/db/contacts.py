@@ -7,6 +7,7 @@ working when every other dependency is down, and it is idempotent on the channel
 from __future__ import annotations
 
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -14,17 +15,15 @@ from uuid import UUID, uuid4
 
 from psycopg.types.json import Jsonb
 
+from skylink_care.db.actions import COMPLAINT_REGISTER, REGULATORY_LANE
 from skylink_care.db.base import Repository
 from skylink_care.db.database import Connection
 from skylink_care.domain.models import Channel
 from skylink_care.domain.reference import format_reference
 from skylink_care.hashing import canonical_hash
 
-COMPLAINT_REGISTER = "COMPLAINT_REGISTER"
 FIRST_MESSAGE_KEY = "inbound:first"
 RECEIVED_EVENT = "contact.received"
-# Complaint registration is served before any other kind of write.
-REGULATORY_LANE = 1
 
 
 class RequestIdReusedError(Exception):
@@ -179,6 +178,28 @@ class ContactRepository(Repository):
                 " WHERE contact_id = %s",
                 (*changes.values(), contact_id),
             )
+
+    async def waiting_on_nodes(
+        self,
+        conn: Connection,
+        node_ids: Sequence[str],
+        *,
+        statuses: Sequence[str],
+        not_told_about: str | None = None,
+    ) -> list[UUID]:
+        """Open contacts on any of these nodes that are in one of the given statuses.
+
+        ``not_told_about`` leaves out contacts already attached to that outage: they heard about
+        it from the live status before the feed event arrived.
+        """
+        cursor = await conn.execute(
+            "SELECT contact_id FROM contacts WHERE node_id = ANY(%s) AND status = ANY(%s)"
+            " AND closed_at IS NULL AND (%s::text IS NULL OR outage_id IS DISTINCT FROM %s)"
+            # Id order, the same order in which the timer pump locks contacts.
+            " ORDER BY contact_id",
+            (list(node_ids), list(statuses), not_told_about, not_told_about),
+        )
+        return [row["contact_id"] for row in await cursor.fetchall()]
 
     async def count_recent_for_customer(self, customer_id: str, *, since: datetime) -> int:
         """How many contacts this customer has made since ``since`` (the repeat-contact signal)."""

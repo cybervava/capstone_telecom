@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from skylink_care.agents.triage import Claim, merge_claim
-from skylink_care.orchestrator.nodes import MAX_SUMMARY_CHARS, clean_summary
+from skylink_care.orchestrator.handover import MAX_SUMMARY_CHARS, clean_summary
 
 
 def test_customer_id_and_phone_in_one_message_fill_the_whole_claim() -> None:

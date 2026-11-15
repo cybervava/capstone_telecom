@@ -54,6 +54,22 @@ class Settings(BaseSettings):
     # Dispatch waits this long after the first failed line test: the NOC detection window.
     dispatch_hold_seconds: int = Field(default=600, ge=0)
 
+    # A contact whose network status could not be verified is looked at again this often, and
+    # handed to a person after this many looks without an answer.
+    network_recheck_seconds: int = Field(default=60, gt=0)
+    network_recheck_limit: int = Field(default=5, ge=1)
+    # A customer told about a declared outage normally hears of its end through the event feed.
+    # The live status is looked at this often as well, so a lost feed event cannot strand them.
+    outage_recheck_seconds: int = Field(default=900, gt=0)
+    # A suspected node fault gets this long to be declared or to clear before a person takes the
+    # contact. It is longer than the NOC normally needs to declare an outage.
+    suspected_wait_seconds: int = Field(default=900, gt=0)
+    # After "service restored", a contact the customer does not answer is closed after this long.
+    close_quiet_seconds: int = Field(default=86_400, gt=0)
+    # "An outage has started" is not sent for a feed event older than this (the consumer was
+    # down or is catching up): the news would arrive stale, possibly after the outage ended.
+    notify_max_event_age_seconds: int = Field(default=900, gt=0)
+
     llm_provider: Literal["offline", "anthropic"] = "offline"
     llm_model: str = "claude-opus-5-5"
 

@@ -17,6 +17,7 @@ READING = TriageReading(
     insists_device_fault=False,
     requests_technician=False,
     requests_credit=False,
+    confirms_working=False,
     abusive_or_off_topic=False,
     summary="Customer reports no internet.",
 )

@@ -13,6 +13,10 @@ How an answer is read is the heart of this module:
 
 Replays are bounded twice: after ``alert_after_attempts`` a person is told while replaying goes
 on, and after ``give_up_after`` the action is closed as FAILED for manual reconciliation.
+
+A customer notification is the one write with a condition attached. Consent is read from the CRM
+immediately before sending, not when the message was proposed, and a message that may not or
+should no longer be sent ends as SKIPPED: finished on purpose, with nobody to alert.
 """
 
 from __future__ import annotations
@@ -20,7 +24,8 @@ from __future__ import annotations
 import asyncio
 import signal
 from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime, timedelta
+from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any
 
 import structlog
@@ -28,15 +33,24 @@ from pydantic import BaseModel
 
 from skylink_care.adapters.gateway import ExecutorClients, OssGateway
 from skylink_care.adapters.result import Err, ErrorKind, Ok, Result
+from skylink_care.clock import Clock, utc_now
 from skylink_care.config import get_oss_keys, get_settings
-from skylink_care.db.actions import Action, ActionRepository, ActionStatus
+from skylink_care.db.actions import (
+    COMPLAINT_REGISTER,
+    INCIDENT_LINK_COMPLAINT,
+    INCIDENT_OPEN,
+    INCIDENT_UPDATE,
+    NOTIFY_SEND,
+    Action,
+    ActionRepository,
+    ActionStatus,
+)
 from skylink_care.db.audit import AuditRepository
-from skylink_care.db.contacts import COMPLAINT_REGISTER
 from skylink_care.db.database import Database
 from skylink_care.db.handoffs import HandoffRepository
+from skylink_care.guardrails.pii import redact_for_log
 from skylink_care.observability.audit import Auditor
 from skylink_care.observability.logging import configure_logging
-from skylink_care.orchestrator.nodes import INCIDENT_LINK_COMPLAINT, INCIDENT_OPEN, INCIDENT_UPDATE
 
 log = structlog.get_logger(__name__)
 
@@ -54,8 +68,31 @@ AUDIT_EVERY_ATTEMPT_UNTIL = 5
 AUDIT_EVERY_NTH_ATTEMPT = 10
 ACTION_FAILED = "ACTION_FAILED"
 ACTION_DELAYED = "ACTION_DELAYED"
+# Why a notification was not sent.
+NO_CONSENT = "NO_CONSENT"
+TOO_LATE = "TOO_LATE"
+# The gateway's own refusal when the consent record no longer names a channel.
+NO_PREFERRED_CHANNEL = "NO_PREFERRED_CHANNEL"
+# Outcomes after which nobody has to be alerted.
+SETTLED_QUIETLY = frozenset({ActionStatus.SUCCEEDED, ActionStatus.SKIPPED})
 
-type Handler = Callable[[Action], Awaitable[Result[Any]]]
+
+@dataclass(frozen=True)
+class Skipped:
+    """The action was deliberately not performed. It is finished and nobody needs to act."""
+
+    reason: str
+
+
+@dataclass(frozen=True)
+class NotAttempted:
+    """A check that has to precede the write could not be made, so nothing was sent."""
+
+    error: Err
+
+
+type Outcome = Result[Any] | Skipped | NotAttempted
+type Handler = Callable[[Action], Awaitable[Outcome]]
 
 
 class MissingPrerequisiteError(Exception):
@@ -76,6 +113,8 @@ class ActionExecutor:
         backoff_base_seconds: float = 2.0,
         alert_after_attempts: int = 8,
         give_up_after: timedelta = timedelta(hours=24),
+        notification_ttl: timedelta = timedelta(minutes=30),
+        now: Clock = utc_now,
     ) -> None:
         self._actions = actions
         self._audit = audit
@@ -87,11 +126,14 @@ class ActionExecutor:
         self._backoff_base_seconds = backoff_base_seconds
         self._alert_after_attempts = alert_after_attempts
         self._give_up_after = give_up_after
+        self._notification_ttl = notification_ttl
+        self._now = now
         self._handlers: dict[str, Handler] = {
             COMPLAINT_REGISTER: self._register_complaint,
             INCIDENT_OPEN: self._open_incident,
             INCIDENT_UPDATE: self._update_incident,
             INCIDENT_LINK_COMPLAINT: self._link_complaint,
+            NOTIFY_SEND: self._send_notification,
         }
 
     async def run_forever(self, stop: asyncio.Event) -> None:
@@ -111,7 +153,12 @@ class ActionExecutor:
     async def run_once(self) -> int:
         """Execute one batch of runnable actions. Returns how many were attempted."""
         for blocked in await self._actions.block_orphans():
-            await self._escalate(blocked, ActionStatus.BLOCKED, blocked.last_error or "blocked")
+            try:
+                await self._escalate(blocked, ActionStatus.BLOCKED, blocked.last_error or "blocked")
+            except Exception:
+                # The row is already BLOCKED and will not be returned again, so one failed
+                # alert must not stop the alerts for the rest.
+                log.exception("blocked_action_not_escalated", action_key=blocked.action_key)
         claimed = await self._actions.claim_runnable(
             limit=self._batch_size, visibility_seconds=self._visibility_seconds
         )
@@ -128,7 +175,9 @@ class ActionExecutor:
         except Exception as exc:
             log.exception("action_execution_error", action_key=action.action_key)
             try:
-                await self._replay_later(action, audit, f"UNEXPECTED: {exc!r}", unknown=True)
+                # An exception can quote the data it failed on; it is masked before it is stored.
+                detail = str(redact_for_log(f"UNEXPECTED: {exc!r}"))
+                await self._replay_later(action, audit, detail, unknown=True)
             except Exception:
                 # Could not even record the deferral. The claim lapses and the action is
                 # replayed under the same key, which is safe.
@@ -140,13 +189,24 @@ class ActionExecutor:
             await self._finish(action, audit, ActionStatus.FAILED, error="no handler for this type")
             return
         try:
-            result = await handler(action)
+            outcome = await handler(action)
         except MissingPrerequisiteError as exc:
             await self._finish(action, audit, ActionStatus.BLOCKED, error=str(exc))
             return
-        if isinstance(result, Ok):
+        if isinstance(outcome, Skipped):
+            # What held the action up before it was skipped stays on the record.
+            earlier = f" (after: {action.last_error})" if action.last_error else ""
+            log.info("action_skipped", action_key=action.action_key, reason=outcome.reason)
+            await self._finish(
+                action, audit, ActionStatus.SKIPPED, error=f"{outcome.reason}{earlier}"
+            )
+        elif isinstance(outcome, NotAttempted):
+            await self._after_error(action, audit, outcome.error, sent=False)
+        elif isinstance(outcome, Ok):
             body = (
-                result.value.model_dump(mode="json") if isinstance(result.value, BaseModel) else {}
+                outcome.value.model_dump(mode="json")
+                if isinstance(outcome.value, BaseModel)
+                else {}
             )
             await self._finish(
                 action,
@@ -154,24 +214,32 @@ class ActionExecutor:
                 ActionStatus.SUCCEEDED,
                 external_ref=_external_ref(action.action_type, body),
                 response_body=body,
-                replayed=result.replayed,
-            )
-        elif _is_definite_rejection(result):
-            await self._finish(
-                action, audit, ActionStatus.FAILED, error=f"{result.kind.value}: {result.code}"
+                replayed=outcome.replayed,
             )
         else:
-            await self._replay_later(
-                action,
-                audit,
-                f"{result.kind.value}: {result.code or result.message}",
-                unknown=result.kind is not ErrorKind.CIRCUIT_OPEN,
+            await self._after_error(action, audit, outcome, sent=True)
+
+    async def _after_error(self, action: Action, audit: Auditor, error: Err, *, sent: bool) -> None:
+        """A definite rejection ends the action; anything else is tried again later.
+
+        ``sent`` says whether the write itself went out. Only then can its outcome be unknown.
+        """
+        if _is_definite_rejection(error):
+            await self._finish(
+                action, audit, ActionStatus.FAILED, error=f"{error.kind.value}: {error.code}"
             )
+            return
+        await self._replay_later(
+            action,
+            audit,
+            f"{error.kind.value}: {error.code or error.message}",
+            unknown=sent and error.kind is not ErrorKind.CIRCUIT_OPEN,
+        )
 
     async def _replay_later(
         self, action: Action, audit: Auditor, error: str, *, unknown: bool
     ) -> None:
-        age = datetime.now(UTC) - action.created_at
+        age = self._now() - action.created_at
         if age >= self._give_up_after:
             await self._finish(
                 action,
@@ -218,20 +286,24 @@ class ActionExecutor:
         )
         if not recorded:
             return
-        await audit.record(
-            actor=ACTOR,
-            step=f"action:{action.action_type}",
-            outcome=status.value,
-            inputs={
-                "action_key": action.action_key,
-                "attempt": action.attempts,
-                "request_hash": action.request_hash,
-                "requested_by": action.requested_by,
-            },
-            outputs={"external_ref": external_ref, "error": error, "replayed": replayed},
-            policy_version=action.policy_version,
-        )
-        if status is not ActionStatus.SUCCEEDED:
+        try:
+            await audit.record(
+                actor=ACTOR,
+                step=f"action:{action.action_type}",
+                outcome=status.value,
+                inputs={
+                    "action_key": action.action_key,
+                    "attempt": action.attempts,
+                    "request_hash": action.request_hash,
+                    "requested_by": action.requested_by,
+                },
+                outputs={"external_ref": external_ref, "error": error, "replayed": replayed},
+                policy_version=action.policy_version,
+            )
+        except Exception:
+            # The outcome is already final. A lost audit line must not also cost the alert.
+            log.exception("action_audit_failed", action_key=action.action_key)
+        if status not in SETTLED_QUIETLY:
             await self._escalate(action, status, error or status.value)
 
     async def _escalate(
@@ -244,6 +316,7 @@ class ActionExecutor:
             action_type=action.action_type,
             status=status.value,
             attempts=action.attempts,
+            episode_id=str(action.episode_id) if action.episode_id else None,
             error=error,
         )
         if action.contact_id is None:
@@ -291,6 +364,52 @@ class ActionExecutor:
             correlation_id=action.correlation_id,
         )
 
+    async def _send_notification(self, action: Action) -> Outcome:
+        """Send a proactive message if, at this moment, the customer still wants it.
+
+        A message proposed long ago is not sent late, consent is read fresh, and the gateway's
+        own refusal for lack of a channel is honoured. Every decision not to send goes through
+        ``_skip``, which keeps the record honest on repeat attempts.
+        """
+        if self._now() - action.created_at > self._notification_ttl:
+            return await self._skip(action, TOO_LATE)
+        customer_id = str(action.request_body.get("customer_id", ""))
+        consent = await self._clients.crm.consent(customer_id, correlation_id=action.correlation_id)
+        if not isinstance(consent, Ok):
+            return NotAttempted(consent)
+        if not consent.value.outage_notifications or consent.value.channel == "none":
+            return await self._skip(action, NO_CONSENT)
+        sent = await self._clients.notify.send(
+            action.request_body,
+            idempotency_key=action.action_key,
+            correlation_id=action.correlation_id,
+        )
+        if (
+            isinstance(sent, Err)
+            and sent.kind is ErrorKind.CONFLICT
+            and sent.code == NO_PREFERRED_CHANNEL
+        ):
+            # Consent was withdrawn between our check and the gateway's own.
+            return await self._skip(action, NO_CONSENT)
+        return sent
+
+    async def _skip(self, action: Action, reason: str) -> Outcome:
+        """Decide not to send, unless an earlier attempt already did.
+
+        On a repeat attempt the earlier one may have reached the customer with its answer lost.
+        The gateway is asked first, so a delivered message is never recorded as skipped (which
+        would also withhold the "restored" message that depends on it).
+        """
+        if action.attempts > 1:
+            earlier = await self._clients.notify.by_key(
+                action.action_key, correlation_id=action.correlation_id
+            )
+            if isinstance(earlier, Ok):
+                return earlier
+            if earlier.kind is not ErrorKind.NOT_FOUND:
+                return NotAttempted(earlier)
+        return Skipped(reason)
+
     async def _incident_id(self, action: Action) -> str:
         if action.depends_on is None:
             raise MissingPrerequisiteError("action has no incident to refer to")
@@ -311,6 +430,8 @@ def _external_ref(action_type: str, body: dict[str, Any]) -> str | None:
         return str(body["incident_id"]) if body.get("incident_id") else None
     if action_type == COMPLAINT_REGISTER:
         return str(body["complaint_ref"]) if body.get("complaint_ref") else None
+    if action_type == NOTIFY_SEND:
+        return str(body["message_id"]) if body.get("message_id") else None
     return None
 
 

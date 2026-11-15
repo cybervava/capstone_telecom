@@ -48,8 +48,17 @@ def clock(moment: datetime) -> str:
     return f"{local:%H:%M} IST on {local.day} {local:%b}"
 
 
+def cause_phrase(cause: str) -> str:
+    """The cause in plain words. An unknown code is never shown to a customer."""
+    return _CAUSES.get(cause, "a network fault")
+
+
+def eta_source_phrase(eta_source: str | None) -> str:
+    return _ETA_SOURCES.get(eta_source or "", "network team estimate")
+
+
 def outage_active(complaint_ref: str, outage: OutageInfo, *, evidence_at: datetime | None) -> Reply:
-    cause = _CAUSES.get(outage.cause, "a network fault")
+    cause = cause_phrase(outage.cause)
     parts = [AI_DISCLOSURE]
     if outage.planned:
         parts.append(
@@ -63,7 +72,7 @@ def outage_active(complaint_ref: str, outage: OutageInfo, *, evidence_at: dateti
             f" {clock(outage.started_at)} and our engineers are working on it."
         )
     if outage.eta is not None:
-        source = _ETA_SOURCES.get(outage.eta_source or "", "network team estimate")
+        source = eta_source_phrase(outage.eta_source)
         parts.append(f"Service is expected back by {clock(outage.eta)} ({source}).")
     else:
         parts.append("There is no restoration estimate yet; I will not guess one.")
@@ -146,6 +155,56 @@ def no_outage_reported(complaint_ref: str, *, evidence_at: datetime) -> Reply:
         " I'm passing you to a support specialist to check your line.",
         "no_outage_reported.v1",
         {"evidence_at": evidence_at.isoformat()},
+    )
+
+
+def outage_restored(
+    complaint_ref: str,
+    *,
+    outage_id: str | None,
+    resolved_at: datetime | None,
+    service_type: str | None,
+) -> Reply:
+    """The outage this customer was waiting on is over.
+
+    It reports what the network team recorded, not that this customer's line works: only the
+    customer can confirm that, so the message says what to do if it does not.
+    """
+    if outage_id and resolved_at:
+        news = (
+            f"Our network team has resolved the outage in your area (outage {outage_id})"
+            f" at {clock(resolved_at)}."
+        )
+    elif outage_id:
+        news = f"The outage in your area (outage {outage_id}) is no longer active on our network."
+    else:
+        news = "Our network checks no longer show a problem in your area."
+    device = "phone" if service_type == "mobile" else "router"
+    return Reply(
+        f"{AI_DISCLOSURE} {news} Your service should be working again. If it isn't back within"
+        f" 10 minutes, restart your {device} once. If it still doesn't work after that, reply"
+        f" here and I'll have your line checked. Your complaint reference is {complaint_ref}.",
+        "outage_restored.v1",
+        {
+            "outage_id": outage_id,
+            "resolved_at": resolved_at.isoformat() if resolved_at else None,
+        },
+    )
+
+
+def closed_confirmed(complaint_ref: str) -> Reply:
+    return Reply(
+        f"{AI_DISCLOSURE} Thank you for confirming. I've closed complaint {complaint_ref}."
+        " If the problem comes back, contact us and quote this reference.",
+        "closed_confirmed.v1",
+    )
+
+
+def closed_quiet(complaint_ref: str) -> Reply:
+    return Reply(
+        f"{AI_DISCLOSURE} We haven't heard back from you, so complaint {complaint_ref} is now"
+        " closed. If you still have a problem, contact us and quote this reference.",
+        "closed_quiet.v1",
     )
 
 

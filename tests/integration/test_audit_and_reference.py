@@ -133,9 +133,11 @@ async def test_fan_out_lists_only_active_unambiguously_mapped_services(
 ) -> None:
     await seed_reference(db)
 
-    services = await reference.services_on_node("BLR-OLT-0001", "broadband")
+    services = await reference.services_on_nodes(["BLR-OLT-0001"])
 
     assert [(ref.service_id, ref.customer_id) for ref in services] == [("S1", "C1")]
+    assert (services[0].service_type, services[0].node_id) == ("broadband", "BLR-OLT-0001")
+    assert await reference.services_on_nodes([]) == []
 
 
 async def test_node_lookup_returns_the_parent(db: Database, reference: ReferenceRepository) -> None:

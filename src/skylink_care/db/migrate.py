@@ -54,6 +54,35 @@ async def migrate(conninfo: str) -> list[str]:
     return applied_now
 
 
+# Everything the platform has learnt from, or sent to, one particular gateway: conversations,
+# proposed and executed writes, the outage read model and workflow checkpoints. The audit log is
+# append-only and is kept; reference data is reloaded by its own loader; the complaint reference
+# sequence is kept, so a reference is never issued twice.
+_RUNTIME_TABLES = (
+    "approvals, actions, handoffs, inbox, timers, contact_messages, contacts, node_episodes,"
+    " outage_nodes, outages, node_alarms, checkpoint_blobs, checkpoint_writes, checkpoints"
+)
+
+
+async def reset_runtime(conninfo: str) -> None:
+    """Forget everything tied to the gateway's previous state. For development and demos only.
+
+    Re-seeding the mock gateway restarts its event sequence and empties its tickets. A care
+    database that kept its feed cursor and its ticket references would then refuse the feed
+    (the sequence ran backwards) and write to tickets that no longer exist.
+    """
+    async with (
+        await AsyncConnection.connect(conninfo, autocommit=True) as conn,
+        conn.transaction(),
+    ):
+        await conn.execute(f"TRUNCATE {_RUNTIME_TABLES} CASCADE")
+        await conn.execute(
+            "UPDATE feed_state SET applied_seq = 0, source_last_seq = 0, heartbeat_at = NULL,"
+            " polled_at = NULL, last_error = NULL, last_error_at = NULL, gap_at = NULL,"
+            " gap_detail = NULL"
+        )
+
+
 async def _setup_checkpointer(conninfo: str) -> None:
     async with await AsyncConnection.connect(
         conninfo, autocommit=True, prepare_threshold=0, row_factory=dict_row

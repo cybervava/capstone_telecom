@@ -22,6 +22,8 @@ from skylink_care.db.database import Database
 from skylink_care.db.handoffs import HandoffRepository
 from skylink_care.domain.models import Channel
 from skylink_care.executor.worker import ActionExecutor
+from skylink_care.ingest.consumer import FeedConsumer, PollOutcome
+from skylink_care.ingest.worker import build_consumer
 from skylink_care.llm.gateway import LLMGateway
 from skylink_care.llm.offline import OfflineProvider
 from skylink_care.orchestrator.graph import build_graph
@@ -38,6 +40,20 @@ class Platform:
     worker: OrchestratorWorker
     executor: ActionExecutor
     checkpointer: AsyncPostgresSaver
+    # The NOC feed consumer. It runs only when a test calls ``feed()``: a test that never does
+    # is a test of the platform with no feed evidence at all.
+    ingest: FeedConsumer
+    clock: ManualClock
+
+    async def feed(self) -> PollOutcome:
+        """Let the feed consumer read everything the NOC has published so far."""
+        outcome = await self.ingest.catch_up()
+        assert outcome.error is None, f"feed poll failed: {outcome.error}"
+        return outcome
+
+    def advance(self, seconds: float) -> None:
+        """Move the clock shared by the gateway and the platform."""
+        self.clock.advance(seconds)
 
     async def contact(self, text: str, **overrides: Any) -> IntakeResult:
         fields: dict[str, Any] = {
@@ -85,7 +101,7 @@ class Platform:
             checkpointer,
             retry_backoff_seconds=0.05,
         )
-        return Platform(self.runtime, worker, self.executor, checkpointer)
+        return Platform(self.runtime, worker, self.executor, checkpointer, self.ingest, self.clock)
 
     async def replies(self, contact_id: UUID) -> list[str]:
         messages = await self.runtime.messages.list_for_contact(contact_id)
@@ -111,12 +127,12 @@ async def platform(
     stack_clock: ManualClock,
 ) -> Platform:
     await load_reference(db, datapack)
+
+    def now() -> datetime:
+        return stack_clock.now().astimezone(UTC)
+
     runtime = build_orchestrator_runtime(
-        care_settings,
-        db,
-        gateway,
-        llm=LLMGateway(OfflineProvider()),
-        now=lambda: stack_clock.now().astimezone(UTC),
+        care_settings, db, gateway, llm=LLMGateway(OfflineProvider()), now=now
     )
     checkpointer = AsyncPostgresSaver(db.pool)
     worker = OrchestratorWorker(
@@ -130,7 +146,8 @@ async def platform(
         visibility_seconds=0.2,
         backoff_base_seconds=0.05,
     )
-    return Platform(runtime, worker, executor, checkpointer)
+    ingest = build_consumer(care_settings, db, gateway, now=now)
+    return Platform(runtime, worker, executor, checkpointer, ingest, stack_clock)
 
 
 def now_utc() -> datetime:

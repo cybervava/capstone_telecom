@@ -33,13 +33,6 @@ class FeedViewSource(Protocol):
     async def view(self, node_id: str, service_type: str) -> FeedView: ...
 
 
-class NoFeed:
-    """Stands in until the event read model exists: there is simply no feed evidence."""
-
-    async def view(self, node_id: str, service_type: str) -> FeedView:
-        return FeedView(heartbeat_at=None, active_outage=None)
-
-
 @dataclass(frozen=True)
 class Diagnosis:
     mapping: NodeMapping

@@ -113,3 +113,38 @@ async def test_provider_reports_no_token_usage() -> None:
 
     assert reading.intent == "connectivity"
     assert (usage.input_tokens, usage.output_tokens) == (0, 0)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "working now, thanks",
+        "it's back",
+        "Internet is working again. Thank you",
+        "yes it works fine now",
+        "all good",
+        "thik ho gaya",
+    ],
+)
+def test_plain_confirmation_that_service_is_back_is_recognised(text: str) -> None:
+    assert read_with_rules(text).confirms_working
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "still not working",
+        "it isn't back",
+        "is it working now?",
+        "internet is working slowly",
+        "it's back but keeps dropping",
+        "no internet again",
+        "it is back to the same problem",
+        "not working now",
+        "My internet is down",
+        "",
+    ],
+)
+def test_doubt_negation_or_a_question_is_never_a_confirmation(text: str) -> None:
+    """A false confirmation would close a complaint that is not solved."""
+    assert not read_with_rules(text).confirms_working

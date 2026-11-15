@@ -3,7 +3,9 @@
 Shape: ``drain_inbox → supervisor → <one specialist> → supervisor → … → await_event``.
 The supervisor is the only node with outgoing choices and it chooses with ``decide_route``, a pure
 function of state. ``await_event`` is the single interrupt; the thread sleeps there, checkpointed
-in PostgreSQL, until the worker resumes it with a bare wake signal.
+in PostgreSQL, until the worker resumes it with a bare wake signal. What wakes it is always an
+inbox event: a customer message, an outage declared or resolved on the customer's node, or a
+timer the workflow armed for itself.
 """
 
 from __future__ import annotations
@@ -35,6 +37,9 @@ _SPECIALISTS = (
     Route.OUTAGE_REPLY,
     Route.UNKNOWN_REPLY,
     Route.CLEAR_REPLY,
+    Route.RESTORED,
+    Route.KEEP_WAITING,
+    Route.CLOSE,
     Route.HANDOFF,
 )
 

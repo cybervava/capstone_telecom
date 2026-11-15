@@ -20,6 +20,7 @@ ANSWER = {
     "insists_device_fault": True,
     "requests_technician": False,
     "requests_credit": False,
+    "confirms_working": False,
     "abusive_or_off_topic": False,
     "summary": "Customer says the router is faulty.",
 }

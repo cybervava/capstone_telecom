@@ -38,6 +38,21 @@ _CREDIT = (
     r"refund|credit|compensat|rebate|waive|money back|reimburse"
     r"|adjust(?:ment)? (?:in|on) (?:my )?bill"
 )
+# "It works again", and the ways of saying the opposite with the same words.
+_WORKING = (
+    r"\b(?:working|works|back|fine|restored|fixed|resolved|ok(?:ay)?)"
+    r"(?:\s+(?:fine|well|properly|perfectly|up|online))?\s+(?:now|again)\b"
+    r"|\b(?:is|it'?s|its|are) (?:back|working|fine|restored|fixed|up and running)"
+    r"(?:\s+(?:now|again|fine|well|properly|perfectly|online|thanks?|thank you))*\s*(?:[.!,\n]|$)"
+    r"|\bworking fine\b|\ball good\b|\bback online\b|\bchal raha hai\b|\bthik ho gaya\b"
+)
+_NOT_WORKING = (
+    r"\bnot\b|\bcannot\b|\bnever\b"
+    r"|\b(?:is|are|was|were|does|do|did|has|have|had|wo|ca|could|would|should)n'?t\b"
+    r"|\bno (?:internet|signal|network|service|connection|net)\b|\bstill\b|\bbut\b"
+    r"|\bslow\w*|\bdrop\w*|\bintermittent\w*|\bbuffer\w*|\bproblem\w*|\bissue\w*"
+    r"|\bnahi\b|\bnahin\b|\bdown\b|\?"
+)
 _ABUSE = r"\b(?:idiot|stupid|useless|scam(?:mers?)?|fraud(?:s|sters?)?|bastard|damn you)\b"
 _INJECTION = (
     r"ignore (?:all |any |the )?(?:previous|prior|above) (?:instructions|rules)"
@@ -89,6 +104,8 @@ def read_with_rules(text: str) -> TriageReading:
         insists_device_fault=_has(_DEVICE, text),
         requests_technician=_has(_TECHNICIAN, text),
         requests_credit=credit,
+        # Deliberately narrow: any doubt, negation or question means "not confirmed".
+        confirms_working=_has(_WORKING, text) and not _has(_NOT_WORKING, text),
         abusive_or_off_topic=off_topic,
         summary=_summary(intent, credit),
     )

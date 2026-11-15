@@ -95,8 +95,64 @@ async def test_resolution_closes_every_episode_of_the_outage_once(
     again = await episodes.close_for_outage("OUT-9")
 
     assert len(first) == 2
-    assert again == []
+    assert all(episode.closed_at is not None for episode in first)
+    # A repeat closes nothing new and reports the same episodes, unchanged.
+    assert {(e.episode_id, e.closed_at) for e in again} == {
+        (e.episode_id, e.closed_at) for e in first
+    }
     assert await episodes.find_open("BLR-OLT-0001", "broadband") is None
+
+
+async def test_resolution_reports_an_episode_a_newer_outage_had_already_closed(
+    episodes: EpisodeRepository,
+) -> None:
+    """Its ticket is still open and is owed the resolution of its own outage."""
+    earlier = await episodes.open_or_join(NODE, "broadband", outage_id="OUT-1")
+    newer = await episodes.open_or_join(NODE, "broadband", outage_id="OUT-2")
+
+    resolved = await episodes.close_for_outage("OUT-1")
+
+    assert [episode.episode_id for episode in resolved] == [earlier.episode.episode_id]
+    still_open = await episodes.find_open(NODE, "broadband")
+    assert still_open is not None
+    assert still_open.episode_id == newer.episode.episode_id
+
+
+async def test_suspicion_that_ends_closes_the_suspected_episode_only(
+    db: Database, episodes: EpisodeRepository
+) -> None:
+    suspected = await episodes.open_or_join(NODE, "broadband", outage_id=None)
+    declared = await episodes.open_or_join("BLR-OLT-0002", "broadband", outage_id="OUT-3")
+
+    async with db.transaction() as conn:
+        closed = await episodes.close_suspected(conn, NODE, "broadband")
+        untouched = await episodes.close_suspected(conn, "BLR-OLT-0002", "broadband")
+        nothing = await episodes.close_suspected(conn, "BLR-OLT-0099", "broadband")
+
+    assert closed is not None
+    assert closed.episode_id == suspected.episode.episode_id
+    assert (untouched, nothing) == (None, None)
+    assert await episodes.find_open(NODE, "broadband") is None
+    still_open = await episodes.find_open("BLR-OLT-0002", "broadband")
+    assert still_open is not None
+    assert still_open.episode_id == declared.episode.episode_id
+
+
+async def test_declared_outage_is_attached_to_the_open_suspected_episode(
+    db: Database, episodes: EpisodeRepository
+) -> None:
+    suspected = await episodes.open_or_join(NODE, "broadband", outage_id=None)
+
+    async with db.transaction() as conn:
+        upgraded = await episodes.attach_outage_to_open(conn, NODE, "broadband", "OUT-7")
+        again = await episodes.attach_outage_to_open(conn, NODE, "broadband", "OUT-8")
+        elsewhere = await episodes.attach_outage_to_open(conn, "BLR-OLT-0042", "broadband", "OUT-7")
+
+    assert upgraded is not None
+    assert upgraded.episode_id == suspected.episode.episode_id
+    assert (upgraded.outage_id, upgraded.kind.value) == ("OUT-7", "NETWORK_OUTAGE")
+    # Only a suspected episode is upgraded, and no episode is created for a node nobody reported.
+    assert (again, elsewhere) == (None, None)
 
 
 async def test_a_node_can_have_a_new_episode_after_the_previous_one_closed(

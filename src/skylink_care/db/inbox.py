@@ -21,6 +21,10 @@ from skylink_care.db.database import Connection
 
 # Longest wait between attempts for a contact whose runs keep failing.
 MAX_RETRY_DELAY_SECONDS = 300.0
+# Events the feed consumer queues for conversations waiting on a node. The payload carries only
+# the outage id: the workflow re-reads the evidence itself before it says anything.
+OUTAGE_DECLARED_EVENT = "outage.declared"
+OUTAGE_RESOLVED_EVENT = "outage.resolved"
 
 
 @dataclass(frozen=True)

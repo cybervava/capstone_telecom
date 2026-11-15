@@ -6,14 +6,14 @@ separate set of clients from its own key.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from skylink_care.adapters.gateway import OssGateway
-from skylink_care.agents.diagnostics import DiagnosticsAgent, FeedViewSource, NoFeed
+from skylink_care.agents.diagnostics import DiagnosticsAgent, FeedViewSource
 from skylink_care.agents.triage import TriageAgent
+from skylink_care.clock import Clock, utc_now
 from skylink_care.config import Settings
 from skylink_care.db.actions import ActionRepository
 from skylink_care.db.audit import AuditRepository
@@ -23,16 +23,14 @@ from skylink_care.db.episodes import EpisodeRepository
 from skylink_care.db.handoffs import HandoffRepository
 from skylink_care.db.inbox import InboxRepository
 from skylink_care.db.messages import MessageRepository
+from skylink_care.db.read_model import ReadModelRepository
 from skylink_care.db.reference import ReferenceRepository
+from skylink_care.db.timers import TimerRepository
 from skylink_care.domain.network import DecisionLimits
 from skylink_care.llm.gateway import LLMGateway, build_gateway
 from skylink_care.observability.audit import Auditor
 
-Clock = Callable[[], datetime]
-
-
-def utc_now() -> datetime:
-    return datetime.now(UTC)
+__all__ = ["Clock", "OrchestratorRuntime", "build_orchestrator_runtime", "utc_now"]
 
 
 @dataclass(frozen=True)
@@ -46,6 +44,8 @@ class OrchestratorRuntime:
     episodes: EpisodeRepository
     handoffs: HandoffRepository
     audit: AuditRepository
+    timers: TimerRepository
+    read_model: ReadModelRepository
     triage: TriageAgent
     diagnostics: DiagnosticsAgent
     now: Clock
@@ -72,6 +72,7 @@ def build_orchestrator_runtime(
     now: Clock = utc_now,
 ) -> OrchestratorRuntime:
     reference = ReferenceRepository(database)
+    read_model = ReadModelRepository(database)
     return OrchestratorRuntime(
         settings=settings,
         db=database,
@@ -82,11 +83,15 @@ def build_orchestrator_runtime(
         episodes=EpisodeRepository(database),
         handoffs=HandoffRepository(database),
         audit=AuditRepository(database),
+        timers=TimerRepository(database),
+        read_model=read_model,
         triage=TriageAgent(gateway.crm_for_triage(), llm or build_gateway(settings)),
         diagnostics=DiagnosticsAgent(
             gateway.network_for_diagnostics(),
             reference,
-            feed or NoFeed(),
+            # What the feed consumer has learnt. With no consumer running its heartbeat ages and
+            # the decision stops trusting it, which is exactly the degraded behaviour wanted.
+            feed or read_model,
             decision_limits(settings),
             now,
         ),

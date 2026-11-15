@@ -76,6 +76,15 @@ class EpisodeRepository(Repository):
                     return EpisodeResult(replacement, created=True, upgraded=False)
         raise RuntimeError(f"could not settle the episode for {node_id}/{service_type}")
 
+    async def get(self, episode_id: UUID) -> Episode | None:
+        async with self._db.connection() as conn:
+            cursor = await conn.execute(
+                f"SELECT {_COLUMNS} FROM node_episodes WHERE episode_id = %s",  # noqa: S608
+                (episode_id,),
+            )
+            row = await cursor.fetchone()
+        return _to_episode(row) if row else None
+
     async def find_open(self, node_id: str, service_type: str) -> Episode | None:
         async with self._db.connection() as conn:
             cursor = await conn.execute(
@@ -100,12 +109,47 @@ class EpisodeRepository(Repository):
             row = await cursor.fetchone()
         return _to_episode(row) if row else None
 
-    async def close_for_outage(self, outage_id: str) -> list[Episode]:
-        """Close every open episode of a resolved outage. Idempotent."""
-        async with self._db.connection() as conn:
-            cursor = await conn.execute(
-                "UPDATE node_episodes SET closed_at = clock_timestamp()"  # noqa: S608 - constant column list
-                " WHERE outage_id = %s AND closed_at IS NULL"
+    async def attach_outage_to_open(
+        self, conn: Connection, node_id: str, service_type: str, outage_id: str
+    ) -> Episode | None:
+        """The NOC has declared an outage: give its id to the node's open suspected episode.
+
+        Returns the episode when it was upgraded, None when there was nothing to upgrade. No
+        episode is created here: tickets are opened when a customer is affected, not for every
+        node of every outage.
+        """
+        current = await _lock_open(conn, node_id, service_type)
+        if current is None or current.outage_id is not None:
+            return None
+        return await _attach_outage(conn, current.episode_id, outage_id)
+
+    async def close_suspected(
+        self, conn: Connection, node_id: str, service_type: str
+    ) -> Episode | None:
+        """The suspicion on this node has ended without an outage being declared: close it.
+
+        Returns the closed episode, or None when the node's open episode (if any) belongs to a
+        declared outage, which only that outage's resolution closes.
+        """
+        current = await _lock_open(conn, node_id, service_type)
+        if current is None or current.outage_id is not None:
+            return None
+        await _close(conn, current.episode_id)
+        return current
+
+    async def close_for_outage(
+        self, outage_id: str, *, conn: Connection | None = None
+    ) -> list[Episode]:
+        """Close the open episodes of a resolved outage and return all of its episodes.
+
+        Episodes that were closed earlier are returned too (unchanged): an episode can be closed
+        before its outage is resolved, when a newer outage takes over the node, and its ticket
+        is still owed its resolution. Idempotent.
+        """
+        async with self._conn(conn) as active:
+            cursor = await active.execute(
+                "UPDATE node_episodes SET closed_at = COALESCE(closed_at, clock_timestamp())"  # noqa: S608 - constant column list
+                " WHERE outage_id = %s"
                 f" RETURNING {_COLUMNS}",
                 (outage_id,),
             )

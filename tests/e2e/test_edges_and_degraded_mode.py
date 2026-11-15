@@ -183,10 +183,73 @@ async def test_network_api_down_gives_a_reference_and_no_all_clear(
     contact = await platform.runtime.contacts.get(intake.contact_id)
     assert contact is not None
     assert contact.network_state == "UNKNOWN"
-    assert "NETWORK_STATUS_UNVERIFIED" in await handoff_reasons(platform)
+    # The status may still verify itself, so the platform looks again before queueing a person.
+    assert contact.status == "AWAITING_NETWORK"
+    assert await handoff_reasons(platform) == []
     state = (await simulator.state())["tables"]
     assert state["appointments"] == 0
     assert state["complaints"] == 1  # the reference is still registered
+
+
+async def test_status_that_stays_unverified_goes_to_a_person_after_the_rechecks(
+    platform: Platform, simulator: Simulator
+) -> None:
+    settings = platform.runtime.settings
+    customer = await customer_with(simulator)
+    await simulator.start_outage(customer["true_node_id"])
+    await simulator.fault("network", "down")
+    intake = await platform.contact(
+        "internet down", authenticated_customer_id=customer["customer_id"]
+    )
+    await platform.settle()
+
+    for _ in range(settings.network_recheck_limit - 1):
+        platform.advance(settings.network_recheck_seconds)
+        await platform.settle()
+    # Re-checks that find nothing new say nothing and queue nobody.
+    assert len(await platform.replies(intake.contact_id)) == 1
+    assert await handoff_reasons(platform) == []
+
+    platform.advance(settings.network_recheck_seconds)
+    await platform.settle()
+
+    replies = await platform.replies(intake.contact_id)
+    assert len(replies) == 2
+    assert "still can't verify the network status" in replies[1]
+    assert not any(ALL_CLEAR.search(reply) for reply in replies)
+    (handoff,) = await platform.runtime.handoffs.list_open()
+    assert handoff.reason == "NETWORK_STATUS_UNVERIFIED"
+    assert f"re-checked {settings.network_recheck_limit} time(s)" in handoff.summary
+    contact = await platform.runtime.contacts.get(intake.contact_id)
+    assert contact is not None
+    assert contact.status == "HANDOFF"
+    assert (await simulator.state())["tables"]["appointments"] == 0
+
+
+async def test_network_api_coming_back_tells_the_customer_without_involving_a_person(
+    platform: Platform, simulator: Simulator
+) -> None:
+    customer = await customer_with(simulator)
+    outage = await simulator.start_outage(customer["true_node_id"])
+    await simulator.fault("network", "down")
+    intake = await platform.contact(
+        "internet down", authenticated_customer_id=customer["customer_id"]
+    )
+    await platform.settle()
+
+    await simulator.fault("network", "ok")
+    platform.advance(platform.runtime.settings.network_recheck_seconds)
+    await platform.settle()
+
+    unverified, confirmed = await platform.replies(intake.contact_id)
+    assert "can't verify the live network status" in unverified
+    assert outage["outage_id"] in confirmed
+    assert await handoff_reasons(platform) == []
+    contact = await platform.runtime.contacts.get(intake.contact_id)
+    assert contact is not None
+    assert (contact.status, contact.network_state) == ("AWAITING_NETWORK", "ACTIVE")
+    state = (await simulator.state())["tables"]
+    assert (state["incidents"], state["incident_complaints"]) == (1, 1)
 
 
 async def test_outage_not_yet_declared_is_treated_as_suspected_not_clear(
@@ -208,6 +271,10 @@ async def test_outage_not_yet_declared_is_treated_as_suspected_not_clear(
     trail = await platform.runtime.audit.for_contact(intake.contact_id)
     decision = next(record for record in trail if record.step == "diagnostics.decide")
     assert decision.outputs["reason"] == "SUSPECTED_NODE_FAULT"
+    # The report is raised once for the node, not queued for a person contact by contact.
+    assert await handoff_reasons(platform) == []
+    state = (await simulator.state())["tables"]
+    assert (state["incidents"], state["incident_complaints"], state["appointments"]) == (1, 1, 0)
 
 
 @pytest.mark.parametrize("defect", ["missing", "ambiguous", "stale"])

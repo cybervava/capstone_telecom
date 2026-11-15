@@ -11,6 +11,7 @@ Three properties are enforced in this module rather than left to callers:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
@@ -34,12 +35,27 @@ _RETURNING = ", ".join(f"actions.{name.strip()}" for name in _COLUMNS.split(",")
 
 ACTION_FINISHED_EVENT = "action.finished"
 
+# Action types: the vocabulary shared by whoever proposes a write and the executor that sends it.
+COMPLAINT_REGISTER = "COMPLAINT_REGISTER"
+INCIDENT_OPEN = "INCIDENT_OPEN"
+INCIDENT_UPDATE = "INCIDENT_UPDATE"
+INCIDENT_LINK_COMPLAINT = "INCIDENT_LINK_COMPLAINT"
+NOTIFY_SEND = "NOTIFY_SEND"
+
+# Lanes: a lower lane is always served first, so a flood of low-priority writes (notifications)
+# can never delay complaint registration or incident tickets.
+REGULATORY_LANE = 1
+INCIDENT_LANE = 2
+LINK_LANE = 3
+NOTIFICATION_LANE = 9
+
 
 class ActionStatus(StrEnum):
     PENDING_APPROVAL = "PENDING_APPROVAL"
     READY = "READY"
     IN_FLIGHT = "IN_FLIGHT"
     SUCCEEDED = "SUCCEEDED"
+    SKIPPED = "SKIPPED"  # deliberately not performed (e.g. no consent at send time)
     FAILED = "FAILED"
     REJECTED = "REJECTED"
     EXPIRED = "EXPIRED"
@@ -49,6 +65,7 @@ class ActionStatus(StrEnum):
 TERMINAL = frozenset(
     {
         ActionStatus.SUCCEEDED,
+        ActionStatus.SKIPPED,
         ActionStatus.FAILED,
         ActionStatus.REJECTED,
         ActionStatus.EXPIRED,
@@ -100,6 +117,14 @@ class Action:
 
 
 @dataclass(frozen=True)
+class KeyedAction:
+    """The little a proposer needs to know about an action it finds by key."""
+
+    action_id: UUID
+    status: ActionStatus
+
+
+@dataclass(frozen=True)
 class Proposal:
     action: Action
     created: bool
@@ -147,6 +172,60 @@ class ActionRepository(Repository):
         if existing is None:  # pragma: no cover - a conflicting row cannot disappear
             raise RuntimeError(f"action {new.action_key} vanished during proposal")
         return Proposal(existing, created=False, conflicting=existing.request_hash != request_hash)
+
+    async def propose_many(self, conn: Connection, proposals: Sequence[NewAction]) -> int:
+        """Record many independent proposals in the caller's transaction (notification fan-out).
+
+        Existing keys are left untouched. Returns how many rows were inserted.
+        """
+        if not proposals:
+            return 0
+        async with conn.cursor() as cursor:
+            await cursor.executemany(
+                "INSERT INTO actions (action_id, action_key, action_type, lane, contact_id,"
+                " episode_id, requested_by, request_body, request_hash, inputs, depends_on,"
+                " approval_level, status, policy_version, correlation_id)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                " ON CONFLICT (action_key) DO NOTHING",
+                [
+                    (
+                        uuid4(),
+                        new.action_key,
+                        new.action_type,
+                        new.lane,
+                        new.contact_id,
+                        new.episode_id,
+                        new.requested_by,
+                        Jsonb(new.request_body),
+                        canonical_hash(new.request_body),
+                        Jsonb(new.inputs),
+                        new.depends_on,
+                        new.approval_level,
+                        (
+                            ActionStatus.READY
+                            if new.approval_level == "none"
+                            else ActionStatus.PENDING_APPROVAL
+                        ).value,
+                        new.policy_version,
+                        new.correlation_id,
+                    )
+                    for new in proposals
+                ],
+            )
+            return cursor.rowcount
+
+    async def lookup_keys(self, conn: Connection, keys: Sequence[str]) -> dict[str, KeyedAction]:
+        """Which of these keys already have an action, and where each one stands."""
+        if not keys:
+            return {}
+        cursor = await conn.execute(
+            "SELECT action_key, action_id, status FROM actions WHERE action_key = ANY(%s)",
+            (list(keys),),
+        )
+        return {
+            row["action_key"]: KeyedAction(row["action_id"], ActionStatus(row["status"]))
+            for row in await cursor.fetchall()
+        }
 
     async def get(self, action_id: UUID) -> Action | None:
         async with self._db.connection() as conn:
@@ -253,18 +332,25 @@ class ActionRepository(Repository):
             return cursor.rowcount == 1
 
     async def block_orphans(self) -> list[Action]:
-        """Block actions whose prerequisite can no longer succeed, and return them."""
+        """Settle actions whose prerequisite can no longer succeed, and return the blocked ones.
+
+        A prerequisite that failed blocks its dependants, and someone has to look. A prerequisite
+        that was deliberately skipped skips them too, quietly: a customer who was not told an
+        outage began is not told that it ended.
+        """
         async with self._db.connection() as conn:
             cursor = await conn.execute(
-                "UPDATE actions SET status = 'BLOCKED',"  # noqa: S608 - constant column list
+                "UPDATE actions SET"  # noqa: S608 - constant column list
+                " status = CASE WHEN dep.status = 'SKIPPED' THEN 'SKIPPED' ELSE 'BLOCKED' END,"
                 " updated_at = clock_timestamp(),"
                 " last_error = 'prerequisite action ' || dep.status"
                 " FROM actions dep WHERE dep.action_id = actions.depends_on"
                 " AND actions.status IN ('READY', 'PENDING_APPROVAL')"
-                " AND dep.status IN ('FAILED', 'REJECTED', 'EXPIRED', 'BLOCKED')"
+                " AND dep.status IN ('FAILED', 'REJECTED', 'EXPIRED', 'BLOCKED', 'SKIPPED')"
                 f" RETURNING {_RETURNING}"
             )
-            return [_to_action(row) for row in await cursor.fetchall()]
+            settled = [_to_action(row) for row in await cursor.fetchall()]
+        return [action for action in settled if action.status is ActionStatus.BLOCKED]
 
 
 async def _select_by_key(conn: Connection, action_key: str) -> Action | None:

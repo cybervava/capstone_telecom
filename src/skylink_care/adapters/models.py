@@ -9,9 +9,27 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
+
+# Identifiers issued by network systems are shown to customers ("outage OUT-…") and stored as
+# keys, so their shape is checked on arrival: letters, digits and a few separators, nothing that
+# could carry a sentence or a link into a customer message.
+NetworkId = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9._:-]{1,64}$")]
+ShortCode = Annotated[str, StringConstraints(max_length=40)]
+# Bounds on what one answer from the feed may make the platform do.
+MAX_NODES_PER_EVENT = 2000
+MAX_EVENTS_PER_PAGE = 500
+MAX_VERSION = 2**31 - 1  # stored as a PostgreSQL integer
+MAX_SEQUENCE = 2**62
 
 
 class Wire(BaseModel):
@@ -22,14 +40,14 @@ class Wire(BaseModel):
 
 
 class OutageDto(Wire):
-    outage_id: str
-    version: int = Field(ge=1)
-    cause: str
+    outage_id: NetworkId
+    version: int = Field(ge=1, le=MAX_VERSION)
+    cause: ShortCode
     planned: bool
-    service_types: tuple[str, ...] = ()
+    service_types: tuple[ShortCode, ...] = Field(default=(), max_length=8)
     started_at: AwareDatetime
     eta: AwareDatetime | None = None
-    eta_source: str | None = None
+    eta_source: ShortCode | None = None
     resolved_at: AwareDatetime | None = None
 
 
@@ -80,30 +98,33 @@ class LineTestDto(Wire):
 
 
 class NetworkEventDto(Wire):
-    seq: int = Field(ge=1)
-    event_id: str
+    """One event of the NOC feed. It comes from another system, so every field is bounded: a
+    single event must not be able to carry free text to customers or unbounded work to us."""
+
+    seq: int = Field(ge=1, le=MAX_SEQUENCE)
+    event_id: Annotated[str, StringConstraints(max_length=64)]
     type: Literal[
         "OUTAGE_STARTED", "OUTAGE_UPDATED", "OUTAGE_RESOLVED", "ALARM_RAISED", "ALARM_CLEARED"
     ]
     emitted_at: AwareDatetime
-    node_ids: tuple[str, ...]
-    outage_id: str | None = None
-    version: int | None = None
-    service_types: tuple[str, ...] = ()
-    cause: str | None = None
+    node_ids: tuple[NetworkId, ...] = Field(max_length=MAX_NODES_PER_EVENT)
+    outage_id: NetworkId | None = None
+    version: int | None = Field(default=None, ge=1, le=MAX_VERSION)
+    service_types: tuple[ShortCode, ...] = Field(default=(), max_length=8)
+    cause: ShortCode | None = None
     planned: bool | None = None
     started_at: AwareDatetime | None = None
     eta: AwareDatetime | None = None
-    eta_source: str | None = None
+    eta_source: ShortCode | None = None
     resolved_at: AwareDatetime | None = None
-    alarm_id: str | None = None
-    alarm_type: str | None = None
-    severity: str | None = None
+    alarm_id: NetworkId | None = None
+    alarm_type: ShortCode | None = None
+    severity: ShortCode | None = None
 
 
 class EventPage(Wire):
-    events: tuple[NetworkEventDto, ...]
-    last_seq: int = Field(ge=0)
+    events: tuple[NetworkEventDto, ...] = Field(max_length=MAX_EVENTS_PER_PAGE)
+    last_seq: int = Field(ge=0, le=MAX_SEQUENCE)
     # Feed heartbeat: when the gateway produced this page.
     generated_at: AwareDatetime
 

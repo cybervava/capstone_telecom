@@ -13,5 +13,6 @@ Decide:
 - `insists_device_fault`: they say the problem is in their own router or device, or reject the idea of a network outage.
 - `requests_technician`: they ask for a visit.
 - `requests_credit`: they ask for a refund, credit or compensation.
+- `confirms_working`: they say the service is working again now ("it's back", "working now, thanks"). False if they say it is still not working, are unsure, or are asking whether it works.
 - `abusive_or_off_topic`: abuse, or a request unrelated to SkyLink services.
 - `summary`: one neutral sentence, at most 25 words, for a human agent who may take over. Keep the tokens as they are; never write a name, number or address.

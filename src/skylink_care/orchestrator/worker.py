@@ -22,6 +22,7 @@ from skylink_care.agents import replies
 from skylink_care.config import get_oss_keys, get_settings
 from skylink_care.db.contacts import Contact
 from skylink_care.db.database import Database
+from skylink_care.guardrails.pii import redact_for_log
 from skylink_care.observability.logging import configure_logging
 from skylink_care.orchestrator.graph import RECURSION_LIMIT, ContactGraph, build_graph
 from skylink_care.orchestrator.routing import CUSTOMER_EVENTS
@@ -75,6 +76,12 @@ class OrchestratorWorker:
 
     async def run_once(self) -> int:
         """Process the contacts that are due right now. Returns how many runs completed."""
+        # Timers first: a timer that has come due becomes an inbox event like any other.
+        try:
+            await self._rt.timers.fire_due(self._rt.now())
+        except Exception:
+            # A timer problem must not hold up the contacts that are ready to run.
+            log.exception("timer_pump_failed")
         pending = await self._rt.inbox.pending_contacts(self._concurrency * 4)
         if not pending:
             return 0
@@ -157,7 +164,8 @@ class OrchestratorWorker:
         async with self._rt.db.transaction() as conn:
             outcome = await self._rt.inbox.record_failure(
                 contact_id,
-                repr(error),
+                # An exception can quote the data it failed on; it is masked before it is stored.
+                str(redact_for_log(repr(error))),
                 max_attempts=self._max_attempts,
                 backoff_seconds=self._retry_backoff_seconds,
                 conn=conn,
@@ -199,17 +207,24 @@ class OrchestratorWorker:
             return
         unseen = [event for event in events if event.event_type in CUSTOMER_EVENTS]
         async with self._rt.db.transaction() as conn:
-            if unseen and contact.status == "HANDOFF":
+            if unseen:
+                # A customer message must never fall on the floor. After a handoff its owner is
+                # told; after a close the contact is opened again for a person.
+                after = "handed to a person" if contact.status == "HANDOFF" else "closed"
                 await self._rt.handoffs.open(
                     contact.contact_id,
                     reason=CUSTOMER_FOLLOW_UP,
                     summary=(
                         f"Reason: {CUSTOMER_FOLLOW_UP}. The customer wrote again after this"
-                        " contact was handed to a person. Read the conversation before replying."
+                        f" contact was {after}. Read the conversation before replying."
                     ),
                     priority=3,
                     conn=conn,
                 )
+                if contact.status != "HANDOFF":
+                    await self._rt.contacts.update(
+                        contact.contact_id, conn=conn, status="HANDOFF", closed_at=None
+                    )
             await self._rt.inbox.mark_applied(contact.contact_id, events[-1].seq, conn=conn)
         await self._rt.auditor(contact.contact_id, contact.correlation_id).record(
             actor="system:orchestrator",

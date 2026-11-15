@@ -27,8 +27,13 @@ from skylink_care.db.migrate import migrate
 from skylink_care.db.reference import ReferenceRepository
 
 _MUTABLE_TABLES = (
-    "approvals, actions, handoffs, inbox, contact_messages, contacts, node_episodes,"
-    " address_node_map, service_index, nodes"
+    "approvals, actions, handoffs, inbox, timers, contact_messages, contacts, node_episodes,"
+    " outage_nodes, outages, node_alarms, address_node_map, service_index, nodes"
+)
+# The feed consumer's one state row is reset rather than removed.
+_RESET_FEED = (
+    "UPDATE feed_state SET applied_seq = 0, source_last_seq = 0, heartbeat_at = NULL,"
+    " polled_at = NULL, last_error = NULL, last_error_at = NULL, gap_at = NULL, gap_detail = NULL"
 )
 
 
@@ -58,6 +63,7 @@ async def db(database_conninfo: str) -> AsyncIterator[Database]:
     database = await Database.open(database_conninfo, min_size=2, max_size=20)
     async with database.connection() as conn:
         await conn.execute(f"TRUNCATE {_MUTABLE_TABLES} CASCADE")
+        await conn.execute(_RESET_FEED)
     yield database
     await database.close()
 

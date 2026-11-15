@@ -25,6 +25,8 @@ class TriageReading(BaseModel):
     insists_device_fault: bool
     requests_technician: bool
     requests_credit: bool
+    # The customer says the service works again. Only acted on after we said it was restored.
+    confirms_working: bool
     abusive_or_off_topic: bool
     summary: str
 

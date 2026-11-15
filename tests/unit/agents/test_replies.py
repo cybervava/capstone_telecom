@@ -147,3 +147,54 @@ def test_outage_reply_does_not_claim_a_ticket_link_it_cannot_guarantee() -> None
 
     assert "recorded against this outage" in text
     assert "linked" not in text
+
+
+def test_restored_reply_reports_what_the_network_team_recorded() -> None:
+    reply = replies.outage_restored(
+        REF, outage_id=OUTAGE.outage_id, resolved_at=NOW, service_type="broadband"
+    )
+
+    assert "resolved the outage in your area (outage OUT-20261115-0003) at 10:31 IST" in reply.text
+    assert "restart your router once" in reply.text
+    assert "reply here and I'll have your line checked" in reply.text
+    assert REF in reply.text
+    assert reply.template_id == "outage_restored.v1"
+    assert reply.facts == {"outage_id": OUTAGE.outage_id, "resolved_at": NOW.isoformat()}
+    # It reports the outage, it does not vouch for this customer's line.
+    assert ALL_CLEAR.search(reply.text) is None
+
+
+def test_restored_reply_without_a_resolution_time_does_not_invent_one() -> None:
+    reply = replies.outage_restored(
+        REF, outage_id=OUTAGE.outage_id, resolved_at=None, service_type="mobile"
+    )
+
+    assert "is no longer active on our network" in reply.text
+    assert " at " not in reply.text.split("Your service")[0]
+    assert "restart your phone once" in reply.text
+
+
+def test_restored_reply_without_any_outage_on_record_claims_only_what_was_checked() -> None:
+    reply = replies.outage_restored(REF, outage_id=None, resolved_at=None, service_type=None)
+
+    assert "Our network checks no longer show a problem in your area." in reply.text
+    assert "outage" not in reply.text.lower().split("your service")[0]
+
+
+@pytest.mark.parametrize(
+    ("build", "phrase", "template_id"),
+    [
+        (replies.closed_confirmed, "Thank you for confirming", "closed_confirmed.v1"),
+        (replies.closed_quiet, "haven't heard back from you", "closed_quiet.v1"),
+    ],
+)
+def test_closing_messages_keep_the_reference_and_say_how_to_come_back(
+    build: object, phrase: str, template_id: str
+) -> None:
+    reply = build(REF)  # type: ignore[operator]
+
+    assert phrase in reply.text
+    assert REF in reply.text
+    assert "quote this reference" in reply.text
+    assert reply.text.startswith(replies.AI_DISCLOSURE)
+    assert reply.template_id == template_id
