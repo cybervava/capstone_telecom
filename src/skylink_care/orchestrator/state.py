@@ -15,6 +15,7 @@ class Phase(StrEnum):
     NEW_TURN = "NEW_TURN"  # fresh events were drained; nothing decided yet
     TRIAGED = "TRIAGED"  # identity and intent are known for this turn
     DIAGNOSED = "DIAGNOSED"  # a network decision is available for this turn
+    RECHECK = "RECHECK"  # a booking was declined on changed evidence: look at it again
     REPLIED = "REPLIED"  # this turn is finished; wait for the next event
     HANDED_OFF = "HANDED_OFF"  # a person owns the contact now
     CLOSED = "CLOSED"
@@ -43,6 +44,8 @@ class Route(StrEnum):
     RESTORED = "restored"
     KEEP_WAITING = "keep_waiting"
     CREDIT_RESULT = "credit_result"
+    VISIT = "visit"
+    VISIT_RESULT = "visit_result"
     CLOSE = "close"
     HANDOFF = "handoff"
     AWAIT = "await_event"
@@ -100,9 +103,23 @@ class ContactState(TypedDict, total=False):
     # unsettled. A contact is not closed while a credit of its own is unsettled.
     credits: list[dict[str, Any]]
     close_when_credit_settles: bool
+    # A technician visit for this contact: the slots on offer, the one the customer chose, the
+    # booking action and the appointment. ``status`` is one of the VISIT_* values below.
+    visit: dict[str, Any] | None
     # Guide steps the customer has been given (the citation). Given once; if they do not help,
     # a person takes over rather than the same steps being repeated.
     guidance_told: str | None
+
+
+VISIT_OFFERED = "OFFERED"  # slots were listed; the customer has not chosen yet
+VISIT_CHOSEN = "CHOSEN"  # the customer chose a slot; nothing is proposed yet
+VISIT_BOOKING = "BOOKING"  # the booking is with the executor
+VISIT_BOOKED = "BOOKED"
+VISIT_DECLINED = "DECLINED"
+
+
+def visit_status(state: ContactState) -> str | None:
+    return (state.get("visit") or {}).get("status")
 
 
 def pending_credits(state: ContactState) -> list[dict[str, Any]]:

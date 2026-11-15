@@ -46,6 +46,7 @@ from skylink_care.db.actions import (
     INCIDENT_OPEN,
     INCIDENT_UPDATE,
     NOTIFY_SEND,
+    VISIT_BOOK,
     Action,
     ActionRepository,
     ActionStatus,
@@ -63,6 +64,7 @@ from skylink_care.executor.outcomes import (
     Refused,
     Skipped,
 )
+from skylink_care.executor.visits import build_visit_booker
 from skylink_care.guardrails.pii import redact_for_log
 from skylink_care.observability.audit import Auditor
 from skylink_care.observability.logging import configure_logging
@@ -91,7 +93,7 @@ NO_PREFERRED_CHANNEL = "NO_PREFERRED_CHANNEL"
 # Outcomes after which nobody has to be alerted.
 SETTLED_QUIETLY = frozenset({ActionStatus.SUCCEEDED, ActionStatus.SKIPPED})
 # Actions whose outcome the customer's conversation is waiting to hear.
-WAKES_CONTACT = frozenset({CREDIT_APPLY})
+WAKES_CONTACT = frozenset({CREDIT_APPLY, VISIT_BOOK})
 
 
 type Handler = Callable[[Action], Awaitable[Outcome]]
@@ -115,6 +117,7 @@ class ActionExecutor:
         approvals: ApprovalRepository | None = None,
         credit_policy: CreditPolicy | None = None,
         credit_review_all: bool = True,
+        visits: Handler | None = None,
         now: Clock = utc_now,
         approval_clock: Clock | None = None,
     ) -> None:
@@ -142,10 +145,10 @@ class ActionExecutor:
             review_all=credit_review_all,
             now=self._approval_now,
         )
-        self._handlers = self._handlers_with(credits)
+        self._handlers = self._handlers_with(credits, visits)
 
-    def _handlers_with(self, credits: Handler) -> dict[str, Handler]:
-        return {
+    def _handlers_with(self, credits: Handler, visits: Handler | None) -> dict[str, Handler]:
+        handlers: dict[str, Handler] = {
             COMPLAINT_REGISTER: self._register_complaint,
             INCIDENT_OPEN: self._open_incident,
             INCIDENT_UPDATE: self._update_incident,
@@ -153,6 +156,8 @@ class ActionExecutor:
             NOTIFY_SEND: self._send_notification,
             CREDIT_APPLY: credits,
         }
+        # Without a booker nothing can be booked: such an action fails for want of a handler.
+        return handlers | ({VISIT_BOOK: visits} if visits else {})
 
     def handler(self, action_type: str) -> Handler | None:
         """What executes actions of this type."""
@@ -473,6 +478,8 @@ def _external_ref(action_type: str, body: dict[str, Any]) -> str | None:
         return str(body["message_id"]) if body.get("message_id") else None
     if action_type == CREDIT_APPLY:
         return str(body["credit_id"]) if body.get("credit_id") else None
+    if action_type == VISIT_BOOK:
+        return str(body["appointment_id"]) if body.get("appointment_id") else None
     return None
 
 
@@ -482,16 +489,18 @@ async def _main() -> None:
     database = await Database.open(settings.database_conninfo(), max_size=settings.db_pool_max)
     gateway = OssGateway(settings.oss_base_url, get_oss_keys())
     try:
+        clients = gateway.for_executor()
         executor = ActionExecutor(
             ActionRepository(database),
             AuditRepository(database),
             HandoffRepository(database),
-            gateway.for_executor(),
+            clients,
             approvals=ApprovalRepository(database),
             # Read at start, like every other process: a bad policy file stops the executor
             # before it can apply anything.
             credit_policy=load_policy(settings.credit_policy_path),
             credit_review_all=settings.credit_review_all,
+            visits=build_visit_booker(settings, database, clients),
         )
         stop = asyncio.Event()
         loop = asyncio.get_running_loop()

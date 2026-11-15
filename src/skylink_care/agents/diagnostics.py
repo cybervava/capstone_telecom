@@ -133,6 +133,19 @@ class DiagnosticsAgent:
         await self._record(subject, audit, mapping, live, feed, probe.result, failing, decision)
         return Diagnosis(mapping, decision, probe.result, failing)
 
+    async def node_state(
+        self, node_id: str, service_type: str, *, audit: Auditor
+    ) -> NetworkDecision:
+        """The network state of one known node, on evidence read now and with no line tested.
+
+        For whoever is about to act on an earlier diagnosis and must not act on a stale one.
+        """
+        mapping = NodeMapping(MappingStatus.RESOLVED, node_id, (node_id,), None)
+        live = to_live_status(await self._status(node_id, audit))
+        feed = await self._feed.view(node_id, service_type)
+        decision, _ = await self._decide(mapping, live, feed)
+        return decision
+
     async def _observe(
         self, subject: Subject, mapping: NodeMapping, probe: _Probe
     ) -> tuple[LiveStatus, FeedView, NodeMapping]:

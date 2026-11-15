@@ -62,6 +62,13 @@ class Settings(BaseSettings):
     line_retest_seconds: int = Field(default=120, ge=0)
     # Dispatch waits this long after the first failed line test: the NOC detection window.
     dispatch_hold_seconds: int = Field(default=600, ge=0)
+    # A technician visit is offered with this many of the earliest free slots.
+    visit_slots_offered: int = Field(default=3, ge=1, le=6)
+    # A visit rests on a failing line test no older than this when it is proposed (seconds),
+    # and no older than the second value when the executor books it. Past that nothing is
+    # booked: a visit is never arranged on evidence that has gone stale.
+    visit_line_test_max_age_seconds: int = Field(default=300, gt=0)
+    visit_evidence_max_age_seconds: int = Field(default=1800, gt=0)
 
     # A contact whose network status could not be verified is looked at again this often, and
     # handed to a person after this many looks without an answer.
@@ -90,6 +97,11 @@ class Settings(BaseSettings):
             raise ValueError(
                 "CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS must not be shorter than"
                 " CARE_DISPATCH_HOLD_SECONDS"
+            )
+        if self.visit_evidence_max_age_seconds < self.visit_line_test_max_age_seconds:
+            raise ValueError(
+                "CARE_VISIT_EVIDENCE_MAX_AGE_SECONDS must not be shorter than"
+                " CARE_VISIT_LINE_TEST_MAX_AGE_SECONDS"
             )
         return self
 

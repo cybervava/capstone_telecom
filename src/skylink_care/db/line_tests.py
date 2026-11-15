@@ -61,6 +61,17 @@ class LineTestRepository(Repository):
             row = await cursor.fetchone()
         return LineTest(**row) if row else None
 
+    async def latest_for_service(self, service_id: str) -> LineTest | None:
+        """The most recent test of this line, whoever asked for it."""
+        async with self._db.connection() as conn:
+            cursor = await conn.execute(
+                f"SELECT {_COLUMNS} FROM line_tests"  # noqa: S608 - constant column list
+                " WHERE service_id = %s ORDER BY tested_at DESC, test_id DESC LIMIT 1",
+                (service_id,),
+            )
+            row = await cursor.fetchone()
+        return LineTest(**row) if row else None
+
     async def failing_lines_on_node(self, node_id: str, *, since: datetime) -> int:
         """How many customers have a line failing on the node, by each line's latest test.
 

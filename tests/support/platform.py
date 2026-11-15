@@ -23,6 +23,7 @@ from skylink_care.db.database import Database
 from skylink_care.db.handoffs import HandoffRepository
 from skylink_care.domain.credit import load_policy
 from skylink_care.domain.models import Channel
+from skylink_care.executor.visits import build_visit_booker
 from skylink_care.executor.worker import ActionExecutor
 from skylink_care.ingest.consumer import FeedConsumer, PollOutcome
 from skylink_care.ingest.worker import build_consumer
@@ -140,16 +141,19 @@ async def platform(
     worker = OrchestratorWorker(
         runtime, build_graph(runtime, checkpointer), checkpointer, retry_backoff_seconds=0.05
     )
+    clients = gateway.for_executor()
     executor = ActionExecutor(
         ActionRepository(db),
         AuditRepository(db),
         HandoffRepository(db),
-        gateway.for_executor(),
+        clients,
         visibility_seconds=0.2,
         backoff_base_seconds=0.05,
         approvals=ApprovalRepository(db),
         credit_policy=load_policy(care_settings.credit_policy_path),
         credit_review_all=care_settings.credit_review_all,
+        # The visit rule is judged by the clock the gateway stamps its evidence with.
+        visits=build_visit_booker(care_settings, db, clients, now=now),
         # Approvals expire and billing cycles turn by the clock the tests move; everything else
         # here uses real time.
         approval_clock=now,

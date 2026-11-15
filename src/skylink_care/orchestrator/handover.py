@@ -26,6 +26,9 @@ _WORDING = {
         "A test found a fault on your line earlier and I couldn't test it again to confirm."
     ),
     "NETWORK_STATUS_UNVERIFIED": "I still can't verify the network status for your area.",
+    "VISIT_OFFER_UNANSWERED": (
+        "Your line needs a repair and I haven't heard back from you about a technician visit."
+    ),
 }
 _DEFAULT_WORDING = "This needs a member of our team."
 # For a write whose replaying stopped without an answer: it may have landed.
@@ -104,6 +107,14 @@ def handoff_summary(state: ContactState, reason: str) -> str:
     if mapping_status and mapping_status != "RESOLVED":
         parts.append(f"Address mapping: {mapping_status}.")
     parts.extend(_credit_lines(state))
+    visit = state.get("visit") or {}
+    if visit:
+        slot = visit.get("slot") or visit.get("chosen") or {}
+        parts.append(
+            f"Technician visit: {visit.get('status')},"
+            f" slot {slot.get('slot_id') or 'none chosen'},"
+            f" appointment {visit.get('appointment_id') or 'none'}."
+        )
     if state.get("guidance_told"):
         parts.append(f"Guide steps already given: {state['guidance_told']}.")
     if state.get("line_fault_seen_at"):

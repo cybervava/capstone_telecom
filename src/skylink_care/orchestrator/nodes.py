@@ -109,6 +109,8 @@ class Nodes(NetworkNodes):
                 "intent": earlier["intent"],
                 "confidence": earlier["confidence"],
                 "summary": earlier.get("summary", intent["summary"]),
+                # The topic is the earlier one: this message named none of its own.
+                "carried_over": True,
             }
 
         identified = identity.get("status") == IdentityStatus.IDENTIFIED.value

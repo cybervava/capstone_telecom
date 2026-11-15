@@ -85,10 +85,10 @@ async def test_failing_line_on_a_clear_node_is_held_before_any_repair_is_arrange
     assert await line_tests_run(platform, intake.contact_id) == tests_before + 1
     _, verdict = await platform.replies(intake.contact_id)
     assert "fault on your line is still there" in verdict
-    assert "the line itself needs a repair" in verdict
-    (handoff,) = await platform.runtime.handoffs.list_open()
-    assert handoff.reason == "LINE_FAULT"
-    assert "Line test: FAIL" in handoff.summary
+    # Only now, with the hold over and the fault confirmed afresh, is a visit even offered,
+    # and it is offered, not booked (the journey from here is in test_visits.py).
+    assert "needs a technician at your address" in verdict
+    assert await handoff_reasons(platform) == []
     state = (await simulator.state())["tables"]
     assert (state["appointments"], state["incidents"]) == (0, 0)  # nothing booked, no node ticket
 
@@ -108,7 +108,7 @@ async def test_line_that_recovers_during_the_hold_is_not_sent_for_repair(
     hold, verdict = await platform.replies(intake.contact_id)
     assert "found a fault" in hold
     assert "passed" in verdict
-    assert "needs a repair" not in verdict
+    assert "technician" not in verdict
     assert await handoff_reasons(platform) == []  # the line is fine: steps to try, not a repair
 
 
@@ -256,7 +256,10 @@ async def test_status_blip_during_the_hold_does_not_end_it_as_unverified(
     for _ in range(settings.dispatch_hold_seconds // settings.network_recheck_seconds):
         platform.advance(settings.network_recheck_seconds)
         await platform.settle()
-    assert await handoff_reasons(platform) == ["LINE_FAULT"]
+    # The hold ended on its own time and for its own reason: the line still fails.
+    assert await handoff_reasons(platform) == []
+    *_, verdict = await platform.replies(intake.contact_id)
+    assert "needs a technician at your address" in verdict
 
 
 async def test_line_that_cannot_be_tested_again_after_the_hold_is_not_called_healthy(

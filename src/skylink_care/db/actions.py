@@ -20,6 +20,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
+from psycopg.errors import UniqueViolation
 from psycopg.types.json import Jsonb
 
 from skylink_care.db.base import Repository
@@ -47,12 +48,16 @@ INCIDENT_UPDATE = "INCIDENT_UPDATE"
 INCIDENT_LINK_COMPLAINT = "INCIDENT_LINK_COMPLAINT"
 NOTIFY_SEND = "NOTIFY_SEND"
 CREDIT_APPLY = "CREDIT_APPLY"
+VISIT_BOOK = "VISIT_BOOK"
+# The constraint that allows one visit booking in progress per service (migration 0007).
+ONE_OPEN_VISIT = "actions_one_open_visit"
 
 # Lanes: a lower lane is always served first, so a flood of low-priority writes (notifications)
 # can never delay complaint registration or incident tickets.
 REGULATORY_LANE = 1
 INCIDENT_LANE = 2
 LINK_LANE = 3
+VISIT_LANE = 3
 CREDIT_LANE = 4
 NOTIFICATION_LANE = 9
 
@@ -198,6 +203,16 @@ class ActionRepository(Repository):
         if existing is None:  # pragma: no cover - a conflicting row cannot disappear
             raise RuntimeError(f"action {new.action_key} vanished during proposal")
         return Proposal(existing, created=False, conflicting=existing.request_hash != request_hash)
+
+    async def propose_only_one_open(self, new: NewAction) -> Proposal | None:
+        """Propose an action of a kind that may be open only once per subject (a visit booking
+        per service, by constraint). None when another one is open already."""
+        try:
+            return await self.propose(new)
+        except UniqueViolation as exc:
+            if exc.diag.constraint_name != ONE_OPEN_VISIT:
+                raise
+            return None
 
     async def propose_many(self, conn: Connection, proposals: Sequence[NewAction]) -> int:
         """Record many independent proposals in the caller's transaction (notification fan-out).

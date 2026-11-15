@@ -10,8 +10,10 @@ from dataclasses import dataclass
 from datetime import timedelta
 from uuid import UUID
 
+from skylink_care.adapters.clients import NetworkReader
 from skylink_care.adapters.gateway import OssGateway
 from skylink_care.agents.diagnostics import DiagnosticsAgent, FeedViewSource, LineTestPolicy
+from skylink_care.agents.dispatch import DispatchAgent
 from skylink_care.agents.resolution import ResolutionAgent
 from skylink_care.agents.triage import TriageAgent
 from skylink_care.agents.troubleshooting import TroubleshootingAgent
@@ -31,6 +33,7 @@ from skylink_care.db.read_model import ReadModelRepository
 from skylink_care.db.reference import ReferenceRepository
 from skylink_care.db.timers import TimerRepository
 from skylink_care.domain.credit import load_policy
+from skylink_care.domain.dispatch import VisitLimits
 from skylink_care.domain.network import DecisionLimits
 from skylink_care.llm.gateway import LLMGateway, build_gateway
 from skylink_care.observability.audit import Auditor
@@ -58,6 +61,7 @@ class OrchestratorRuntime:
     diagnostics: DiagnosticsAgent
     troubleshooting: TroubleshootingAgent
     resolution: ResolutionAgent
+    dispatch: DispatchAgent
     now: Clock
 
     def auditor(self, contact_id: UUID, correlation_id: str) -> Auditor:
@@ -72,6 +76,44 @@ def decision_limits(settings: Settings) -> DecisionLimits:
     )
 
 
+def visit_limits(settings: Settings, *, line_test_max_age_seconds: int) -> VisitLimits:
+    """The limits of the visit rule. The age a line test may have differs by who asks: the
+    workflow proposes on a test made moments ago, the executor books within a longer bound."""
+    return VisitLimits(
+        hold=timedelta(seconds=settings.dispatch_hold_seconds),
+        status_max_age=timedelta(seconds=settings.status_max_age_seconds),
+        line_test_max_age=timedelta(seconds=line_test_max_age_seconds),
+    )
+
+
+def build_diagnostics(
+    settings: Settings,
+    database: Database,
+    network: NetworkReader,
+    *,
+    feed: FeedViewSource | None = None,
+    now: Clock = utc_now,
+) -> DiagnosticsAgent:
+    """The network decision, for the orchestrator and for a process that must look at a node
+    again before it acts (the executor, before it books a visit).
+
+    The feed view is what the feed consumer has learnt. With no consumer running its heartbeat
+    ages and the decision stops trusting it, which is exactly the degraded behaviour wanted.
+    """
+    return DiagnosticsAgent(
+        network,
+        ReferenceRepository(database),
+        feed or ReadModelRepository(database),
+        LineTestRepository(database),
+        decision_limits(settings),
+        LineTestPolicy(
+            cluster_window=timedelta(seconds=settings.line_test_cluster_window_seconds),
+            retest_after=timedelta(seconds=settings.line_retest_seconds),
+        ),
+        now,
+    )
+
+
 def build_orchestrator_runtime(
     settings: Settings,
     database: Database,
@@ -81,8 +123,6 @@ def build_orchestrator_runtime(
     feed: FeedViewSource | None = None,
     now: Clock = utc_now,
 ) -> OrchestratorRuntime:
-    reference = ReferenceRepository(database)
-    read_model = ReadModelRepository(database)
     return OrchestratorRuntime(
         settings=settings,
         db=database,
@@ -95,21 +135,10 @@ def build_orchestrator_runtime(
         handoffs=HandoffRepository(database),
         audit=AuditRepository(database),
         timers=TimerRepository(database),
-        read_model=read_model,
+        read_model=ReadModelRepository(database),
         triage=TriageAgent(gateway.crm_for_triage(), llm or build_gateway(settings)),
-        diagnostics=DiagnosticsAgent(
-            gateway.network_for_diagnostics(),
-            reference,
-            # What the feed consumer has learnt. With no consumer running its heartbeat ages and
-            # the decision stops trusting it, which is exactly the degraded behaviour wanted.
-            feed or read_model,
-            LineTestRepository(database),
-            decision_limits(settings),
-            LineTestPolicy(
-                cluster_window=timedelta(seconds=settings.line_test_cluster_window_seconds),
-                retest_after=timedelta(seconds=settings.line_retest_seconds),
-            ),
-            now,
+        diagnostics=build_diagnostics(
+            settings, database, gateway.network_for_diagnostics(), feed=feed, now=now
         ),
         troubleshooting=TroubleshootingAgent(GuideIndex(database, HashingEmbedder())),
         resolution=ResolutionAgent(
@@ -119,6 +148,14 @@ def build_orchestrator_runtime(
             review_all=settings.credit_review_all,
             # Credits proposed and not yet settled count towards the billing-cycle cap.
             ledger=ActionRepository(database),
+        ),
+        dispatch=DispatchAgent(
+            gateway.field_for_dispatch(),
+            visit_limits(
+                settings, line_test_max_age_seconds=settings.visit_line_test_max_age_seconds
+            ),
+            slots_offered=settings.visit_slots_offered,
+            now=now,
         ),
         now=now,
     )

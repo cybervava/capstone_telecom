@@ -24,7 +24,17 @@ from skylink_care.db.timers import TIMER_FIRED_EVENT
 from skylink_care.domain.models import Intent, NetworkState
 from skylink_care.domain.network import DecisionReason
 from skylink_care.llm.base import CONFIDENCE_SCORE
-from skylink_care.orchestrator.state import ContactState, Phase, Route, Trigger, pending_credits
+from skylink_care.orchestrator.state import (
+    VISIT_BOOKING,
+    VISIT_CHOSEN,
+    VISIT_OFFERED,
+    ContactState,
+    Phase,
+    Route,
+    Trigger,
+    pending_credits,
+    visit_status,
+)
 
 # Loop guard: supervisor passes allowed within one run before a person takes over.
 MAX_STEPS_PER_RUN = 12
@@ -35,6 +45,7 @@ MIN_INTENT_CONFIDENCE = 0.5
 CUSTOMER_EVENTS = frozenset({"contact.received", "customer.message"})
 NETWORK_STATUS_UNVERIFIED = "NETWORK_STATUS_UNVERIFIED"
 LINE_TEST_UNAVAILABLE = "LINE_TEST_UNAVAILABLE"
+VISIT_OFFER_UNANSWERED = "VISIT_OFFER_UNANSWERED"
 # With any of these in the same message, "it works now" does not settle the contact.
 _STILL_WANTS_SOMETHING = ("requests_credit", "requests_technician", "insists_device_fault")
 
@@ -72,6 +83,8 @@ def decide_route(state: ContactState, limits: RoutingLimits = DEFAULT_LIMITS) ->
         return _on_new_events(state)
     if phase == Phase.TRIAGED.value:
         return _after_triage(state)
+    if phase == Phase.RECHECK.value:
+        return Decision(Route.DIAGNOSE)
     if phase == Phase.DIAGNOSED.value:
         return _after_diagnosis(state, limits)
     return Decision(Route.HANDOFF, "UNKNOWN_PHASE")
@@ -80,20 +93,7 @@ def decide_route(state: ContactState, limits: RoutingLimits = DEFAULT_LIMITS) ->
 def _on_new_events(state: ContactState) -> Decision:
     events = state.get("events", [])
     kinds = {event.get("event_type") for event in events}
-    fired = {
-        (event.get("payload") or {}).get("key")
-        for event in events
-        if event.get("event_type") == TIMER_FIRED_EVENT
-    }
-    # A timer that has fired is spent whatever happens next, so its key is cleared on every
-    # path. A fired timer with any other key was replaced or cancelled earlier and is ignored.
-    spent: dict[str, Any] = {}
-    recheck_due = bool(state.get("recheck_key")) and state.get("recheck_key") in fired
-    close_due = bool(state.get("close_key")) and state.get("close_key") in fired
-    if recheck_due:
-        spent |= {"recheck_key": None, "network_rechecks": state.get("network_rechecks", 0) + 1}
-    if close_due:
-        spent["close_key"] = None
+    spent, recheck_due, close_due = _timers_fired(state, events)
 
     told = state.get("told_outage_id")
     waiting = bool(told or state.get("resolved_outage_id") or state.get("recheck_key"))
@@ -108,9 +108,14 @@ def _on_new_events(state: ContactState) -> Decision:
         # Told first, whatever else arrived with it: the event is consumed by this turn. A
         # customer message in the same batch is handled straight afterwards.
         return Decision(Route.CREDIT_RESULT, updates={**spent, **owed})
+    if _visit_has_ended(state, events):
+        return Decision(Route.VISIT_RESULT, updates={**spent, **owed})
     if kinds & CUSTOMER_EVENTS:
         updates = {**spent, **owed, "trigger": Trigger.CUSTOMER.value}
         return Decision(Route.TRIAGE, updates=updates)
+    if close_due and visit_status(state) in {VISIT_OFFERED, VISIT_CHOSEN}:
+        # A line that needs a repair is not closed because nobody answered the offer.
+        return Decision(Route.HANDOFF, VISIT_OFFER_UNANSWERED, updates=spent)
     if close_due:
         return Decision(Route.CLOSE, updates={**spent, "trigger": Trigger.QUIET.value})
     if not waiting:
@@ -127,12 +132,48 @@ def _on_new_events(state: ContactState) -> Decision:
     return Decision(Route.AWAIT, updates=spent)
 
 
+def _timers_fired(
+    state: ContactState, events: list[dict[str, Any]]
+) -> tuple[dict[str, Any], bool, bool]:
+    """Which of the contact's armed timers these events fire: the state that records them as
+    spent, and whether the re-check and the quiet close are due.
+
+    A timer that has fired is spent whatever happens next, so its key is cleared on every path.
+    A fired timer with any other key was replaced or cancelled earlier and is ignored.
+    """
+    fired = {
+        (event.get("payload") or {}).get("key")
+        for event in events
+        if event.get("event_type") == TIMER_FIRED_EVENT
+    }
+    spent: dict[str, Any] = {}
+    recheck_due = bool(state.get("recheck_key")) and state.get("recheck_key") in fired
+    close_due = bool(state.get("close_key")) and state.get("close_key") in fired
+    if recheck_due:
+        spent |= {"recheck_key": None, "network_rechecks": state.get("network_rechecks", 0) + 1}
+    if close_due:
+        spent["close_key"] = None
+    return spent, recheck_due, close_due
+
+
 def _credit_has_ended(state: ContactState, events: list[dict[str, Any]]) -> bool:
     """A credit this contact is waiting on was applied, skipped, rejected, expired or failed."""
     waited_for = {credit.get("action_id") for credit in pending_credits(state)}
     return any(
         event.get("event_type") == ACTION_FINISHED_EVENT
         and (event.get("payload") or {}).get("action_id") in waited_for
+        for event in events
+    )
+
+
+def _visit_has_ended(state: ContactState, events: list[dict[str, Any]]) -> bool:
+    """The visit booking this contact is waiting on was made, declined or failed."""
+    if visit_status(state) != VISIT_BOOKING:
+        return False
+    waited_for = (state.get("visit") or {}).get("action_id")
+    return any(
+        event.get("event_type") == ACTION_FINISHED_EVENT
+        and (event.get("payload") or {}).get("action_id") == waited_for
         for event in events
     )
 
@@ -152,8 +193,9 @@ def _after_triage(state: ContactState) -> Decision:
         return Decision(Route.HANDOFF, "CUSTOMER_REQUESTED_HUMAN")
     if intent.get("abusive_or_off_topic"):
         return Decision(Route.OUT_OF_SCOPE)
+    offered = visit_status(state) == VISIT_OFFERED
     if (
-        state.get("asked_if_working")
+        (state.get("asked_if_working") or offered)
         and intent.get("confirms_working")
         and not any(intent.get(flag) for flag in _STILL_WANTS_SOMETHING)
     ):
@@ -205,23 +247,7 @@ def _after_diagnosis(state: ContactState, limits: RoutingLimits) -> Decision:
         if told or resolved:
             # After an outage the customer waited on, a clear network is "service restored".
             return Decision(Route.RESTORED)
-        result = (state.get("line_test") or {}).get("result")
-        if result == LINE_FAILED and not state.get("line_hold_over"):
-            # The node looks healthy but this line fails. That is also what the first minutes of
-            # an undeclared node fault look like, so nothing is arranged until the hold is over.
-            return Decision(Route.LINE_HOLD)
-        if state.get("line_hold_until") and result not in {LINE_FAILED, LINE_PASSED}:
-            # A fault was found on this line and it cannot be tested again just now. That is
-            # not a clean bill of health: try again shortly, and give it to a person if the
-            # test stays unavailable. A customer who asks meanwhile is told where things stand.
-            if by_customer:
-                return Decision(Route.LINE_HOLD)
-            return _keep_waiting(state, limits, reason, give_up=LINE_TEST_UNAVAILABLE)
-        if result == LINE_PASSED and not state.get("guidance_told"):
-            # A clear node and a passing line point at the equipment in the home: the one case
-            # in which the customer is given steps to try, once.
-            return Decision(Route.GUIDE)
-        return Decision(Route.CLEAR_REPLY)
+        return _on_a_clear_node(state, limits, reason, by_customer=by_customer)
 
     # UNKNOWN, or anything unrecognised: never the device flow.
     if by_customer or reason == DecisionReason.MAPPING_UNRESOLVED.value:
@@ -234,6 +260,32 @@ def _after_diagnosis(state: ContactState, limits: RoutingLimits) -> Decision:
     if reason == DecisionReason.SUSPECTED_NODE_FAULT.value and not state.get("suspected_told"):
         return Decision(Route.UNKNOWN_REPLY)  # something specific to say for the first time
     return _keep_waiting(state, limits, reason)
+
+
+def _on_a_clear_node(
+    state: ContactState, limits: RoutingLimits, reason: str | None, *, by_customer: bool
+) -> Decision:
+    """The node is proven clear: what happens next depends on the customer's own line."""
+    result = (state.get("line_test") or {}).get("result")
+    if result == LINE_FAILED and not state.get("line_hold_over"):
+        # The node looks healthy but this line fails. That is also what the first minutes of
+        # an undeclared node fault look like, so nothing is arranged until the hold is over.
+        return Decision(Route.LINE_HOLD)
+    if state.get("line_hold_until") and result not in {LINE_FAILED, LINE_PASSED}:
+        # A fault was found on this line and it cannot be tested again just now. That is
+        # not a clean bill of health: try again shortly, and give it to a person if the
+        # test stays unavailable. A customer who asks meanwhile is told where things stand.
+        if by_customer:
+            return Decision(Route.LINE_HOLD)
+        return _keep_waiting(state, limits, reason, give_up=LINE_TEST_UNAVAILABLE)
+    if result == LINE_PASSED and not state.get("guidance_told"):
+        # A clear node and a passing line point at the equipment in the home: the one case
+        # in which the customer is given steps to try, once.
+        return Decision(Route.GUIDE)
+    if result == LINE_FAILED:
+        # Still failing after the hold, on a node proven clear: the case for a technician.
+        return Decision(Route.VISIT)
+    return Decision(Route.CLEAR_REPLY)
 
 
 def _keep_waiting(

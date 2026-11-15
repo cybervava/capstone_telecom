@@ -21,14 +21,14 @@ from langgraph.types import Command
 from skylink_care.adapters.gateway import OssGateway
 from skylink_care.agents import replies
 from skylink_care.config import get_oss_keys, get_settings
-from skylink_care.db.actions import ACTION_FINISHED_EVENT, CREDIT_APPLY, TERMINAL, Action
+from skylink_care.db.actions import ACTION_FINISHED_EVENT, TERMINAL, Action
 from skylink_care.db.contacts import Contact
-from skylink_care.db.database import Connection, Database
+from skylink_care.db.database import Database
 from skylink_care.db.inbox import InboxEvent
 from skylink_care.guardrails.pii import redact_for_log
 from skylink_care.observability.logging import configure_logging
-from skylink_care.orchestrator.credit_nodes import credit_outcome, outcome_note, tell_outcome
 from skylink_care.orchestrator.graph import RECURSION_LIMIT, ContactGraph, build_graph
+from skylink_care.orchestrator.late_outcomes import OWED_TO_THE_CUSTOMER, tell_late_outcome
 from skylink_care.orchestrator.routing import CUSTOMER_EVENTS
 from skylink_care.runtime import OrchestratorRuntime, build_orchestrator_runtime
 
@@ -207,17 +207,17 @@ class OrchestratorWorker:
     async def _note_follow_up(self, contact: Contact) -> None:
         """Events arrived for a contact the workflow no longer handles: tell its owner.
 
-        The outcome of a credit is owed to the customer whoever holds the contact by then, so
-        it is told from here, and a credit that was not applied reaches a person.
+        The outcome of a credit or of a visit booking is owed to the customer whoever holds the
+        contact by then, so it is told from here, and one that did not happen reaches a person.
         """
         events = await self._rt.inbox.fetch_unapplied(contact.contact_id)
         if not events:
             return
         unseen = [event for event in events if event.event_type in CUSTOMER_EVENTS]
-        credits = await self._ended_credits(contact, events)
+        ended = await self._ended_actions(contact, events)
         async with self._rt.db.transaction() as conn:
-            for action in credits:
-                await self._tell_credit_outcome(contact, action, conn)
+            for action in ended:
+                await tell_late_outcome(self._rt, contact, action, conn)
             if unseen:
                 # A customer message must never fall on the floor. After a handoff its owner is
                 # told; after a close the contact is opened again for a person.
@@ -238,10 +238,8 @@ class OrchestratorWorker:
                     )
             await self._rt.inbox.mark_applied(contact.contact_id, events[-1].seq, conn=conn)
         outputs: dict[str, Any] = {"events": [event.event_type for event in events]}
-        if credits:
-            outputs["credit_outcomes"] = {
-                action.action_key: action.status.value for action in credits
-            }
+        if ended:
+            outputs["outcomes"] = {action.action_key: action.status.value for action in ended}
         await self._rt.auditor(contact.contact_id, contact.correlation_id).record(
             actor="system:orchestrator",
             step="events_after_workflow_end",
@@ -249,8 +247,9 @@ class OrchestratorWorker:
             outputs=outputs,
         )
 
-    async def _ended_credits(self, contact: Contact, events: Sequence[InboxEvent]) -> list[Action]:
-        """The credits of this contact that these events report as ended."""
+    async def _ended_actions(self, contact: Contact, events: Sequence[InboxEvent]) -> list[Action]:
+        """The actions of this contact these events report as ended, of the kinds whose outcome
+        the customer is owed (a credit, a visit booking)."""
         ended = []
         for event in events:
             action_id = (event.payload or {}).get("action_id")
@@ -259,31 +258,12 @@ class OrchestratorWorker:
             action = await self._rt.actions.get(UUID(str(action_id)))
             if (
                 action is not None
-                and action.action_type == CREDIT_APPLY
+                and action.action_type in OWED_TO_THE_CUSTOMER
                 and action.contact_id == contact.contact_id
                 and action.status in TERMINAL
             ):
                 ended.append(action)
         return ended
-
-    async def _tell_credit_outcome(
-        self, contact: Contact, action: Action, conn: Connection
-    ) -> None:
-        outcome = credit_outcome(contact.complaint_ref, action)
-        await tell_outcome(self._rt.messages, contact, str(action.action_id), outcome, conn=conn)
-        if outcome.follow_up is None:
-            return
-        await self._rt.handoffs.open(
-            contact.contact_id,
-            reason=outcome.follow_up,
-            summary=outcome_note(outcome.follow_up, action),
-            priority=3,
-            conn=conn,
-        )
-        if contact.status != "HANDOFF":
-            await self._rt.contacts.update(
-                contact.contact_id, conn=conn, status="HANDOFF", closed_at=None
-            )
 
     async def _mark_everything_applied(self, contact_id: UUID) -> None:
         events = await self._rt.inbox.fetch_unapplied(contact_id)

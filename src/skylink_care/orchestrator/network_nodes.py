@@ -27,13 +27,22 @@ from skylink_care.db.contacts import Contact
 from skylink_care.db.episodes import Episode
 from skylink_care.db.line_tests import FAIL as LINE_FAILED
 from skylink_care.db.line_tests import PASS as LINE_PASSED
+from skylink_care.db.line_tests import LineTest
 from skylink_care.db.timers import CLOSE_QUIET
 from skylink_care.domain.models import NetworkState
 from skylink_care.domain.network import DecisionReason
 from skylink_care.orchestrator.credit_nodes import CreditNodes
 from skylink_care.orchestrator.evidence import decision_to_state, outage_from_state, parse_time
 from skylink_care.orchestrator.handover import handoff_summary
-from skylink_care.orchestrator.state import ContactState, Phase, Trigger
+from skylink_care.orchestrator.state import (
+    VISIT_CHOSEN,
+    VISIT_OFFERED,
+    ContactState,
+    Phase,
+    Trigger,
+    visit_status,
+)
+from skylink_care.orchestrator.visit_nodes import VisitNodes
 
 # How much of what the customer wrote is used to find the guide section.
 MAX_PROBLEM_CHARS = 2000
@@ -55,7 +64,26 @@ _TOLD_THE_NEWS: dict[str, Any] = {
 }
 
 
-class NetworkNodes(CreditNodes):
+def _line_fault_state(
+    state: ContactState, network: NetworkState, line: LineTest | None, *, hold_over: bool
+) -> dict[str, Any]:
+    """What the contact keeps about its line fault after a diagnosis.
+
+    A line that passes has no fault to hold for; the next failure starts afresh. And a visit
+    that was on offer, or chosen, for a fault the evidence no longer shows is withdrawn.
+    """
+    kept: dict[str, Any] = (
+        _NO_LINE_HOLD if line and line.result == LINE_PASSED else {"line_hold_over": hold_over}
+    )
+    still_a_line_fault = (
+        network is NetworkState.CONFIRMED_CLEAR and line is not None and line.result == LINE_FAILED
+    )
+    if not still_a_line_fault and visit_status(state) in {VISIT_OFFERED, VISIT_CHOSEN}:
+        return {**kept, "visit": None}
+    return kept
+
+
+class NetworkNodes(CreditNodes, VisitNodes):
     async def diagnose(self, state: ContactState) -> dict[str, Any]:
         contact = await self._contact(state)
         service = state.get("service") or {}
@@ -73,10 +101,7 @@ class NetworkNodes(CreditNodes):
             fresh_line_test=hold_over,
         )
         decision, line = diagnosis.decision, diagnosis.line_test
-        # A line that passes has no fault to hold for; the next failure starts afresh.
-        hold = (
-            _NO_LINE_HOLD if line and line.result == LINE_PASSED else {"line_hold_over": hold_over}
-        )
+        hold = _line_fault_state(state, decision.state, line, hold_over=hold_over)
         await self._rt.contacts.update(
             contact.contact_id,
             node_id=decision.node_id,

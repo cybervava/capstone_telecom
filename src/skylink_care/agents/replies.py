@@ -222,7 +222,8 @@ def line_fault_hold(
         f"{AI_DISCLOSURE} I've checked the network: no outage has been reported for your area"
         f" as of {clock(evidence_at)}. A remote test of your line at {clock(tested_at)} found a"
         " fault. Before a repair is arranged I'm checking whether it is part of a wider network"
-        f" problem, which can take up to {hold_minutes} minutes. I'll update you here; you don't"
+        f" problem, which can take up to {hold_minutes} minute{'' if hold_minutes == 1 else 's'}."
+        " I'll update you here; you don't"
         f" need to do anything meanwhile. Your complaint reference is {complaint_ref}.",
         "line_fault_hold.v1",
         {

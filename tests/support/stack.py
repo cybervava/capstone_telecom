@@ -131,6 +131,28 @@ class Simulator:
             "/admin/v1/line-faults", {"service_id": service_id, "fault": fault, "result": result}
         )
 
+    async def fill_slot(self, slot_id: str, *, not_for: str) -> None:
+        """Book a visit slot to its capacity of three, for customers other than ``not_for``."""
+        people = await self.find_customers(4, service_type="broadband", status="active")
+        others = [person for person in people if person["service_id"] != not_for][:3]
+        for person in others:
+            await self.book_slot(slot_id, person)
+
+    async def book_slot(self, slot_id: str, customer: dict[str, Any]) -> dict[str, Any]:
+        """Book a visit directly in Field Service, as another system or a person would."""
+        response = await self._client.post(
+            "/field/v1/appointments",
+            json={
+                "customer_id": customer["customer_id"],
+                "service_id": customer["service_id"],
+                "slot_id": slot_id,
+                "reason": "test: booked outside the care platform",
+            },
+            headers={"Idempotency-Key": f"direct:{slot_id}:{customer['service_id']}"},
+        )
+        response.raise_for_status()
+        return dict(response.json())
+
     async def fault(self, target: str, mode: str, **options: Any) -> dict[str, Any]:
         return await self.post("/admin/v1/chaos", {"target": target, "mode": mode, **options})
 

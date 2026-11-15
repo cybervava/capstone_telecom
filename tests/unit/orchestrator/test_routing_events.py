@@ -417,7 +417,7 @@ def clear(**state: Any) -> ContactState:
     ("state", "route"),
     [
         (clear(line_test={"result": "FAIL"}), Route.LINE_HOLD),
-        (clear(line_test={"result": "FAIL"}, line_hold_over=True), Route.CLEAR_REPLY),
+        (clear(line_test={"result": "FAIL"}, line_hold_over=True), Route.VISIT),
         (clear(line_test={"result": "PASS"}), Route.GUIDE),
         (clear(line_test={"result": "PASS"}, guidance_told="guide-x §wifi v1"), Route.CLEAR_REPLY),
         (clear(line_test={"result": "INCONCLUSIVE"}), Route.CLEAR_REPLY),
