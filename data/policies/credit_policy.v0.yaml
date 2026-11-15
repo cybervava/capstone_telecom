@@ -1,0 +1,52 @@
+# =====================================================================================
+# SYNTHETIC PLACEHOLDER — NOT SkyLink's real policy.
+#
+# The brief says a service credit policy is supplied. It has not been received, so this
+# file exists only to let the credit engine be built and tested. Every number below is
+# an assumption. When the real policy arrives: copy this file to a new version, change
+# the values, update data/knowledge/policies/service_credit_policy.md to match, and
+# regenerate the oracle table. No code change is needed for a change of numbers.
+# =====================================================================================
+policy_id: skylink-service-credit
+version: v0-placeholder
+status: placeholder
+effective_from: 2026-04-01
+currency: INR
+
+# Amounts are rounded once, at the end, to the paisa.
+rounding:
+  quantum: "0.01"
+  mode: ROUND_HALF_UP
+
+approval:
+  # Brief: "credits above INR 500 need supervisor approval". Exactly 500.00 does not.
+  supervisor_above_inr: "500.00"
+
+# hourly rate = monthly fee / hours_in_month
+hours_in_month: 720
+# Outage duration is rounded UP to whole units of this many minutes before pricing.
+billable_unit_minutes: 60
+
+# Planned maintenance that was notified in advance earns no credit.
+exclude_planned_work: true
+
+services:
+  broadband:
+    # Shorter outages earn nothing.
+    min_outage_minutes: 240
+    # Multiplier chosen by total outage minutes; `from_minutes` is inclusive.
+    tiers:
+      - {from_minutes: 240, multiplier: "1.0"}
+      - {from_minutes: 1440, multiplier: "1.5"}
+      - {from_minutes: 4320, multiplier: "2.0"}
+    # An eligible outage never earns less than this (unless the cycle cap is lower).
+    minimum_credit_inr: "50.00"
+    # Outage credits in one billing cycle never exceed this share of the monthly fee.
+    cap_fraction_of_monthly_fee: "1.0"
+  mobile:
+    min_outage_minutes: 1440
+    tiers:
+      - {from_minutes: 1440, multiplier: "1.0"}
+      - {from_minutes: 4320, multiplier: "1.5"}
+    minimum_credit_inr: "25.00"
+    cap_fraction_of_monthly_fee: "1.0"

@@ -1,0 +1,110 @@
+"""Runtime settings, read from the environment (and from ``.env`` in development).
+
+Secrets are ``SecretStr`` so they cannot leak through ``repr`` or logs. Each process validates at
+start-up that the secrets *it* needs are present, and reads no others.
+"""
+
+from __future__ import annotations
+
+from functools import lru_cache
+from pathlib import Path
+from typing import Literal
+
+from psycopg.conninfo import make_conninfo
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+AgentIdentity = Literal[
+    "triage", "diagnostics", "resolution", "dispatch", "notification", "ingest", "executor"
+]
+
+
+class MissingSecretError(RuntimeError):
+    """A secret this process needs is absent. Raised at start-up, never mid-request."""
+
+
+class Settings(BaseSettings):
+    # Environment only. Locally, `uv run --env-file …` supplies it; nothing is read implicitly
+    # from disk, so a process holds exactly the settings it was started with.
+    model_config = SettingsConfigDict(env_prefix="CARE_", extra="ignore", frozen=True)
+
+    # Fails closed: development conveniences exist only when this is set to "dev" on purpose.
+    env: Literal["dev", "test", "prod"] = "prod"
+
+    db_host: str = "127.0.0.1"
+    db_port: int = 55432
+    db_name: str = "care"
+    db_user: str = "care"
+    db_password: SecretStr
+    db_pool_max: int = Field(default=10, ge=1, le=50)
+
+    # Only the API process signs and checks tokens; workers run without it.
+    jwt_secret: SecretStr | None = None
+    api_host: str = "127.0.0.1"
+    api_port: int = 8080
+
+    oss_base_url: str = "http://127.0.0.1:8081"
+
+    credit_policy_path: Path = Path("data/policies/credit_policy.v0.yaml")
+    credit_review_all: bool = True
+
+    status_max_age_seconds: int = Field(default=60, gt=0)
+    feed_max_age_seconds: int = Field(default=90, gt=0)
+    line_test_cluster_threshold: int = Field(default=3, ge=2)
+    # Dispatch waits this long after the first failed line test: the NOC detection window.
+    dispatch_hold_seconds: int = Field(default=600, ge=0)
+
+    llm_provider: Literal["offline", "anthropic"] = "offline"
+    llm_model: str = "claude-opus-5-5"
+
+    def require_jwt_secret(self) -> str:
+        if self.jwt_secret is None or not self.jwt_secret.get_secret_value():
+            raise MissingSecretError("CARE_JWT_SECRET is not set")
+        return self.jwt_secret.get_secret_value()
+
+    def database_conninfo(self, *, dbname: str | None = None) -> str:
+        """libpq connection string; values are quoted, so any password character is safe."""
+        return make_conninfo(
+            host=self.db_host,
+            port=self.db_port,
+            dbname=dbname or self.db_name,
+            user=self.db_user,
+            password=self.db_password.get_secret_value(),
+            application_name="skylink-care",
+        )
+
+
+class OssKeys(BaseSettings):
+    """API keys for the OSS/BSS gateway, one per agent identity.
+
+    Every field is optional so that a process only needs the keys of the identities it runs.
+    """
+
+    # Read from the process environment only, never from a file: which keys a process holds is
+    # decided by whoever starts it, and that is what keeps the write key out of the orchestrator.
+    model_config = SettingsConfigDict(env_prefix="OSS_KEY_", extra="ignore", frozen=True)
+
+    triage: SecretStr | None = None
+    diagnostics: SecretStr | None = None
+    resolution: SecretStr | None = None
+    dispatch: SecretStr | None = None
+    notification: SecretStr | None = None
+    ingest: SecretStr | None = None
+    executor: SecretStr | None = None
+
+    def require(self, identity: AgentIdentity) -> str:
+        """Return the key for an identity, or fail fast with the variable name to set."""
+        secret: SecretStr | None = getattr(self, identity)
+        if secret is None or not secret.get_secret_value():
+            raise MissingSecretError(f"OSS_KEY_{identity.upper()} is not set")
+        return secret.get_secret_value()
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    return Settings()
+
+
+@lru_cache(maxsize=1)
+def get_oss_keys() -> OssKeys:
+    return OssKeys()
