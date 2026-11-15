@@ -7,7 +7,7 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 ## Status
 
-Milestones M0 (foundations) and M1 (reference-first outage path) are built and tested. M2 is in progress: seven of its nine slices are built (the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey); the supervisor console, the evaluations and everything after M2 are not.
+Milestones M0 (foundations) and M1 (reference-first outage path) are built and tested. M2 is in progress: eight of its nine slices are built (the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk); the evaluations and everything after M2 are not.
 
 **Works today**
 
@@ -25,16 +25,17 @@ Milestones M0 (foundations) and M1 (reference-first outage path) are built and t
 - **A customer who disputes the outage.** Evidence decides. While an outage is active on the customer's node, nothing is arranged for their own equipment, however sure they are that the router is at fault: they are told the outage with its evidence, why a restart, a replacement or a technician would not help while it lasts, and that their line is tested the moment it is over. If they say it again, a person takes the contact, with the evidence.
 - **Mobile, as a thin path.** A tower outage is told, ticketed, restored and credited (by the mobile rule of the policy) like a broadband outage, in words that never mention a router. There is no remote test of a mobile connection here and no guide for a phone: on a working tower the customer is told what the network shows and a person takes over.
 - **Degraded mode.** When nothing can be verified: reference still issued, no all-clear, no device steps; the status is re-checked on a timer and a person takes over if it stays unverified.
-- Per-contact audit trail, API with roles, per-caller rate limits, demo console.
+- **Staff desk** (`/staff.html`). What the assistant could not or may not settle on its own: the credits that wait for a decision, each shown exactly as it was frozen, with its working, and approved or rejected there; and the queue of contacts passed to a person, each with the handover summary, the conversation and the audit trail, closed with a note once dealt with. Every decision carries the name of who took it.
+- Per-contact audit trail, API with roles, per-caller rate limits, customer desk.
 
 **Not built yet**
 
-- A screen for approvals (the API exists: `GET /v1/approvals`, `POST /v1/approvals/{id}/decision`). Credits for affected customers who did not contact us.
+- Credits for affected customers who did not contact us. A reply to the customer from the staff desk (a person answers by their own channel). Real staff sign-in.
 - Changing or cancelling a booked visit (a person does that); a visit for a line that passes its test.
 - Anything for mobile beyond the outage path (no tower inference, no device guidance, no SIM or plan checks).
 - A learned embedding model for retrieval (the index uses a deterministic hashing embedder; see "Guide retrieval").
 - Surge test, circuit breaker, dashboards and alerts, evaluation reports.
-- Full console (supervisor queue, simulator controls).
+- Simulator controls in the console (outages and faults are started with the admin API or the smoke run).
 
 ## Two things that are stand-ins
 
@@ -48,7 +49,7 @@ The brief says SkyLink supplies the datasets, the credit policy, the router guid
 Requirements: Python 3.12, [`uv`](https://docs.astral.sh/uv/), Docker with Compose.
 
 ```bash
-make init        # writes .env with freshly generated local secrets (never overwrites)
+make init        # writes .env with freshly generated local secrets; on an existing .env it only adds a secret that is new
 make install     # installs the locked dependencies
 make up          # PostgreSQL with pgvector, on 127.0.0.1:55432
 make data        # synthetic data pack, 40,000 customers (CUSTOMERS=400000 for full scale)
@@ -59,7 +60,7 @@ make demo        # instead of `make dev`: the wait before a visit is offered is 
 
 `make smoke` runs seven journeys against `make dev`. Against `make demo` it runs an eighth: the failing line is still failing after the hold, a visit is offered, the customer picks the second slot and the executor books it.
 
-Open <http://127.0.0.1:8080/>. Leave the customer ID empty to arrive as an unidentified guest, or enter one; `make smoke` prints an outage being started, and the simulator can find customers for you:
+Open <http://127.0.0.1:8080/> for the customer desk and <http://127.0.0.1:8080/staff.html> for the staff desk. The staff desk asks for a role, a name and the staff key: `grep CARE_DEV_STAFF_KEY .env` shows it. On the customer desk, leave the customer ID empty to arrive as an unidentified guest, or enter one; `make smoke` prints an outage being started, and the simulator can find customers for you:
 
 ```bash
 set -a; . ./.env; set +a
@@ -111,7 +112,8 @@ All settings come from the environment. `.env.example` lists every variable; `ma
 
 | Variable | Used by | Meaning |
 |---|---|---|
-| `CARE_ENV` | all | `dev` enables the local token endpoint used by the console. Anything else leaves it off; unset means `prod`. In `dev` that endpoint hands out a token for any role, including the two that approve credits, to whoever can reach the API: it is for a machine nobody else can reach |
+| `CARE_DEV_STAFF_KEY` | API | Local demos only. What a person types into the staff desk to sign in as an agent or a supervisor; `make init` generates it. Unset or shorter than 16 characters: no staff token can be had from the dev token endpoint |
+| `CARE_ENV` | all | `dev` enables the local token endpoint used by the console. Anything else leaves it off; unset means `prod`. In `dev` that endpoint gives a customer or guest token to whoever asks, and a staff token only to someone who knows `CARE_DEV_STAFF_KEY`. It is a stand-in for sign-in on a machine nobody else can reach, not sign-in |
 | `CARE_DB_HOST`, `CARE_DB_PORT`, `CARE_DB_NAME`, `CARE_DB_USER`, `CARE_DB_PASSWORD` | all | PostgreSQL connection |
 | `CARE_JWT_SECRET` | API only | Signs and verifies API tokens (at least 32 characters) |
 | `CARE_API_HOST`, `CARE_API_PORT` | API | Listen address |

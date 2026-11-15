@@ -99,6 +99,8 @@ services:
       <<: *care-db
       # The API signs and checks tokens. It holds no gateway key of any kind.
       CARE_JWT_SECRET: ${CARE_JWT_SECRET:?run make init}
+      # Staff sign-in through the dev token endpoint needs this; empty means there is none.
+      CARE_DEV_STAFF_KEY: ${CARE_DEV_STAFF_KEY:-}
       CARE_API_HOST: 0.0.0.0
       CARE_API_PORT: "8080"
     ports:

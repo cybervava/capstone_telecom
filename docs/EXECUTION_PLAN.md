@@ -217,7 +217,7 @@ Each task lists its acceptance check. Tests are written first for `domain/` and 
 
 ### M2 Six capabilities (summary)
 
-Built in slices, each committed when its tests and a live run pass: **A** event feed, read model, timers · **B** proactive notifications and restoration · **C** line tests, mapping repair, line-test clustering · **D** guide index and cited troubleshooting · **E** credits, approvals, billing write · **F** dispatch · **G** conflict path and mobile journey · H supervisor console · I evaluations. A to G are done (see the progress log); H and I remain.
+Built in slices, each committed when its tests and a live run pass: **A** event feed, read model, timers · **B** proactive notifications and restoration · **C** line tests, mapping repair, line-test clustering · **D** guide index and cited troubleshooting · **E** credits, approvals, billing write · **F** dispatch · **G** conflict path and mobile journey · **H** supervisor console · I evaluations. A to H are done (see the progress log); I (the evaluations) remains.
 
 Event consumer with dedupe, version checks, applied-sequence tracking and heartbeat; alarm state per node; notification fan-out to resolved mappings only, consent checked at send time, one message per customer, outage and template; line-test tool and mapping repair; suspected-fault hold (critical alarm, or several failed line tests on one node) that opens an episode without an outage id; retroactive confirmation when the outage is declared; index build and filtered retrieval; step-by-step guided troubleshooting with citations; credit proposals only after restoration, priced from frozen inputs; approval records carrying the hash the approver saw; billing write under a per-customer lock; dispatch rules (failed re-test, fresh `CONFIRMED_CLEAR` after the hold-down, customer consent, one open visit per service); conflict path for "the network says outage, the customer says device"; handoff queue with summary; one mobile outage journey.
 
@@ -308,13 +308,14 @@ Items 1, 2, 8 and 9 (deck, problem statement, ROI workbook, contribution matrix)
 | 15 Nov | **M2 slice E: service credits, approvals, billing write** | **Done.** At restoration a credit is worked out by the policy engine from Billing's record and the NOC's outage times, proposed with its amount frozen, and approved through the API by an agent or, above INR 500, a supervisor (gate input 3: one more hour of outage moves the credit past the limit and the approval to a supervisor). The executor applies it under a per-customer lock, after checking again, on what is true then: the request against its hash, the approval the amount requires, the account for an existing credit, and the billing-cycle cap. The customer is told the outcome of every credit; the contact stays open until then |
 | 15 Nov | **M2 slice F: technician visits** | **Done.** A line that still fails after the hold on a node proven clear is offered a visit with the earliest free slots; the customer's reply is read by rules, narrowly; the chosen slot is proposed as an action tied to the message that chose it, and the executor books it after applying the same rule again to evidence it reads itself (node state, the line's last test, Field Service's bookings). An outage declared after the offer, or between the choice and the booking, means no visit. One booking in progress per service is a database constraint |
 | 15 Nov | **M2 slice G: disputed outage, mobile journey** | **Done.** A customer who says the fault is their own equipment, or asks for a technician, during an outage is told the outage with its evidence and why nothing is arranged for their equipment while it lasts; said again for the same outage, a person takes it. Mobile is a thin path (A9): tower outage told, ticketed, restored and credited by the mobile rule, with no router wording, no line test and no visit; on a working tower a person takes over |
+| 15 Nov | **M2 slice H: staff desk** | **Done.** A second page of the console for an agent or a supervisor: the credits that wait for a decision (the frozen request, its working, approve or reject with a note) and the queue of contacts passed to a person (handover summary, conversation, audit trail, closed with a note; the closure is audited with who closed it). Staff sign-in through the dev token endpoint now needs a staff key and takes a name, so a decision is attributable and the endpoint no longer hands an approver's token to whoever can reach the port |
 
 ### Evidence at this point
 
-- `make test-all`: 1,774 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 95% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
+- `make test-all`: 1,807 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 95% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
 - `make smoke` passes against the host processes at 400,000-customer scale (eight journeys with `make demo`, which shortens the hold before a visit to 20 seconds; seven with `make dev`): declared outage → sourced reply, one incident, complaint linked, and 168 neighbours on the node notified once each (none without consent, checked in the gateway's own store); Network API down → the feed still proves the outage; same failure for a customer on another node → no all-clear and no device steps; outage resolved → the waiting customer is told, confirms, the contact closes and the node's incident is resolved; a failing line on a healthy node → held, nothing booked; a passing line on a healthy node → steps from the guide for the customer's own router, with the source; a five-hour outage → credit proposed, approved by an agent through the API, applied to the account once; the held line still failing after the hold → a visit offered with three slots, the customer chooses the second, one appointment booked for exactly that slot.
 - `make smoke` also passes against the container stack (40,000 customers), where the feed consumer runs as its own service. Its first run there failed, usefully: re-seeding the gateway restarts its event sequence and empties its tickets, while the care database still held the cursor and ticket references of the previous gateway. The consumer refused the feed (sequence running backwards) exactly as designed. `make seed` and the container set-up now clear the care platform's runtime state in the same step (`care-admin reset-runtime`, refused unless `CARE_ENV` is `dev` or `test`).
-- The console was checked in a browser at 1440 px and 375 px (M1; unchanged since).
+- Both desks were checked in a browser at 1440 px and 375 px after slice H: sign-in as a supervisor, a supervisor-level credit approved, a case opened and marked done, the audit trail opened from the customer desk with the staff key; no console errors, no horizontal overflow.
 
 ### What the code reviews changed
 
@@ -401,7 +402,7 @@ One independent security review of the money path, before the commit. It found n
 
 Found by the new tests while the fixes were written: a credit proposed by another conversation of the same customer differs from this one's request in its complaint reference alone, which made every second conversation about an outage look like a disputed amount. Amounts are now compared as amounts.
 
-Not fixed, and listed below: the token endpoint of `dev` mode.
+Not fixed then, and fixed with the staff desk (slice H): the token endpoint of `dev` mode gave a staff token to anyone.
 
 ### What the review of M2 slice F changed
 
@@ -431,6 +432,17 @@ One independent review, before the commit. It confirmed that an old dispute cann
 
 Found by an existing test while the slice was written: with no outage id on record, "the outage this customer disputed" and "the current outage" were both nothing, and therefore equal, so a first complaint was handed over as a repeated dispute. A dispute now counts only against an outage that has an id.
 
+### What the review of M2 slice H changed
+
+One independent security review, before the commit. It found the key check sound (unset, empty or short keys admit nobody; compared in constant time; never logged or echoed), the name unable to impersonate a role, the closure atomic with its audit entry, and no way for a customer's text to reach the staff desk as markup. Fixed and covered by tests:
+
+| Finding | Fix |
+|---|---|
+| The console's forms had no method. If a page's script failed to load, pressing Enter would have submitted the form by GET and put what was typed into it, the staff key included, into the address bar and the access log | Every form of the console posts; a test reads both pages and checks each form. Pages and scripts are served `no-cache`, so a new page never runs with a script the browser kept from before |
+| The `channel` role, which is believed about who is calling, could still be had from the dev token endpoint without the key | Only a customer or a guest token is given without it |
+| `make init` did not recognise `export KEY=value` as setting `KEY`, and would have added a second, generated value that most loaders prefer | Such a line counts as set |
+| The note a person writes when closing a case went into the audit trail as written | It is kept as written with the case and masked in the audit trail, like everything else recorded there |
+
 ### Known gaps carried into M2 and M3
 
 - After a handoff the workflow no longer speaks. A customer who disputed an outage twice was first told "I'll tell you here when it is resolved"; from the handoff on, that is for the person who holds the contact.
@@ -440,7 +452,8 @@ Found by an existing test while the slice was written: with no outage id on reco
 - The executor takes the customer's consent and the service's state from the proposal; what it reads again is the network, the line and the bookings.
 - Slot times are shown in Indian time whatever the customer's device says; the replies are English only, and so is the reading of the answer (a reply in another script is asked again, then goes to a person).
 
-- In `dev` mode the token endpoint mints any role without authentication, including the two that approve credits, and every token of a role has the same subject (`demo-agent`), so "who approved" is not a person. It does not exist outside `dev`, and the stack binds to 127.0.0.1. Staff sign-in belongs with the supervisor console (slice H) and M4.
+- Staff sign-in is a stand-in. In `dev` mode the token endpoint gives a staff token to anyone who knows the one staff key in `.env`, under whatever name they type; it does not exist outside `dev`. Real sign-in belongs to M4. The staff desk has no automated browser test: it was checked by hand at two widths.
+- From the staff desk a person can decide a credit and close a case, not answer the customer: that happens on their own channel.
 - A credit is offered only to a customer who contacted us about the outage. Whether every affected customer is credited is part of decision D3.
 - An outage the NOC re-opens and resolves again is not credited for the added time: the first credit stands and a person is asked to review the difference. Reversing a credit is not built.
 - The executor reads the fee and cycle day for the cap from what was recorded with the proposal, in its own database. Separate database roles (M4) are what would stop another process from changing them.

@@ -57,7 +57,16 @@ def token(api: httpx.Client, role: str, customer_id: str | None = None) -> dict[
     body: dict[str, Any] = {"role": role}
     if customer_id:
         body["customer_id"] = customer_id
-    value = api.post("/v1/dev/token", json=body).json()["data"]["token"]
+    else:
+        # Staff sign in with the local staff key and a name, as a person does at the desk.
+        body |= {"staff_key": os.environ.get("CARE_DEV_STAFF_KEY", ""), "name": "smoke.run"}
+    response = api.post("/v1/dev/token", json=body)
+    if response.status_code == httpx.codes.FORBIDDEN:
+        raise SystemExit(
+            "staff sign-in was refused: CARE_DEV_STAFF_KEY is not set for this run or for the"
+            " API. Run `make init` (it adds the key to .env) and restart the stack."
+        )
+    value = response.json()["data"]["token"]
     return {"Authorization": f"Bearer {value}"}
 
 
@@ -428,7 +437,7 @@ def credit_is_approved_and_applied(
     check(
         "the credit carries the approved amount, approver and outage",
         (newest["amount_inr"], newest["approved_by"], newest["outage_id"])
-        == (approval["request"]["amount_inr"], "demo-agent", outage_id),
+        == (approval["request"]["amount_inr"], "agent:smoke.run", outage_id),
         f"INR {newest['amount_inr']} approved by {newest['approved_by']}",
     )
 
