@@ -1,0 +1,153 @@
+name: skylink-care
+
+# Local runtime. Values come from .env (create it with `make init`); nothing secret lives in this
+# file. Each process is given only the variables it needs: the API holds no gateway key at all,
+# the orchestrator holds the read-only agent keys, and only the executor holds the write key.
+#
+#   make up          PostgreSQL only (processes run on the host with scripts/dev_stack.sh)
+#   make stack-up    everything in containers, including data generation and seeding
+
+x-care-image: &care-image
+  build: .
+  image: skylink-care:local
+  restart: unless-stopped
+
+x-care-db: &care-db
+  CARE_ENV: ${CARE_ENV:-dev}
+  CARE_DB_HOST: postgres
+  CARE_DB_PORT: "5432"
+  CARE_DB_NAME: ${CARE_DB_NAME:?run make init}
+  CARE_DB_USER: ${CARE_DB_USER:?run make init}
+  CARE_DB_PASSWORD: ${CARE_DB_PASSWORD:?run make init}
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: ${CARE_DB_NAME:?run make init}
+      POSTGRES_USER: ${CARE_DB_USER:?run make init}
+      POSTGRES_PASSWORD: ${CARE_DB_PASSWORD:?run make init}
+    ports:
+      # Bound to loopback only; 5432 is often taken on developer machines.
+      - "127.0.0.1:${CARE_DB_PORT:-55432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # One-shot: generate the data pack if absent, migrate, seed the gateway, load reference data.
+  setup:
+    <<: *care-image
+    profiles: ["stack"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *care-db
+      CUSTOMERS: ${CUSTOMERS:-40000}
+    volumes:
+      - datapack:/data/generated
+      - mockstate:/state
+    command: ["sh", "/app/setup.sh"]
+    configs:
+      - source: setup_script
+        target: /app/setup.sh
+
+  mock-oss:
+    <<: *care-image
+    profiles: ["stack"]
+    command: ["mock-oss", "serve"]
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    environment:
+      MOCK_OSS_HOST: 0.0.0.0
+      MOCK_OSS_PORT: "8081"
+      MOCK_OSS_DB: /state/mock_oss.sqlite
+      MOCK_OSS_LINE_TEST_DELAY_MS: ${MOCK_OSS_LINE_TEST_DELAY_MS:-300-1500}
+      OSS_KEY_TRIAGE: ${OSS_KEY_TRIAGE:?run make init}
+      OSS_KEY_DIAGNOSTICS: ${OSS_KEY_DIAGNOSTICS:?run make init}
+      OSS_KEY_RESOLUTION: ${OSS_KEY_RESOLUTION:?run make init}
+      OSS_KEY_DISPATCH: ${OSS_KEY_DISPATCH:?run make init}
+      OSS_KEY_NOTIFICATION: ${OSS_KEY_NOTIFICATION:?run make init}
+      OSS_KEY_INGEST: ${OSS_KEY_INGEST:?run make init}
+      OSS_KEY_EXECUTOR: ${OSS_KEY_EXECUTOR:?run make init}
+      OSS_KEY_ADMIN: ${OSS_KEY_ADMIN:?run make init}
+    volumes:
+      - mockstate:/state
+    ports:
+      - "127.0.0.1:${MOCK_OSS_PORT:-8081}:8081"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    <<: *care-image
+    profiles: ["stack"]
+    command: ["care-api"]
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    environment:
+      <<: *care-db
+      # The API signs and checks tokens. It holds no gateway key of any kind.
+      CARE_JWT_SECRET: ${CARE_JWT_SECRET:?run make init}
+      CARE_API_HOST: 0.0.0.0
+      CARE_API_PORT: "8080"
+    ports:
+      - "127.0.0.1:${CARE_API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  worker:
+    <<: *care-image
+    profiles: ["stack"]
+    command: ["care-worker"]
+    depends_on:
+      mock-oss:
+        condition: service_healthy
+    environment:
+      <<: *care-db
+      CARE_OSS_BASE_URL: http://mock-oss:8081
+      CARE_LLM_PROVIDER: ${CARE_LLM_PROVIDER:-offline}
+      CARE_LLM_MODEL: ${CARE_LLM_MODEL:-claude-opus-5-5}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CARE_STATUS_MAX_AGE_SECONDS: ${CARE_STATUS_MAX_AGE_SECONDS:-60}
+      CARE_FEED_MAX_AGE_SECONDS: ${CARE_FEED_MAX_AGE_SECONDS:-90}
+      # Read-only agent identities. The write key is deliberately absent.
+      OSS_KEY_TRIAGE: ${OSS_KEY_TRIAGE:?run make init}
+      OSS_KEY_DIAGNOSTICS: ${OSS_KEY_DIAGNOSTICS:?run make init}
+      OSS_KEY_RESOLUTION: ${OSS_KEY_RESOLUTION:?run make init}
+      OSS_KEY_DISPATCH: ${OSS_KEY_DISPATCH:?run make init}
+      OSS_KEY_NOTIFICATION: ${OSS_KEY_NOTIFICATION:?run make init}
+
+  executor:
+    <<: *care-image
+    profiles: ["stack"]
+    command: ["care-executor"]
+    depends_on:
+      mock-oss:
+        condition: service_healthy
+    environment:
+      <<: *care-db
+      CARE_OSS_BASE_URL: http://mock-oss:8081
+      # The only process that can write to the enterprise systems.
+      OSS_KEY_EXECUTOR: ${OSS_KEY_EXECUTOR:?run make init}
+
+configs:
+  setup_script:
+    file: ./scripts/container_setup.sh
+
+volumes:
+  pgdata:
+  datapack:
+  mockstate:
