@@ -10,13 +10,13 @@
 <body>
   <header class="masthead">
     <p class="masthead__mark">SkyLink <span>Care Desk</span></p>
-    <p class="masthead__note">Demonstration build · synthetic data · you are talking to an automated assistant</p>
+    <p class="masthead__note">Demonstration build · synthetic data · you are talking to an automated assistant · <a href="staff.html">staff desk</a></p>
   </header>
 
   <main class="desk">
     <section class="panel panel--who" aria-labelledby="who-heading">
       <h2 id="who-heading">Who is contacting</h2>
-      <form id="persona-form" class="stack">
+      <form method="post" id="persona-form" class="stack">
         <label for="customer-id">Customer ID <span class="hint">leave empty to arrive as an unidentified guest</span></label>
         <div class="row">
           <input id="customer-id" name="customer-id" inputmode="text" autocomplete="off"
@@ -40,7 +40,7 @@
     <section class="panel panel--talk" aria-labelledby="talk-heading">
       <h2 id="talk-heading">Conversation</h2>
       <ol id="thread" class="thread" aria-live="polite"></ol>
-      <form id="message-form" class="composer">
+      <form method="post" id="message-form" class="composer">
         <label for="message" class="visually-hidden">Your message</label>
         <textarea id="message" rows="2" maxlength="4000" required disabled
                   placeholder="Start a session, then describe the problem…"></textarea>
@@ -53,6 +53,12 @@
         <h2 id="trail-heading">Audit trail</h2>
         <button type="button" id="trail-refresh" class="quiet" disabled>Open as staff</button>
       </div>
+      <form method="post" id="trail-form" class="row" hidden>
+        <label class="visually-hidden" for="trail-key">Staff key</label>
+        <input id="trail-key" type="password" autocomplete="off" required
+               placeholder="Staff key (CARE_DEV_STAFF_KEY in .env)">
+        <button type="submit" class="quiet">Open</button>
+      </form>
       <p class="hint">Staff view. Every step, tool call and write, with who did it and under which versions.</p>
       <ol id="trail" class="trail"></ol>
     </section>

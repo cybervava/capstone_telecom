@@ -154,13 +154,30 @@ el("message-form").addEventListener("submit", async (event) => {
   }
 });
 
-// The audit trail is a staff view. Its token is requested only when someone opens it.
+// The audit trail is a staff view: it opens with the staff key, asked for when someone opens it.
 el("trail-refresh").addEventListener("click", async () => {
+  if (!state.staffToken) {
+    el("trail-form").hidden = false;
+    el("trail-key").focus();
+    return;
+  }
+  await refreshTrail().catch((error) => {
+    el("persona-status").textContent = `Could not refresh the staff view: ${error.message}`;
+  });
+});
+
+el("trail-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
   try {
-    if (!state.staffToken) {
-      state.staffToken = await devToken("ops");
-      el("trail-refresh").textContent = "Refresh";
-    }
+    const signed = await api("/v1/dev/token", {
+      method: "POST",
+      body: { role: "ops", staff_key: el("trail-key").value },
+      token: null,
+    });
+    state.staffToken = signed.token;
+    el("trail-key").value = "";
+    el("trail-form").hidden = true;
+    el("trail-refresh").textContent = "Refresh";
     await refreshTrail();
   } catch (error) {
     el("persona-status").textContent = `Could not open the staff view: ${error.message}`;

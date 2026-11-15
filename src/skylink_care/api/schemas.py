@@ -39,6 +39,13 @@ class MessageIn(_In):
 class TokenIn(_In):
     role: Literal["guest", "customer", "channel", "agent", "supervisor", "ops"]
     customer_id: Annotated[str, StringConstraints(pattern=r"^C\d{7}$")] | None = None
+    # Staff roles only: the local staff key, and a handle that says who is signing in.
+    staff_key: Annotated[str, StringConstraints(max_length=200)] | None = None
+    name: Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9.-]{1,39}$")] | None = None
+
+
+class HandoffDoneIn(_In):
+    note: Annotated[str, StringConstraints(max_length=500, strip_whitespace=True)] | None = None
 
 
 class ContactAccepted(BaseModel):

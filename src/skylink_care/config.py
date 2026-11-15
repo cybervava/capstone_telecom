@@ -23,6 +23,9 @@ class MissingSecretError(RuntimeError):
     """A secret this process needs is absent. Raised at start-up, never mid-request."""
 
 
+MIN_STAFF_KEY_CHARS = 16
+
+
 class Settings(BaseSettings):
     # Environment only. Locally, `uv run --env-file …` supplies it; nothing is read implicitly
     # from disk, so a process holds exactly the settings it was started with.
@@ -40,6 +43,9 @@ class Settings(BaseSettings):
 
     # Only the API process signs and checks tokens; workers run without it.
     jwt_secret: SecretStr | None = None
+    # Local demos only (CARE_ENV=dev): what a person must know to sign in as staff through the
+    # token endpoint. Unset means no staff token can be had there at all.
+    dev_staff_key: SecretStr | None = None
     api_host: str = "127.0.0.1"
     api_port: int = 8080
 
@@ -104,6 +110,13 @@ class Settings(BaseSettings):
                 " CARE_VISIT_LINE_TEST_MAX_AGE_SECONDS"
             )
         return self
+
+    def staff_key_for_dev(self) -> str | None:
+        """The staff key, or None when it is not set or too short to be one."""
+        if self.dev_staff_key is None:
+            return None
+        key = self.dev_staff_key.get_secret_value()
+        return key if len(key) >= MIN_STAFF_KEY_CHARS else None
 
     def require_jwt_secret(self) -> str:
         if self.jwt_secret is None or not self.jwt_secret.get_secret_value():

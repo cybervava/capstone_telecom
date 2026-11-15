@@ -30,6 +30,8 @@
 }
 
 * { box-sizing: border-box; }
+/* An element taken out with the hidden attribute stays out, whatever its class lays out. */
+[hidden] { display: none !important; }
 html { background: var(--paper); color: var(--ink); font: var(--step-0)/1.55 var(--sans); }
 body { margin: 0; min-height: 100vh; overflow-x: clip; }
 h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: -0.01em; margin: 0; }
@@ -126,3 +128,71 @@ button.quiet:hover:not(:disabled) { color: var(--paper-raised); }
 .trail .step { font-family: var(--mono); font-weight: 600; }
 .trail .meta { color: var(--ink-soft); display: block; overflow-wrap: anywhere; }
 .trail:empty::before { content: "No steps recorded yet."; color: var(--ink-soft); padding-left: 1rem; font-style: italic; font-family: var(--serif); }
+
+/* Staff desk — the same paper, laid out as a bench: slips that ask for a decision, a queue of
+   cases, and the case that is open. One more colour with a meaning: brick = needs a supervisor. */
+:root { --authority: oklch(46% 0.14 28); --authority-wash: oklch(95% 0.03 28); --accent-wash: oklch(95% 0.03 255); }
+.masthead__note a { color: var(--accent); text-underline-offset: 0.2em; }
+.masthead__note a:focus-visible, summary:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.bench {
+  display: grid; gap: var(--gap); padding: var(--gap); align-items: start;
+  grid-template-columns: minmax(18rem, 1fr) minmax(16rem, 0.85fr) minmax(20rem, 1.35fr);
+}
+.panel--sign { grid-column: 1 / -1; padding-bottom: var(--gap); border-bottom: 1px solid var(--rule); }
+.sign { display: grid; gap: 0.75rem; grid-template-columns: 9rem minmax(9rem, 1fr) minmax(12rem, 1.5fr) auto; align-items: end; }
+select {
+  font: inherit; color: inherit; background: var(--paper-raised); width: 100%;
+  border: 1px solid var(--ink-soft); border-radius: 2px; padding: 0.55rem 0.7rem;
+}
+.tally { font: 700 var(--step-1)/1 var(--mono); color: var(--accent); min-width: 2ch; text-align: right; }
+
+.slips, .queue { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; }
+.slips:empty::before, .queue:empty::before { content: "Nothing waiting."; color: var(--ink-soft); font-style: italic; font-family: var(--serif); }
+
+.slip {
+  display: grid; gap: 0.7rem; padding: 1rem 1.1rem 1.1rem; background: var(--paper-raised);
+  border: 1px solid var(--ink); border-left: 6px solid var(--accent); container-type: inline-size;
+  animation: arrive 260ms var(--ease) both;
+}
+.slip[data-level="supervisor"] { border-left-color: var(--authority); }
+.slip__amount { margin: 0; font: 700 clamp(1.3rem, 9cqi, 2.1rem)/1 var(--mono); letter-spacing: -0.01em; }
+.slip .chip { justify-self: start; }
+.chip[data-state="agent"] { color: var(--accent); background: var(--accent-wash); }
+.chip[data-state="supervisor"] { color: var(--authority); background: var(--authority-wash); }
+.working summary { cursor: pointer; font-size: var(--step--1); color: var(--accent); width: fit-content; }
+.working[open] summary { margin-bottom: 0.5rem; }
+.slip__decide { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.5rem; align-items: center; }
+.slip__decide input { font-family: var(--sans); }
+
+.queue__row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.15rem 0.75rem; width: 100%; text-align: left;
+  background: var(--paper-raised); color: var(--ink); border: 1px solid var(--rule); padding: 0.7rem 0.85rem;
+  font-weight: 400; white-space: normal;
+}
+.queue__row:hover:not(:disabled) { background: var(--paper); color: var(--ink); border-color: var(--ink); }
+.queue__row[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 5px 0 0 var(--accent); }
+.queue__priority { grid-row: span 2; align-self: center; font: 700 var(--step-0)/1 var(--mono); padding: 0.35rem 0.45rem; border: 1px solid currentColor; }
+.queue li[data-priority="2"] .queue__priority { color: var(--authority); background: var(--authority-wash); }
+.queue__reason { font-weight: 600; }
+.queue__reason::first-letter { text-transform: uppercase; }
+.queue__ref, .queue__age { font: var(--step--1)/1.4 var(--mono); color: var(--ink-soft); }
+.queue__age { grid-column: 2; }
+
+.panel--case { background: var(--paper-raised); border: 1px solid var(--rule); padding: var(--gap); box-shadow: 0 1px 0 var(--rule), 0 18px 40px -28px oklch(22% 0.02 260 / 0.45); container-type: inline-size; }
+.panel--case .thread { min-height: 0; }
+.panel--case .composer input { font-family: var(--sans); }
+.summary { margin: 0; padding-left: 0.8rem; border-left: 3px solid var(--rule); font-size: var(--step--1); color: var(--ink-soft); overflow-wrap: anywhere; }
+
+@media (max-width: 68rem) {
+  .bench { grid-template-columns: 1fr 1fr; }
+  .panel--case { grid-column: 1 / -1; }
+  .sign { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 44rem) {
+  .bench { grid-template-columns: 1fr; }
+  .sign { grid-template-columns: 1fr; }
+  .slip__decide { grid-template-columns: 1fr 1fr; }
+  .slip__decide input { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .slip { animation: none; } }

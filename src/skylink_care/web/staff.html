@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SkyLink Staff Desk</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="masthead">
+    <p class="masthead__mark">SkyLink <span>Staff Desk</span></p>
+    <p class="masthead__note">Demonstration build · synthetic data · what the assistant could not or may not settle on its own · <a href="./">customer desk</a></p>
+  </header>
+
+  <main class="bench">
+    <section class="panel panel--sign" aria-labelledby="sign-heading">
+      <h2 id="sign-heading">Who is at the desk</h2>
+      <form method="post" id="sign-form" class="sign">
+        <label for="role">Role
+          <select id="role" name="role">
+            <option value="agent">Agent</option>
+            <option value="supervisor">Supervisor</option>
+          </select>
+        </label>
+        <label for="name">Name <span class="hint">goes on every decision</span>
+          <input id="name" name="name" required pattern="[a-z][a-z0-9.\-]{1,39}" autocomplete="off"
+                 placeholder="anna.k" aria-describedby="sign-status">
+        </label>
+        <label for="staff-key">Staff key <span class="hint">CARE_DEV_STAFF_KEY in .env</span>
+          <input id="staff-key" name="staff-key" type="password" required autocomplete="off">
+        </label>
+        <button type="submit">Sign in</button>
+      </form>
+      <p id="sign-status" class="status" role="status">Not signed in. Nothing below is loaded.</p>
+    </section>
+
+    <section class="panel panel--approvals" aria-labelledby="approvals-heading">
+      <div class="panel__head">
+        <h2 id="approvals-heading">Credits awaiting a decision</h2>
+        <span class="tally" id="approvals-count" aria-label="open approvals">0</span>
+      </div>
+      <p class="hint">You decide on the request exactly as it is shown. If it changes, your decision is refused.</p>
+      <ol id="approvals" class="slips" aria-live="polite"></ol>
+    </section>
+
+    <section class="panel panel--queue" aria-labelledby="queue-heading">
+      <div class="panel__head">
+        <h2 id="queue-heading">With a person</h2>
+        <span class="tally" id="queue-count" aria-label="open items">0</span>
+      </div>
+      <p class="hint">Most urgent first. Open one to read the case.</p>
+      <ol id="queue" class="queue" aria-live="polite"></ol>
+    </section>
+
+    <section class="panel panel--case" aria-labelledby="case-heading" id="case" hidden>
+      <div class="panel__head">
+        <h2 id="case-heading">Case</h2>
+        <button type="button" class="quiet" id="case-close">Put back</button>
+      </div>
+      <p class="docket__ref" id="case-ref">—</p>
+      <p class="summary" id="case-summary"></p>
+      <h3>Conversation</h3>
+      <ol id="case-thread" class="thread"></ol>
+      <h3>Audit trail</h3>
+      <ol id="case-trail" class="trail"></ol>
+      <form method="post" id="done-form" class="composer">
+        <label class="visually-hidden" for="done-note">What was done</label>
+        <input id="done-note" maxlength="500" placeholder="What was done (optional, kept in the audit trail)">
+        <button type="submit" id="done">Mark done</button>
+      </form>
+      <p id="case-status" class="status" role="status"></p>
+    </section>
+  </main>
+
+  <script type="module" src="staff.js"></script>
+</body>
+</html>

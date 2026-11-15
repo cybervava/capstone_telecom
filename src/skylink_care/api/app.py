@@ -7,6 +7,7 @@ so it keeps answering when all of them are down. This process holds no OSS/BSS k
 
 from __future__ import annotations
 
+import hmac
 import re
 import time
 from dataclasses import dataclass
@@ -26,6 +27,7 @@ from starlette.types import Lifespan
 
 from skylink_care.api.approvals import register_approval_routes
 from skylink_care.api.auth import Principal, Role, check_secret, issue_token, require
+from skylink_care.api.handoffs import register_handoff_routes
 from skylink_care.api.ratelimit import RateLimiter
 from skylink_care.api.schemas import (
     ContactAccepted,
@@ -41,7 +43,6 @@ from skylink_care.clock import Clock, utc_now
 from skylink_care.db.audit import AuditRepository
 from skylink_care.db.contacts import Contact, ContactRepository, NewContact, RequestIdReusedError
 from skylink_care.db.database import Database
-from skylink_care.db.handoffs import HandoffRepository
 from skylink_care.db.inbox import InboxRepository
 from skylink_care.db.messages import MessageRepository
 from skylink_care.domain.models import Channel
@@ -66,6 +67,8 @@ SAFE_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 CUSTOMER_SIDE = (Role.GUEST, Role.CUSTOMER, Role.CHANNEL)
 STAFF_SIDE = (Role.AGENT, Role.SUPERVISOR, Role.OPS)
+# The personas the dev token endpoint hands to anyone: the two a customer can be.
+KEYLESS_IN_DEV = (Role.GUEST, Role.CUSTOMER)
 
 
 @dataclass(frozen=True)
@@ -78,6 +81,8 @@ class ApiDeps:
     contact_limit: RateLimiter | None = None
     # The clock approvals are offered and decided by.
     now: Clock = utc_now
+    # What a person must know to get a staff token from the dev token endpoint. None: nobody.
+    dev_staff_key: str | None = None
 
 
 def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> FastAPI:
@@ -95,7 +100,6 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
     messages = MessageRepository(deps.database)
     inbox = InboxRepository(deps.database)
     audit = AuditRepository(deps.database)
-    handoffs = HandoffRepository(deps.database)
     message_limit = deps.message_limit or RateLimiter(capacity=20, refill_per_second=20 / 60)
     contact_limit = deps.contact_limit or RateLimiter(capacity=5, refill_per_second=5 / 60)
 
@@ -113,6 +117,9 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
             response.headers.setdefault(name, value)
         if request.url.path.startswith(API_PREFIX):
             response.headers["Cache-Control"] = "no-store"
+        else:
+            # The console's pages and scripts: kept by the browser, checked before every use.
+            response.headers.setdefault("Cache-Control", "no-cache")
         return response
 
     @app.get("/health")
@@ -231,12 +238,7 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
         trail = await audit.for_contact(contact_id)
         return ok(jsonable_encoder([record.__dict__ for record in trail]))
 
-    @app.get("/v1/handoffs")
-    async def list_handoffs(
-        _: Annotated[Principal, Depends(require(*STAFF_SIDE))],
-    ) -> dict[str, Any]:
-        return ok(jsonable_encoder([item.__dict__ for item in await handoffs.list_open()]))
-
+    register_handoff_routes(app, deps.database, deps.now)
     register_approval_routes(app, deps.database, deps.now)
 
     if deps.env == "dev":
@@ -247,9 +249,16 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
             role = Role(body.role)
             if role is Role.CUSTOMER and not body.customer_id:
                 raise HTTPException(422, "customer_id is required")
+            subject = body.customer_id or f"demo-{role.value}"
+            if role not in KEYLESS_IN_DEV:
+                # Not for whoever can reach the port: a staff token can approve a credit, and a
+                # channel token is believed about who is calling.
+                if not _knows_the_staff_key(body.staff_key, deps.dev_staff_key):
+                    raise HTTPException(status.HTTP_403_FORBIDDEN, "staff sign-in was refused")
+                subject = f"{role.value}:{body.name}" if body.name else subject
             token = issue_token(
                 deps.jwt_secret,
-                subject=body.customer_id or f"demo-{role.value}",
+                subject=subject,
                 role=role,
                 customer_id=body.customer_id if role is Role.CUSTOMER else None,
                 session_id=uuid4().hex if role is Role.GUEST else None,
@@ -259,6 +268,13 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
     if WEB_DIR.is_dir():
         app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
     return app
+
+
+def _knows_the_staff_key(offered: str | None, expected: str | None) -> bool:
+    """Compared in constant time. With no key configured nobody knows it."""
+    if not expected or not offered:
+        return False
+    return hmac.compare_digest(offered.encode(), expected.encode())
 
 
 def _caller_key(principal: Principal) -> str:
