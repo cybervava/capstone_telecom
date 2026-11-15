@@ -11,7 +11,9 @@ systems:
 5. a customer whose own line fails its remote test while the node looks healthy: the fault is
    watched for the NOC's detection window, and no repair is arranged meanwhile,
 6. a customer on a healthy node with a passing line: steps quoted from the guide for their own
-   router model, with the source.
+   router model, with the source,
+7. an outage long enough to earn a service credit: the credit is proposed from the policy, an
+   agent approves it through the API, and it is applied to the account once.
 
 Run with:  uv run --env-file .env python scripts/smoke.py
 Exits non-zero if any check fails. It changes simulator state and restores it at the end.
@@ -121,7 +123,7 @@ def decision_reason(api: httpx.Client, contact_id: str) -> str:
 
 
 def pick_customers(sim: httpx.Client) -> tuple[dict[str, Any], ...]:
-    """Two customers on one node, and three more on three other nodes."""
+    """Two customers on one node, and four more on four other nodes."""
     people = sim.get("/admin/v1/customers/search", params={**SEARCH, "limit": 50}).json()[
         "customers"
     ]
@@ -140,7 +142,18 @@ def pick_customers(sim: httpx.Client) -> tuple[dict[str, Any], ...]:
         for p in people
         if p["true_node_id"] not in {node_id, elsewhere["true_node_id"], third_node["true_node_id"]}
     )
-    return first, second, elsewhere, third_node, fourth_node
+    fifth_node = next(
+        p
+        for p in people
+        if p["true_node_id"]
+        not in {
+            node_id,
+            elsewhere["true_node_id"],
+            third_node["true_node_id"],
+            fourth_node["true_node_id"],
+        }
+    )
+    return first, second, elsewhere, third_node, fourth_node, fifth_node
 
 
 def declared_outage(
@@ -305,6 +318,65 @@ def guided_steps_are_cited(api: httpx.Client, sim: httpx.Client, customer: dict[
     say(f"\n     assistant: {reply}")
 
 
+def credit_is_approved_and_applied(
+    api: httpx.Client, sim: httpx.Client, customer: dict[str, Any]
+) -> None:
+    outage_id = sim.post(
+        "/admin/v1/outages",
+        json={
+            "node_id": customer["true_node_id"],
+            "cause": "FIBRE_CUT",
+            "started_minutes_ago": 300,
+        },
+    ).json()["outage_id"]
+    headers = token(api, "customer", customer["customer_id"])
+    accepted, _ = open_contact(api, headers, "internet has been down for hours")
+    wait_for_replies(api, headers, accepted["contact_id"])
+    sim.post(f"/admin/v1/outages/{outage_id}/resolve").raise_for_status()
+    contact = wait_for_replies(api, headers, accepted["contact_id"], count=2)
+    restored = outbound(contact)[-1]
+    check(
+        "restoration message offers the credit", "you are due a service credit of INR" in restored
+    )
+    check("credit names the policy version", "(v0-placeholder)" in restored)
+    check("credit waits for approval", "sent for approval" in restored)
+    account = f"/billing/v1/accounts/{customer['customer_id']}/credits"
+    before = len(sim.get(account).json()["credits"])
+    say(f"\n     assistant: {restored}")
+
+    agent = token(api, "agent")
+
+    def mine() -> dict[str, Any] | None:
+        listed = api.get("/v1/approvals", headers=agent).json()["data"]
+        return next(
+            (a for a in listed if a["request"]["complaint_ref"] == accepted["complaint_ref"]), None
+        )
+
+    approval = eventually("the approval request", mine)
+    check("an agent may approve it", approval["required_role"] == "agent")
+    check("nothing is applied before approval", len(sim.get(account).json()["credits"]) == before)
+    api.post(
+        f"/v1/approvals/{approval['approval_id']}/decision",
+        json={"decision": "approve", "request_hash": approval["request_hash"]},
+        headers=agent,
+    ).raise_for_status()
+    contact = wait_for_replies(api, headers, accepted["contact_id"], count=3)
+    confirmation = outbound(contact)[-1]
+    check(
+        "customer is told the credit was applied",
+        "has been applied to your account" in confirmation,
+    )
+    credits = sim.get(account).json()["credits"]
+    check("exactly one credit was added", len(credits) == before + 1, f"{len(credits) - before}")
+    newest = credits[0]
+    check(
+        "the credit carries the approved amount, approver and outage",
+        (newest["amount_inr"], newest["approved_by"], newest["outage_id"])
+        == (approval["request"]["amount_inr"], "demo-agent", outage_id),
+        f"INR {newest['amount_inr']} approved by {newest['approved_by']}",
+    )
+
+
 def main() -> int:
     admin_key = os.environ.get("OSS_KEY_ADMIN")
     if not admin_key:
@@ -313,7 +385,7 @@ def main() -> int:
     api = httpx.Client(base_url=API, timeout=10.0)
     sim = httpx.Client(base_url=OSS, timeout=10.0, headers={"X-API-Key": admin_key})
     sim.post("/admin/v1/reset").raise_for_status()
-    first, second, elsewhere, on_a_healthy_node, with_a_good_line = pick_customers(sim)
+    first, second, elsewhere, on_a_healthy_node, with_a_good_line, long_outage = pick_customers(sim)
     node_id = first["true_node_id"]
     outage_id = None
     try:
@@ -339,6 +411,9 @@ def main() -> int:
 
         say(f"\n6. A {with_a_good_line['router_model']} router on a healthy node and line")
         guided_steps_are_cited(api, sim, with_a_good_line)
+
+        say(f"\n7. A five-hour outage on {long_outage['true_node_id']}: credit and approval")
+        credit_is_approved_and_applied(api, sim, long_outage)
     finally:
         sim.delete("/admin/v1/chaos")
         sim.post(

@@ -132,6 +132,8 @@ services:
       CARE_NETWORK_RECHECK_LIMIT: ${CARE_NETWORK_RECHECK_LIMIT:-5}
       CARE_SUSPECTED_WAIT_SECONDS: ${CARE_SUSPECTED_WAIT_SECONDS:-900}
       CARE_OUTAGE_RECHECK_SECONDS: ${CARE_OUTAGE_RECHECK_SECONDS:-900}
+      CARE_CREDIT_REVIEW_ALL: ${CARE_CREDIT_REVIEW_ALL:-true}
+      CARE_APPROVAL_TTL_SECONDS: ${CARE_APPROVAL_TTL_SECONDS:-259200}
       CARE_CLOSE_QUIET_SECONDS: ${CARE_CLOSE_QUIET_SECONDS:-86400}
       # Read-only agent identities. The write key is deliberately absent.
       OSS_KEY_TRIAGE: ${OSS_KEY_TRIAGE:?run make init}
@@ -164,6 +166,9 @@ services:
     environment:
       <<: *care-db
       CARE_OSS_BASE_URL: http://mock-oss:8081
+      # It checks the credit policy again before it applies a credit, so it reads the same
+      # policy file (part of the image) and the same review switch as the orchestrator.
+      CARE_CREDIT_REVIEW_ALL: ${CARE_CREDIT_REVIEW_ALL:-true}
       # The only process that can write to the enterprise systems.
       OSS_KEY_EXECUTOR: ${OSS_KEY_EXECUTOR:?run make init}
 

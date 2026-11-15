@@ -217,7 +217,7 @@ Each task lists its acceptance check. Tests are written first for `domain/` and 
 
 ### M2 Six capabilities (summary)
 
-Built in slices, each committed when its tests and a live run pass: **A** event feed, read model, timers · **B** proactive notifications and restoration · **C** line tests, mapping repair, line-test clustering · **D** guide index and cited troubleshooting · E credits, approvals, billing write · F dispatch · G conflict path and mobile journey · H supervisor console · I evaluations. A, B, C and D are done (see the progress log).
+Built in slices, each committed when its tests and a live run pass: **A** event feed, read model, timers · **B** proactive notifications and restoration · **C** line tests, mapping repair, line-test clustering · **D** guide index and cited troubleshooting · **E** credits, approvals, billing write · F dispatch · G conflict path and mobile journey · H supervisor console · I evaluations. A, B, C, D and E are done (see the progress log).
 
 Event consumer with dedupe, version checks, applied-sequence tracking and heartbeat; alarm state per node; notification fan-out to resolved mappings only, consent checked at send time, one message per customer, outage and template; line-test tool and mapping repair; suspected-fault hold (critical alarm, or several failed line tests on one node) that opens an episode without an outage id; retroactive confirmation when the outage is declared; index build and filtered retrieval; step-by-step guided troubleshooting with citations; credit proposals only after restoration, priced from frozen inputs; approval records carrying the hash the approver saw; billing write under a per-customer lock; dispatch rules (failed re-test, fresh `CONFIRMED_CLEAR` after the hold-down, customer consent, one open visit per service); conflict path for "the network says outage, the customer says device"; handoff queue with summary; one mobile outage journey.
 
@@ -305,10 +305,12 @@ Items 1, 2, 8 and 9 (deck, problem statement, ROI workbook, contribution matrix)
 
 | 15 Nov | **M2 slice D: guide index and cited troubleshooting** | **Done.** The twelve router guides are indexed by section in PostgreSQL (text search and pgvector). With a clear node and a passing line, a customer who asks gets the steps for their own router model, quoted with guide, section and version; a different router model gets a different guide for the same complaint (gate input 2). Steps are given once. On a turn the platform starts itself the customer is told the checks are clear and asked, not instructed |
 
+| 15 Nov | **M2 slice E: service credits, approvals, billing write** | **Done.** At restoration a credit is worked out by the policy engine from Billing's record and the NOC's outage times, proposed with its amount frozen, and approved through the API by an agent or, above INR 500, a supervisor (gate input 3: one more hour of outage moves the credit past the limit and the approval to a supervisor). The executor applies it under a per-customer lock, after checking again, on what is true then: the request against its hash, the approval the amount requires, the account for an existing credit, and the billing-cycle cap. The customer is told the outcome of every credit; the contact stays open until then |
+
 ### Evidence at this point
 
-- `make test-all`: 1,387 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 94% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
-- `make smoke` passes against the host processes at 400,000-customer scale. Six journeys: declared outage → sourced reply, one incident, complaint linked, and 168 neighbours on the node notified once each (none without consent, checked in the gateway's own store); Network API down → the feed still proves the outage; same failure for a customer on another node → no all-clear and no device steps; outage resolved → the waiting customer is told, confirms, the contact closes and the node's incident is resolved; a failing line on a healthy node → held, nothing booked; a passing line on a healthy node → steps from the guide for the customer's own router, with the source.
+- `make test-all`: 1,582 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 95% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
+- `make smoke` passes against the host processes at 400,000-customer scale. Seven journeys: declared outage → sourced reply, one incident, complaint linked, and 168 neighbours on the node notified once each (none without consent, checked in the gateway's own store); Network API down → the feed still proves the outage; same failure for a customer on another node → no all-clear and no device steps; outage resolved → the waiting customer is told, confirms, the contact closes and the node's incident is resolved; a failing line on a healthy node → held, nothing booked; a passing line on a healthy node → steps from the guide for the customer's own router, with the source; a five-hour outage → credit proposed, approved by an agent through the API, applied to the account once.
 - `make smoke` also passes against the container stack (40,000 customers), where the feed consumer runs as its own service. Its first run there failed, usefully: re-seeding the gateway restarts its event sequence and empties its tickets, while the care database still held the cursor and ticket references of the previous gateway. The consumer refused the feed (sequence running backwards) exactly as designed. `make seed` and the container set-up now clear the care platform's runtime state in the same step (`care-admin reset-runtime`, refused unless `CARE_ENV` is `dev` or `test`).
 - The console was checked in a browser at 1440 px and 375 px (M1; unchanged since).
 
@@ -378,7 +380,33 @@ One independent security review, and two findings from the live run. Fixed and c
 | The whole conversation was masked and searched on every guide turn, and the e-mail pattern was quadratic on long input | The search uses the customer's most recent text only; the pattern is bounded |
 | A text with nothing to search for scored every section equally | No section is returned and a person takes over |
 
+### What the review of M2 slice E changed
+
+One independent security review of the money path, before the commit. It found no way to a credit without its approval, to a second credit for one service and outage, or for a model or a customer to move an amount. What it did find was in the life of a credit after the proposal. Fixed and covered by tests:
+
+| Finding | Fix |
+|---|---|
+| The executor stopped replaying a write 24 hours after it was *proposed*, but an approval may take 72. A credit approved on the second day was ended by the first hiccup of Billing, and the customer was told it had not been applied although an attempt might have landed | The clock starts when an action becomes runnable: at the proposal, or at its approval (`actions.ready_at`). A credit the executor gave up on is reported as "could not be confirmed", to the customer and to the person who follows up, who is told to look for it on the account under its key first |
+| A second outage on the same contact replaced what the contact knew about its first credit, so the first one's outcome was never told and a rejection reached nobody | A contact keeps every credit it waits for, one per outage, and is told the outcome of each |
+| A credit that ended after the contact had gone to a person (or closed) was noted nowhere: no message, no handoff | The outcome is told from the follow-up path as well, once, and a credit that was not applied opens a handoff there too |
+| The customer was told the amount worked out in the turn, not the amount frozen in the ledger. When a credit for the service and outage was on record already these could differ, and an earlier credit that had ended could leave the contact waiting for news that had long passed | Everything said about a credit is read from the frozen request. A credit on record is reported as it stands (in progress, applied, already on the account, not applied) and waited for only if it is still open; a different amount worked out now goes to a person with both figures |
+| The billing-cycle cap was checked only when a credit was priced, against credits already applied. Two outages in one cycle could each be priced as if the other did not exist | Credits proposed and not yet settled count towards the cap at pricing, and the executor checks the cap again under the customer's lock, where the money moves; a credit that no longer fits is refused and goes to a person |
+| The executor believed the ledger about which approval a credit needed, and never recomputed the request's hash | It recomputes the hash, works out the required approval from the amount under the policy, and takes the stricter of that and the ledger's. A credit priced under another policy version is refused |
+| A credit on the account under the action's own key was sent again and left to the gateway's idempotency store | It is the answer to the earlier attempt and nothing is sent |
+| A decision and its audit entry were two transactions; an approval past its time was still listed until the sweep ran | One transaction: a decision that cannot be recorded in the trail is not taken. Expired approvals are not offered |
+| Each credit holds a database connection across two calls to Billing; a burst could starve the pool | At most two credits are written at once |
+| A service with an unusable fee or cycle day was silently given no credit | A person reviews it; a fee that is not a positive finite number is never priced |
+
+Found by the new tests while the fixes were written: a credit proposed by another conversation of the same customer differs from this one's request in its complaint reference alone, which made every second conversation about an outage look like a disputed amount. Amounts are now compared as amounts.
+
+Not fixed, and listed below: the token endpoint of `dev` mode.
+
 ### Known gaps carried into M2 and M3
+
+- In `dev` mode the token endpoint mints any role without authentication, including the two that approve credits, and every token of a role has the same subject (`demo-agent`), so "who approved" is not a person. It does not exist outside `dev`, and the stack binds to 127.0.0.1. Staff sign-in belongs with the supervisor console (slice H) and M4.
+- A credit is offered only to a customer who contacted us about the outage. Whether every affected customer is credited is part of decision D3.
+- An outage the NOC re-opens and resolves again is not credited for the added time: the first credit stands and a person is asked to review the difference. Reversing a credit is not built.
+- The executor reads the fee and cycle day for the cap from what was recorded with the proposal, in its own database. Separate database roles (M4) are what would stop another process from changing them.
 
 - A line that still fails after the hold goes to a person (`LINE_FAULT`); booking a visit is slice F.
 - Retrieval uses a deterministic hashing embedder, not a learned model (A5 and D2 are open), and is checked by fixed phrasings in the tests, not yet by a scored evaluation on the labelled transcripts (slice I). Guidance is one round: the best-matching section, once.

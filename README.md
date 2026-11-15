@@ -7,7 +7,7 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 ## Status
 
-Milestones M0 (foundations) and M1 (reference-first outage path) are built and tested. M2 is in progress: its first four slices (the NOC event feed, proactive notifications, remote line tests, cited troubleshooting) are built; the rest of M2 and everything after it is not.
+Milestones M0 (foundations) and M1 (reference-first outage path) are built and tested. M2 is in progress: its first five slices (the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval) are built; the rest of M2 and everything after it is not.
 
 **Works today**
 
@@ -20,12 +20,13 @@ Milestones M0 (foundations) and M1 (reference-first outage path) are built and t
 - **Restoration.** A waiting customer is told when their outage is resolved, and the contact closes when they confirm or after a quiet period.
 - **Remote line tests.** The test names the node that really serves the line, which repairs a missing, ambiguous, stale or simply wrong address mapping. A failed line on a healthy-looking node is watched for the NOC's detection window before any repair is arranged.
 - **Guided troubleshooting.** With the node confirmed clear and the customer's line passing its test, a customer who asks gets the steps from the guide for **their own router model**, quoted verbatim with guide, section and version. The model comes from the service record, never from the message. Factory reset is never offered; steps are given once, then a person takes over.
+- **Service credits.** When an outage a customer waited on is resolved, a credit is worked out in code from the versioned policy file (never by a model, never from what the customer wrote) and offered in the same message. It is proposed with its amount frozen; an agent, or a supervisor above INR 500, approves that exact request through the API; only then does the executor apply it to Billing, one customer at a time and never twice. The customer is told the outcome, and the contact stays open until it is settled.
 - **Degraded mode.** When nothing can be verified: reference still issued, no all-clear, no device steps; the status is re-checked on a timer and a person takes over if it stays unverified.
 - Per-contact audit trail, API with roles, per-caller rate limits, demo console.
 
 **Not built yet**
 
-- Credit proposals, supervisor approval screen, billing write (the credit **engine** and its tests exist).
+- A screen for approvals (the API exists: `GET /v1/approvals`, `POST /v1/approvals/{id}/decision`). Credits for affected customers who did not contact us.
 - Technician dispatch (a line that still fails after the hold goes to a person for now).
 - The "network says outage, customer says device" conflict path; a mobile journey.
 - A learned embedding model for retrieval (the index uses a deterministic hashing embedder; see "Guide retrieval").
@@ -49,7 +50,7 @@ make install     # installs the locked dependencies
 make up          # PostgreSQL with pgvector, on 127.0.0.1:55432
 make data        # synthetic data pack, 40,000 customers (CUSTOMERS=400000 for full scale)
 make dev         # migrate, seed, then start the gateway, API, orchestrator, executor and feed consumer
-make smoke       # six live journeys over HTTP, with checks
+make smoke       # seven live journeys over HTTP, with checks
 ```
 
 Open <http://127.0.0.1:8080/>. Leave the customer ID empty to arrive as an unidentified guest, or enter one; `make smoke` prints an outage being started, and the simulator can find customers for you:
@@ -104,7 +105,7 @@ All settings come from the environment. `.env.example` lists every variable; `ma
 
 | Variable | Used by | Meaning |
 |---|---|---|
-| `CARE_ENV` | all | `dev` enables the local token endpoint used by the console. Anything else leaves it off; unset means `prod` |
+| `CARE_ENV` | all | `dev` enables the local token endpoint used by the console. Anything else leaves it off; unset means `prod`. In `dev` that endpoint hands out a token for any role, including the two that approve credits, to whoever can reach the API: it is for a machine nobody else can reach |
 | `CARE_DB_HOST`, `CARE_DB_PORT`, `CARE_DB_NAME`, `CARE_DB_USER`, `CARE_DB_PASSWORD` | all | PostgreSQL connection |
 | `CARE_JWT_SECRET` | API only | Signs and verifies API tokens (at least 32 characters) |
 | `CARE_API_HOST`, `CARE_API_PORT` | API | Listen address |
@@ -120,10 +121,29 @@ All settings come from the environment. `.env.example` lists every variable; `ma
 | `CARE_OUTAGE_RECHECK_SECONDS` | orchestrator | How often the live status is looked at for a customer waiting on a declared outage, behind the event feed |
 | `CARE_CLOSE_QUIET_SECONDS` | orchestrator | How long a contact waits for the customer before it is closed (assumption; default 24 h) |
 | `CARE_NOTIFY_MAX_EVENT_AGE_SECONDS` | feed consumer | An outage learnt later than this is recorded but not announced |
-| `CARE_CREDIT_POLICY_PATH`, `CARE_CREDIT_REVIEW_ALL` | orchestrator (M2) | Policy file; whether every credit waits for a person |
+| `CARE_CREDIT_POLICY_PATH`, `CARE_CREDIT_REVIEW_ALL` | orchestrator, executor | Policy file; whether every credit waits for a person. Both processes read them: one proposes a credit, the other checks again before applying it |
+| `CARE_APPROVAL_TTL_SECONDS` | orchestrator | How long an approval may wait |
 | `CARE_KNOWLEDGE_DIR` | `care-admin index-guides` | The knowledge pack whose router guides are indexed |
 | `CARE_LLM_PROVIDER`, `CARE_LLM_MODEL`, `ANTHROPIC_API_KEY` | orchestrator | See below |
 | `MOCK_OSS_HOST`, `MOCK_OSS_PORT`, `MOCK_OSS_DB`, `MOCK_OSS_LINE_TEST_DELAY_MS` | mock gateway | Listen address, store, simulated line-test delay |
+
+### Service credits and approvals
+
+The policy is `data/policies/credit_policy.v0.yaml`, a **synthetic placeholder** (see above): every credit, message and approval names its version. The amount is `monthly fee × billable hours × tier multiplier / 720`, at least the policy minimum, capped per billing cycle, rounded once. Planned maintenance and outages shorter than the minimum earn nothing; a customer who asked is told why.
+
+A credit is proposed under the identity "one per service per outage" together with an approval request that carries a hash of the frozen request. `GET /v1/approvals` shows an agent or supervisor what they may decide, with the working; `POST /v1/approvals/{id}/decision` must quote the hash back, so a decision cannot land on a request the approver did not see. Above the policy limit only a supervisor may decide. `CARE_CREDIT_REVIEW_ALL=true` (the default) keeps a person in the loop for smaller credits too; whether they may be applied without review is an open decision (D3). An approval nobody gives within `CARE_APPROVAL_TTL_SECONDS` ends the credit unapplied and a person follows up.
+
+The executor applies a credit possibly days after it was proposed, and takes nothing from the proposal on trust. Immediately before the write it checks that the stored request still matches the hash the approver saw, works out from the amount which approval the policy requires and looks for exactly that, and, holding a lock on the customer, reads the account: a credit already there for the service and outage means this one is skipped, and the outage credits of the billing cycle must stay within the policy's cap with this one added. Credits that are proposed and not yet applied count towards the cap when the next one is priced. A credit found on the account under the action's own key is the answer to an earlier attempt and is never sent again.
+
+The customer hears the outcome of every credit, in the amount that was frozen: applied (with Billing's reference), already on the account, not applied (a person follows up), or, when Billing stopped answering and the executor gave up, "could not be confirmed" (a person checks the account first; nobody is told it was not applied). This holds when a second outage brought a second credit, and when a person has taken the conversation over in the meantime.
+
+To see a credit locally, start an outage that began five hours ago, contact as a customer on that node, resolve it, and approve as an agent (the smoke run does exactly this):
+
+```bash
+curl -s -X POST -H "X-API-Key: $OSS_KEY_ADMIN" -H "Content-Type: application/json" \
+  -d '{"node_id":"<node>","cause":"FIBRE_CUT","started_minutes_ago":300}' \
+  http://127.0.0.1:8081/admin/v1/outages
+```
 
 ### Guide retrieval
 
