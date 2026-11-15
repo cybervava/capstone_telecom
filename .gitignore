@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Environment and secrets — only the example is tracked
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Generated data and runtime state
+data/generated/
+var/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Editors / OS
+.playwright-mcp/
+.idea/
+.vscode/
+.DS_Store
+
+# Programme documents (the brief and the team's action plan) stay out of the public repository.
+# Remove this line to track them.
+/*.pdf
