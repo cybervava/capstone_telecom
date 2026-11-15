@@ -1,0 +1,230 @@
+[
+  {
+    "model_id": "AL-AX18",
+    "vendor": "Aerolink",
+    "name": "Aerolink AX1800",
+    "type": "ont_router",
+    "facts": {
+      "admin_url": "http://192.168.1.1",
+      "default_ssid_pattern": "Aerolink-XXXX",
+      "power_led": "solid white",
+      "internet_led_name": "INTERNET",
+      "internet_led_ok": "solid white",
+      "internet_led_fault": "solid red",
+      "los_led_name": "LOS",
+      "reset_hold_seconds": 10,
+      "reboot_wait_seconds": 120,
+      "wps_button": true,
+      "firmware": "AX18-2.4.7"
+    }
+  },
+  {
+    "model_id": "AL-FX30",
+    "vendor": "Aerolink",
+    "name": "Aerolink FiberMax 3000",
+    "type": "ont_router",
+    "facts": {
+      "admin_url": "http://192.168.0.1",
+      "default_ssid_pattern": "AL_FX30_XXXXXX",
+      "power_led": "solid green",
+      "internet_led_name": "WAN",
+      "internet_led_ok": "solid green",
+      "internet_led_fault": "blinking amber",
+      "los_led_name": "PON-ALM",
+      "reset_hold_seconds": 15,
+      "reboot_wait_seconds": 150,
+      "wps_button": true,
+      "firmware": "FX30-1.9.2"
+    }
+  },
+  {
+    "model_id": "AL-R12",
+    "vendor": "Aerolink",
+    "name": "Aerolink HomeRoute R12",
+    "type": "router",
+    "facts": {
+      "admin_url": "http://192.168.10.1",
+      "default_ssid_pattern": "AeroHome-XXXX",
+      "power_led": "solid blue",
+      "internet_led_name": "GLOBE",
+      "internet_led_ok": "solid blue",
+      "internet_led_fault": "solid amber",
+      "los_led_name": null,
+      "reset_hold_seconds": 7,
+      "reboot_wait_seconds": 60,
+      "wps_button": false,
+      "firmware": "R12-3.0.5"
+    }
+  },
+  {
+    "model_id": "NX-G520",
+    "vendor": "Nirvex",
+    "name": "Nirvex G520 Fibre Gateway",
+    "type": "ont_router",
+    "facts": {
+      "admin_url": "http://192.168.29.1",
+      "default_ssid_pattern": "NIRVEX-G520-XXXX",
+      "power_led": "solid green",
+      "internet_led_name": "INTERNET",
+      "internet_led_ok": "solid green",
+      "internet_led_fault": "not lit",
+      "los_led_name": "LOS",
+      "reset_hold_seconds": 20,
+      "reboot_wait_seconds": 180,
+      "wps_button": true,
+      "firmware": "G520-5.1.0"
+    }
+  },
+  {
+    "model_id": "NX-R300",
+    "vendor": "Nirvex",
+    "name": "Nirvex R300 Mesh Router",
+    "type": "router",
+    "facts": {
+      "admin_url": "http://10.0.0.1",
+      "default_ssid_pattern": "Nirvex_Mesh_XXXX",
+      "power_led": "solid white",
+      "internet_led_name": "STATUS",
+      "internet_led_ok": "solid white",
+      "internet_led_fault": "pulsing red",
+      "los_led_name": null,
+      "reset_hold_seconds": 12,
+      "reboot_wait_seconds": 90,
+      "wps_button": true,
+      "firmware": "R300-2.2.18"
+    }
+  },
+  {
+    "model_id": "KV-ON10",
+    "vendor": "Kestrava",
+    "name": "Kestrava ON10 Optical Router",
+    "type": "ont_router",
+    "facts": {
+      "admin_url": "http://192.168.100.1",
+      "default_ssid_pattern": "KESTRAVA-XXXXXX",
+      "power_led": "solid green",
+      "internet_led_name": "NET",
+      "internet_led_ok": "solid green",
+      "internet_led_fault": "blinking red",
+      "los_led_name": "OPTICAL",
+      "reset_hold_seconds": 5,
+      "reboot_wait_seconds": 240,
+      "wps_button": false,
+      "firmware": "ON10-4.0.3"
+    }
+  },
+  {
+    "model_id": "KV-HX6",
+    "vendor": "Kestrava",
+    "name": "Kestrava HX6 Wi-Fi 6 Router",
+    "type": "router",
+    "facts": {
+      "admin_url": "http://192.168.8.1",
+      "default_ssid_pattern": "Kestrava-HX6-XXXX",
+      "power_led": "solid green",
+      "internet_led_name": "WAN",
+      "internet_led_ok": "solid green",
+      "internet_led_fault": "solid orange",
+      "los_led_name": null,
+      "reset_hold_seconds": 25,
+      "reboot_wait_seconds": 75,
+      "wps_button": true,
+      "firmware": "HX6-1.4.11"
+    }
+  },
+  {
+    "model_id": "VT-F100",
+    "vendor": "Veltro",
+    "name": "Veltro F100 Fibre Hub",
+    "type": "ont_router",
+    "facts": {
+      "admin_url": "http://192.168.2.1",
+      "default_ssid_pattern": "Veltro-F100-XXXX",
+      "power_led": "solid white",
+      "internet_led_name": "INTERNET",
+      "internet_led_ok": "solid green",
+      "internet_led_fault": "blinking red",
+      "los_led_name": "LOS",
+      "reset_hold_seconds": 30,
+      "reboot_wait_seconds": 45,
+      "wps_button": true,
+      "firmware": "F100-7.3.1"
+    }
+  },
+  {
+    "model_id": "VT-L5",
+    "vendor": "Veltro",
+    "name": "Veltro Linkstar L5",
+    "type": "router",
+    "facts": {
+      "admin_url": "http://192.168.31.1",
+      "default_ssid_pattern": "VeltroL5_XXXX",
+      "power_led": "solid green",
+      "internet_led_name": "UPLINK",
+      "internet_led_ok": "solid white",
+      "internet_led_fault": "solid red",
+      "los_led_name": null,
+      "reset_hold_seconds": 8,
+      "reboot_wait_seconds": 100,
+      "wps_button": false,
+      "firmware": "L5-2.0.9"
+    }
+  },
+  {
+    "model_id": "QL-ON4",
+    "vendor": "Quillon",
+    "name": "Quillon ON4 Home Gateway",
+    "type": "ont_router",
+    "facts": {
+      "admin_url": "http://192.168.50.1",
+      "default_ssid_pattern": "QUILLON-ON4-XXXX",
+      "power_led": "solid green",
+      "internet_led_name": "WAN",
+      "internet_led_ok": "solid blue",
+      "internet_led_fault": "blinking amber",
+      "los_led_name": "ALARM",
+      "reset_hold_seconds": 18,
+      "reboot_wait_seconds": 210,
+      "wps_button": true,
+      "firmware": "ON4-3.6.2"
+    }
+  },
+  {
+    "model_id": "QL-M5",
+    "vendor": "Quillon",
+    "name": "Quillon M5 Dual-band Router",
+    "type": "router",
+    "facts": {
+      "admin_url": "http://172.16.0.1",
+      "default_ssid_pattern": "Quillon-M5-XXXX",
+      "power_led": "solid blue",
+      "internet_led_name": "INTERNET",
+      "internet_led_ok": "solid blue",
+      "internet_led_fault": "blinking red",
+      "los_led_name": null,
+      "reset_hold_seconds": 35,
+      "reboot_wait_seconds": 30,
+      "wps_button": true,
+      "firmware": "M5-1.1.30"
+    }
+  },
+  {
+    "model_id": "TG-FG7",
+    "vendor": "Tarang",
+    "name": "Tarang FG7 Fibre Router",
+    "type": "ont_router",
+    "facts": {
+      "admin_url": "http://10.10.10.1",
+      "default_ssid_pattern": "TARANG-FG7-XXXX",
+      "power_led": "solid green",
+      "internet_led_name": "INTERNET",
+      "internet_led_ok": "solid green",
+      "internet_led_fault": "solid red",
+      "los_led_name": "LOS",
+      "reset_hold_seconds": 40,
+      "reboot_wait_seconds": 300,
+      "wps_button": false,
+      "firmware": "FG7-6.2.4"
+    }
+  }
+]
