@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SkyLink Care Desk</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="masthead">
+    <p class="masthead__mark">SkyLink <span>Care Desk</span></p>
+    <p class="masthead__note">Demonstration build · synthetic data · you are talking to an automated assistant</p>
+  </header>
+
+  <main class="desk">
+    <section class="panel panel--who" aria-labelledby="who-heading">
+      <h2 id="who-heading">Who is contacting</h2>
+      <form id="persona-form" class="stack">
+        <label for="customer-id">Customer ID <span class="hint">leave empty to arrive as an unidentified guest</span></label>
+        <div class="row">
+          <input id="customer-id" name="customer-id" inputmode="text" autocomplete="off"
+                 placeholder="C0000001" pattern="C\d{7}">
+          <button type="submit">Start session</button>
+        </div>
+        <p id="persona-status" class="status" role="status">No session yet.</p>
+      </form>
+
+      <aside class="docket" aria-live="polite" aria-labelledby="docket-heading" hidden id="docket">
+        <h3 id="docket-heading">Complaint reference</h3>
+        <p class="docket__ref" id="docket-ref">—</p>
+        <dl class="docket__facts">
+          <div><dt>Issued in</dt><dd id="docket-latency">—</dd></div>
+          <div><dt>Status</dt><dd id="docket-status">—</dd></div>
+          <div><dt>Network</dt><dd id="docket-network"><span class="chip" data-state="none">not checked</span></dd></div>
+        </dl>
+      </aside>
+    </section>
+
+    <section class="panel panel--talk" aria-labelledby="talk-heading">
+      <h2 id="talk-heading">Conversation</h2>
+      <ol id="thread" class="thread" aria-live="polite"></ol>
+      <form id="message-form" class="composer">
+        <label for="message" class="visually-hidden">Your message</label>
+        <textarea id="message" rows="2" maxlength="4000" required disabled
+                  placeholder="Start a session, then describe the problem…"></textarea>
+        <button type="submit" disabled id="send">Send</button>
+      </form>
+    </section>
+
+    <section class="panel panel--trail" aria-labelledby="trail-heading">
+      <div class="panel__head">
+        <h2 id="trail-heading">Audit trail</h2>
+        <button type="button" id="trail-refresh" class="quiet" disabled>Open as staff</button>
+      </div>
+      <p class="hint">Staff view. Every step, tool call and write, with who did it and under which versions.</p>
+      <ol id="trail" class="trail"></ol>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
