@@ -342,3 +342,85 @@ def test_credit_already_on_record_is_described_by_its_own_amount() -> None:
     ):
         assert line.startswith(" ")  # each is added to the message about the restoration
         assert line.endswith(".")
+
+
+# --- an outage the customer disputes, and an outage on a mobile service --------------------------
+
+
+def test_outage_reply_to_a_mobile_customer_does_not_speak_of_a_router() -> None:
+    reply = replies.outage_active(REF, OUTAGE, evidence_at=NOW, service_type="mobile")
+
+    assert "You don't need to restart your phone" in reply.text
+    assert "router" not in reply.text
+    assert "technician" not in reply.text
+    assert reply.template_id == "outage_active.v1"
+
+
+@pytest.mark.parametrize(
+    ("service_type", "why", "check"),
+    [
+        (
+            "broadband",
+            "Restarting or replacing your router, or a technician visit, would not bring",
+            "test your line",
+        ),
+        (
+            "mobile",
+            "Restarting it, replacing it or changing its settings would not bring",
+            "look at your connection",
+        ),
+    ],
+)
+def test_customer_who_disputes_the_outage_is_told_why_nothing_is_arranged_and_what_comes_next(
+    service_type: str, why: str, check: str
+) -> None:
+    reply = replies.outage_active(
+        REF, OUTAGE, evidence_at=NOW, service_type=service_type, disputed=True
+    )
+
+    assert f"outage {OUTAGE.outage_id}" in reply.text  # the evidence is still stated first
+    assert why in reply.text
+    assert f"I'll {check} straight away" in reply.text
+    assert 'reply "agent"' in reply.text
+    assert "the fault is on our side" not in reply.text
+    assert reply.template_id == "outage_disputed.v1"
+
+
+BROADBAND_ONLY_WORDS = ("router", "technician", "your line")
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: replies.outage_active(REF, OUTAGE, evidence_at=NOW, service_type="mobile"),
+        lambda: replies.outage_active(
+            REF, OUTAGE, evidence_at=NOW, service_type="mobile", disputed=True
+        ),
+        lambda: replies.outage_restored(
+            REF, outage_id="OUT-1", resolved_at=NOW, service_type="mobile"
+        ),
+        lambda: replies.no_outage_reported(REF, evidence_at=NOW, service_type="mobile"),
+        *(
+            (
+                lambda reason=reason: replies.network_unknown(
+                    REF, reason, last_known_outage=OUTAGE, evidence_at=NOW, service_type="mobile"
+                )
+            )
+            for reason in DecisionReason
+        ),
+    ],
+)
+def test_nothing_said_to_a_mobile_customer_speaks_of_a_router_a_line_or_a_technician(
+    build: object,
+) -> None:
+    text = build().text  # type: ignore[operator]
+
+    assert not [word for word in BROADBAND_ONLY_WORDS if word in text]
+
+
+def test_broadband_wording_is_unchanged_when_no_service_type_is_given() -> None:
+    unknown = replies.network_unknown(REF, DecisionReason.NO_FRESH_EVIDENCE)
+    clear = replies.no_outage_reported(REF, evidence_at=NOW)
+
+    assert "change anything on your router or book a technician" in unknown.text
+    assert "to check your line" in clear.text

@@ -46,6 +46,7 @@ CUSTOMER_EVENTS = frozenset({"contact.received", "customer.message"})
 NETWORK_STATUS_UNVERIFIED = "NETWORK_STATUS_UNVERIFIED"
 LINE_TEST_UNAVAILABLE = "LINE_TEST_UNAVAILABLE"
 VISIT_OFFER_UNANSWERED = "VISIT_OFFER_UNANSWERED"
+CUSTOMER_DISPUTES_OUTAGE = "CUSTOMER_DISPUTES_OUTAGE"
 # With any of these in the same message, "it works now" does not settle the contact.
 _STILL_WANTS_SOMETHING = ("requests_credit", "requests_technician", "insists_device_fault")
 
@@ -234,6 +235,11 @@ def _after_diagnosis(state: ContactState, limits: RoutingLimits) -> Decision:
     current = (network.get("outage") or {}).get("outage_id")
 
     if network_state == NetworkState.ACTIVE.value:
+        told_why = current is not None and state.get("outage_disputed") == current
+        if by_customer and told_why and disputes_the_outage(state):
+            # They were told why nothing is arranged for their own equipment during this
+            # outage, and say it again. Evidence cannot settle that here; a person can.
+            return Decision(Route.HANDOFF, CUSTOMER_DISPUTES_OUTAGE)
         if by_customer or current != told:
             return Decision(Route.OUTAGE_REPLY)
         if resolved == current:
@@ -260,6 +266,13 @@ def _after_diagnosis(state: ContactState, limits: RoutingLimits) -> Decision:
     if reason == DecisionReason.SUSPECTED_NODE_FAULT.value and not state.get("suspected_told"):
         return Decision(Route.UNKNOWN_REPLY)  # something specific to say for the first time
     return _keep_waiting(state, limits, reason)
+
+
+def disputes_the_outage(state: ContactState) -> bool:
+    """The customer's latest message says the fault is their own equipment, or asks for a
+    technician. During an outage that is a disagreement with the evidence."""
+    intent = state.get("intent") or {}
+    return bool(intent.get("insists_device_fault") or intent.get("requests_technician"))
 
 
 def _on_a_clear_node(

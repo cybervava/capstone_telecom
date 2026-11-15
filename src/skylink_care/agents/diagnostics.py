@@ -27,7 +27,7 @@ from skylink_care.adapters.models import NodeStatusDto
 from skylink_care.adapters.result import Err, ErrorKind, Ok, Result
 from skylink_care.db.line_tests import LineTest, LineTestRepository
 from skylink_care.db.reference import ACTIVE, ReferenceRepository
-from skylink_care.domain.models import MappingStatus, NetworkState, NodeMapping
+from skylink_care.domain.models import MappingStatus, NetworkState, NodeMapping, ServiceType
 from skylink_care.domain.network import (
     DecisionLimits,
     FeedView,
@@ -245,6 +245,8 @@ class DiagnosticsAgent:
 
     async def _test_line(self, subject: Subject, audit: Auditor, *, fresh: bool) -> LineTest | None:
         """Run a line test, or reuse a very recent one. None when no result could be had."""
+        if subject.service_type != ServiceType.BROADBAND.value:
+            return None  # a mobile connection has no line that can be tested from here
         if not fresh and subject.contact_id is not None:
             # The limit protects the equipment from one conversation re-testing it every turn.
             # A new complaint is new information and gets a test of its own.

@@ -34,6 +34,7 @@ from skylink_care.domain.network import DecisionReason
 from skylink_care.orchestrator.credit_nodes import CreditNodes
 from skylink_care.orchestrator.evidence import decision_to_state, outage_from_state, parse_time
 from skylink_care.orchestrator.handover import handoff_summary
+from skylink_care.orchestrator.routing import disputes_the_outage
 from skylink_care.orchestrator.state import (
     VISIT_CHOSEN,
     VISIT_OFFERED,
@@ -135,30 +136,18 @@ class NetworkNodes(CreditNodes, VisitNodes):
         contact = await self._contact(state)
         network = state["network"]
         outage = outage_from_state(network["outage"])
-        service = state.get("service") or {}
         if outage is None or not network.get("node_id"):
             raise RuntimeError("outage_reply reached without an active outage on a known node")
-
-        joined = await self._rt.episodes.open_or_join(
-            network["node_id"], service["service_type"], outage_id=outage.outage_id
-        )
-        episode = joined.episode
-        opened = await self._open_ticket(contact, state, episode)
-        if joined.upgraded or opened.conflicting:
-            # The ticket was opened as a suspected fault before the outage was declared.
-            await self._upgrade_ticket(contact, episode, opened, outage.outage_id)
-        already_over = await self._settle_ticket(contact, episode, opened)
-        if opened.action.status in {ActionStatus.FAILED, ActionStatus.BLOCKED}:
-            # The node's ticket could not be raised earlier. The customer is still told the
-            # truth about the outage; a person is told the ticket is missing.
-            await self._rt.handoffs.open(
-                contact.contact_id,
-                reason="INCIDENT_NOT_RAISED",
-                summary=handoff_summary(state, "INCIDENT_NOT_RAISED"),
-                priority=2,
-            )
+        episode, already_over = await self._ticket_for(contact, state, outage.outage_id)
+        # A customer who says the fault is their own equipment is told why nothing is arranged
+        # for it while the outage lasts. Once: the second time a person takes it (routing).
+        disputed = state.get("trigger") == Trigger.CUSTOMER.value and disputes_the_outage(state)
         reply = replies.outage_active(
-            contact.complaint_ref, outage, evidence_at=parse_time(network.get("evidence_at"))
+            contact.complaint_ref,
+            outage,
+            evidence_at=parse_time(network.get("evidence_at")),
+            service_type=(state.get("service") or {}).get("service_type"),
+            disputed=disputed,
         )
         await self._say(contact, state, reply, author="agent:resolution")
         # The end of the outage normally arrives as a feed event. The live status is watched as
@@ -186,9 +175,36 @@ class NetworkNodes(CreditNodes, VisitNodes):
             "episode_id": str(episode.episode_id),
             "told_outage_id": outage.outage_id,
             "resolved_outage_id": outage.outage_id if resolving else None,
+            "outage_disputed": outage.outage_id if disputed else state.get("outage_disputed"),
             "close_key": None,
             "asked_if_working": False,
         }
+
+    async def _ticket_for(
+        self, contact: Contact, state: ContactState, outage_id: str
+    ) -> tuple[Episode, bool]:
+        """The node's one incident for this outage, with this complaint on it. Returns the
+        episode and whether the outage has turned out to be over already."""
+        network, service = state["network"], state.get("service") or {}
+        joined = await self._rt.episodes.open_or_join(
+            network["node_id"], service["service_type"], outage_id=outage_id
+        )
+        episode = joined.episode
+        opened = await self._open_ticket(contact, state, episode)
+        if joined.upgraded or opened.conflicting:
+            # The ticket was opened as a suspected fault before the outage was declared.
+            await self._upgrade_ticket(contact, episode, opened, outage_id)
+        already_over = await self._settle_ticket(contact, episode, opened)
+        if opened.action.status in {ActionStatus.FAILED, ActionStatus.BLOCKED}:
+            # The node's ticket could not be raised earlier. The customer is still told the
+            # truth about the outage; a person is told the ticket is missing.
+            await self._rt.handoffs.open(
+                contact.contact_id,
+                reason="INCIDENT_NOT_RAISED",
+                summary=handoff_summary(state, "INCIDENT_NOT_RAISED"),
+                priority=2,
+            )
+        return episode, already_over
 
     async def unknown_reply(self, state: ContactState) -> dict[str, Any]:
         """Say what is and is not known. Never an all-clear, and never device steps.
@@ -205,6 +221,7 @@ class NetworkNodes(CreditNodes, VisitNodes):
             reason,
             last_known_outage=outage_from_state(network.get("last_known_outage")),
             evidence_at=parse_time(network.get("evidence_at")),
+            service_type=(state.get("service") or {}).get("service_type"),
         )
         await self._say(contact, state, reply, author="agent:diagnostics")
         if reason is DecisionReason.MAPPING_UNRESOLVED:
@@ -356,7 +373,11 @@ class NetworkNodes(CreditNodes, VisitNodes):
                 contact.complaint_ref, evidence_at=evidence_at, tested_at=tested_at
             )
         else:
-            reply = replies.no_outage_reported(contact.complaint_ref, evidence_at=evidence_at)
+            reply = replies.no_outage_reported(
+                contact.complaint_ref,
+                evidence_at=evidence_at,
+                service_type=(state.get("service") or {}).get("service_type"),
+            )
         await self._say(contact, state, reply, author="agent:diagnostics")
         await self._rt.handoffs.open(
             contact.contact_id,

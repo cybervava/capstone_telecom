@@ -26,6 +26,10 @@ _WORDING = {
         "A test found a fault on your line earlier and I couldn't test it again to confirm."
     ),
     "NETWORK_STATUS_UNVERIFIED": "I still can't verify the network status for your area.",
+    "CUSTOMER_DISPUTES_OUTAGE": (
+        "You've told me again that the fault is with your own equipment, and I can't settle"
+        " that here while the outage in your area is active."
+    ),
     "VISIT_OFFER_UNANSWERED": (
         "Your line needs a repair and I haven't heard back from you about a technician visit."
     ),

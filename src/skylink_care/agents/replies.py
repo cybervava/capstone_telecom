@@ -57,8 +57,19 @@ def eta_source_phrase(eta_source: str | None) -> str:
     return _ETA_SOURCES.get(eta_source or "", "network team estimate")
 
 
-def outage_active(complaint_ref: str, outage: OutageInfo, *, evidence_at: datetime | None) -> Reply:
+def outage_active(
+    complaint_ref: str,
+    outage: OutageInfo,
+    *,
+    evidence_at: datetime | None,
+    service_type: str | None = None,
+    disputed: bool = False,
+) -> Reply:
+    """The outage, with its evidence. ``disputed`` is for a customer who says the fault is
+    their own equipment, or asks for a technician: they are told why neither is arranged
+    while the outage lasts, and what happens when it is over."""
     cause = cause_phrase(outage.cause)
+    mobile = service_type == "mobile"
     parts = [AI_DISCLOSURE]
     if outage.planned:
         parts.append(
@@ -78,17 +89,14 @@ def outage_active(complaint_ref: str, outage: OutageInfo, *, evidence_at: dateti
         parts.append("There is no restoration estimate yet; I will not guess one.")
     if evidence_at is not None:
         parts.append(f"This status was verified at {clock(evidence_at)}.")
-    parts.append(
-        "You don't need to restart or reset your router and no technician visit is needed:"
-        " the fault is on our side."
-    )
+    parts.append(_about_their_equipment(mobile=mobile, disputed=disputed))
     parts.append(
         f"Your complaint reference is {complaint_ref}. It is recorded against this outage and"
         " I'll update you when service is restored."
     )
     return Reply(
         " ".join(parts),
-        "outage_active.v1",
+        "outage_disputed.v1" if disputed else "outage_active.v1",
         {
             "outage_id": outage.outage_id,
             "outage_version": outage.version,
@@ -99,24 +107,64 @@ def outage_active(complaint_ref: str, outage: OutageInfo, *, evidence_at: dateti
     )
 
 
+def _about_their_equipment(*, mobile: bool, disputed: bool) -> str:
+    """During an outage nothing is to be done to the customer's own equipment. Said plainly,
+    and at more length to a customer who believes otherwise."""
+    if not disputed:
+        if mobile:
+            return (
+                "You don't need to restart your phone or change its settings: the fault is on"
+                " our side."
+            )
+        return (
+            "You don't need to restart or reset your router and no technician visit is needed:"
+            " the fault is on our side."
+        )
+    if mobile:
+        return (
+            "I understand you believe the fault is with your own phone. Restarting it,"
+            " replacing it or changing its settings would not bring your service back while"
+            " this outage is active, so there is nothing for you to do on it now. When the"
+            " outage is resolved I'll tell you here, and if your service does not return then,"
+            " I'll look at your connection straight away. If you would rather speak to a person"
+            ' now, reply "agent".'
+        )
+    return (
+        "I understand you believe the fault is with your own equipment. Restarting or"
+        " replacing your router, or a technician visit, would not bring your service back"
+        " while this outage is active, so I am not arranging any of them now. When the outage"
+        " is resolved I'll tell you here, and if your service does not return then, I'll test"
+        ' your line straight away. If you would rather speak to a person now, reply "agent".'
+    )
+
+
 def network_unknown(
     complaint_ref: str,
     reason: DecisionReason,
     *,
     last_known_outage: OutageInfo | None = None,
     evidence_at: datetime | None = None,
+    service_type: str | None = None,
 ) -> Reply:
     """Degraded-mode message. It must never suggest that the network is healthy."""
+    mobile = service_type == "mobile"
     opening = f"{AI_DISCLOSURE} Your complaint is registered under reference {complaint_ref}."
+    nothing_asked = (
+        "ask you to change anything on your phone"
+        if mobile
+        else "ask you to change anything on your router or book a technician"
+    )
     closing = (
-        "Until the status is confirmed I won't ask you to change anything on your router or"
-        " book a technician, because that could waste your time. We will update you as soon as"
-        " we can verify it."
+        f"Until the status is confirmed I won't {nothing_asked}, because that could waste your"
+        " time. We will update you as soon as we can verify it."
     )
     if reason is DecisionReason.MAPPING_UNRESOLVED:
+        subject, checked = (
+            ("mobile service", "connection") if mobile else ("service address", "line")
+        )
         middle = (
-            "I couldn't match your service address to our network records, so I can't check the"
-            " network status for your line automatically. A specialist will check it and"
+            f"I couldn't match your {subject} to our network records, so I can't check the"
+            f" network status for your {checked} automatically. A specialist will check it and"
             " contact you."
         )
     elif reason is DecisionReason.SUSPECTED_NODE_FAULT:
@@ -147,12 +195,15 @@ def network_unknown(
     )
 
 
-def no_outage_reported(complaint_ref: str, *, evidence_at: datetime) -> Reply:
+def no_outage_reported(
+    complaint_ref: str, *, evidence_at: datetime, service_type: str | None = None
+) -> Reply:
     """Only for a CONFIRMED_CLEAR decision. Says "none reported", never "there is none"."""
+    checked = "connection" if service_type == "mobile" else "line"
     return Reply(
         f"{AI_DISCLOSURE} I've checked the network: no outage has been reported for your area"
         f" as of {clock(evidence_at)}. Your complaint reference is {complaint_ref}."
-        " I'm passing you to a support specialist to check your line.",
+        f" I'm passing you to a support specialist to check your {checked}.",
         "no_outage_reported.v1",
         {"evidence_at": evidence_at.isoformat()},
     )
@@ -268,11 +319,11 @@ def outage_restored(
         news = f"The outage in your area (outage {outage_id}) is no longer active on our network."
     else:
         news = "Our network checks no longer show a problem in your area."
-    device = "phone" if service_type == "mobile" else "router"
+    device, checked = ("phone", "connection") if service_type == "mobile" else ("router", "line")
     return Reply(
         f"{AI_DISCLOSURE} {news} Your service should be working again. If it isn't back within"
         f" 10 minutes, restart your {device} once. If it still doesn't work after that, reply"
-        f" here and I'll have your line checked.{about_credit}"
+        f" here and I'll have your {checked} checked.{about_credit}"
         f" Your complaint reference is {complaint_ref}.",
         "outage_restored.v1",
         {

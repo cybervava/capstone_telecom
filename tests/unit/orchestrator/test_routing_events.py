@@ -525,3 +525,67 @@ def test_end_of_the_credit_the_contact_waits_on_is_told_first() -> None:
 )
 def test_other_finished_actions_do_not_start_a_credit_message(state: ContactState) -> None:
     assert decide_route(state).route is Route.AWAIT
+
+
+# --- the network says outage, the customer says device -------------------------------------------
+
+
+def disputing(**state: Any) -> ContactState:
+    return diagnosed(
+        "ACTIVE",
+        trigger=Trigger.CUSTOMER,
+        outage_id=TOLD,
+        intent={"insists_device_fault": True},
+        **state,
+    )
+
+
+def test_first_dispute_is_answered_with_the_outage_and_its_evidence() -> None:
+    assert decide_route(disputing(), LIMITS).route is Route.OUTAGE_REPLY
+    assert decide_route(disputing(told_outage_id=TOLD), LIMITS).route is Route.OUTAGE_REPLY
+
+
+@pytest.mark.parametrize("flag", ["insists_device_fault", "requests_technician"])
+def test_dispute_repeated_for_the_same_outage_goes_to_a_person(flag: str) -> None:
+    again = diagnosed(
+        "ACTIVE",
+        trigger=Trigger.CUSTOMER,
+        outage_id=TOLD,
+        intent={flag: True},
+        told_outage_id=TOLD,
+        outage_disputed=TOLD,
+    )
+
+    decision = decide_route(again, LIMITS)
+
+    assert (decision.route, decision.handoff_reason) == (Route.HANDOFF, "CUSTOMER_DISPUTES_OUTAGE")
+
+
+def test_dispute_of_an_earlier_outage_does_not_count_against_this_one() -> None:
+    assert decide_route(disputing(outage_disputed="OUT-0"), LIMITS).route is Route.OUTAGE_REPLY
+
+
+def test_question_after_a_dispute_is_still_just_answered() -> None:
+    asking = diagnosed(
+        "ACTIVE",
+        trigger=Trigger.CUSTOMER,
+        outage_id=TOLD,
+        intent={"insists_device_fault": False},
+        told_outage_id=TOLD,
+        outage_disputed=TOLD,
+    )
+
+    assert decide_route(asking, LIMITS).route is Route.OUTAGE_REPLY
+
+
+def test_dispute_on_record_does_not_hand_over_a_turn_the_platform_started() -> None:
+    silent = diagnosed(
+        "ACTIVE",
+        trigger=Trigger.RECHECK,
+        outage_id=TOLD,
+        intent={"insists_device_fault": True},
+        told_outage_id=TOLD,
+        outage_disputed=TOLD,
+    )
+
+    assert decide_route(silent, LIMITS).route is Route.KEEP_WAITING

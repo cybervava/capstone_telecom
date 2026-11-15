@@ -84,6 +84,10 @@ class ContactState(TypedDict, total=False):
     episode_id: str | None
     # The outage the customer has been told about and is waiting on.
     told_outage_id: str | None
+    # The outage during which the customer said the fault was their own equipment (or asked
+    # for a technician) and was told why nothing is arranged for it. Saying it again for the
+    # same outage is not answered a second time: a person takes it.
+    outage_disputed: str | None
     # An outage on their node the NOC has reported resolved: "service restored" is owed.
     resolved_outage_id: str | None
     # Key of the armed network re-check timer. A timer with any other key is stale.
