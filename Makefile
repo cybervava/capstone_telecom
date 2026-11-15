@@ -61,6 +61,9 @@ profile: ## Write the mapping-quality profile to reports/data_profile.md
 dev: up seed ## Start PostgreSQL, seed (clean state), then run the five processes on this machine
 	./scripts/dev_stack.sh start
 
+demo: up seed ## Like `dev`, with the wait before a technician visit shortened to 20 seconds
+	DEMO_HOLD_SECONDS=20 ./scripts/dev_stack.sh start
+
 stop: ## Stop the local processes
 	./scripts/dev_stack.sh stop
 

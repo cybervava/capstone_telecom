@@ -128,6 +128,8 @@ services:
       CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS: ${CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS:-900}
       CARE_LINE_RETEST_SECONDS: ${CARE_LINE_RETEST_SECONDS:-120}
       CARE_DISPATCH_HOLD_SECONDS: ${CARE_DISPATCH_HOLD_SECONDS:-600}
+      CARE_VISIT_SLOTS_OFFERED: ${CARE_VISIT_SLOTS_OFFERED:-3}
+      CARE_VISIT_LINE_TEST_MAX_AGE_SECONDS: ${CARE_VISIT_LINE_TEST_MAX_AGE_SECONDS:-300}
       CARE_NETWORK_RECHECK_SECONDS: ${CARE_NETWORK_RECHECK_SECONDS:-60}
       CARE_NETWORK_RECHECK_LIMIT: ${CARE_NETWORK_RECHECK_LIMIT:-5}
       CARE_SUSPECTED_WAIT_SECONDS: ${CARE_SUSPECTED_WAIT_SECONDS:-900}
@@ -169,6 +171,14 @@ services:
       # It checks the credit policy again before it applies a credit, so it reads the same
       # policy file (part of the image) and the same review switch as the orchestrator.
       CARE_CREDIT_REVIEW_ALL: ${CARE_CREDIT_REVIEW_ALL:-true}
+      # Before it books a visit it looks at the node and the line's last test for itself, by the
+      # same rule and the same limits as the orchestrator that proposed it.
+      CARE_STATUS_MAX_AGE_SECONDS: ${CARE_STATUS_MAX_AGE_SECONDS:-60}
+      CARE_FEED_MAX_AGE_SECONDS: ${CARE_FEED_MAX_AGE_SECONDS:-90}
+      CARE_LINE_TEST_CLUSTER_THRESHOLD: ${CARE_LINE_TEST_CLUSTER_THRESHOLD:-3}
+      CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS: ${CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS:-900}
+      CARE_DISPATCH_HOLD_SECONDS: ${CARE_DISPATCH_HOLD_SECONDS:-600}
+      CARE_VISIT_EVIDENCE_MAX_AGE_SECONDS: ${CARE_VISIT_EVIDENCE_MAX_AGE_SECONDS:-1800}
       # The only process that can write to the enterprise systems.
       OSS_KEY_EXECUTOR: ${OSS_KEY_EXECUTOR:?run make init}
 

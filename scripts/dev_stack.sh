@@ -6,6 +6,10 @@
 # the API gets no gateway key, the orchestrator gets the read-only agent keys, the feed consumer
 # gets the one key that can read the event feed, and the write key goes to the executor alone.
 # The same split is in docker-compose.yml.
+#
+# DEMO_HOLD_SECONDS=20 ./scripts/dev_stack.sh start  (or `make demo`) shortens the wait before a
+# technician visit is offered, so that the whole journey can be shown in a minute. It changes
+# two timings for the processes that use them and nothing else.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 umask 077
@@ -13,12 +17,21 @@ umask 077
 SERVICES=(mock-oss care-api care-worker care-executor care-ingest)
 mkdir -p var/log var/run
 
+# The two timings a demo shortens, for the two processes that judge the hold.
+demo_timings() {
+  case "$1" in
+    care-worker|care-executor)
+      printf 'CARE_DISPATCH_HOLD_SECONDS=%s\nCARE_NETWORK_RECHECK_SECONDS=%s\n' \
+        "$DEMO_HOLD_SECONDS" "$(( DEMO_HOLD_SECONDS / 2 > 5 ? DEMO_HOLD_SECONDS / 2 : 5 ))" ;;
+  esac
+}
+
 allowed_variables() {
   case "$1" in
     mock-oss)      echo '^(MOCK_OSS_|OSS_KEY_)' ;;
     care-api)      echo '^(CARE_ENV|CARE_DB_|CARE_JWT_SECRET|CARE_API_)' ;;
-    care-worker)   echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_LLM_|CARE_STATUS_|CARE_FEED_|CARE_KNOWLEDGE_|CARE_LINE_|CARE_DISPATCH_|CARE_CREDIT_|CARE_APPROVAL_|CARE_NETWORK_|CARE_SUSPECTED_|CARE_OUTAGE_|CARE_CLOSE_|ANTHROPIC_API_KEY|OSS_KEY_(TRIAGE|DIAGNOSTICS|RESOLUTION|DISPATCH|NOTIFICATION)=)' ;;
-    care-executor) echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_CREDIT_|OSS_KEY_EXECUTOR=)' ;;
+    care-worker)   echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_LLM_|CARE_STATUS_|CARE_FEED_|CARE_KNOWLEDGE_|CARE_LINE_|CARE_DISPATCH_|CARE_VISIT_|CARE_CREDIT_|CARE_APPROVAL_|CARE_NETWORK_|CARE_SUSPECTED_|CARE_OUTAGE_|CARE_CLOSE_|ANTHROPIC_API_KEY|OSS_KEY_(TRIAGE|DIAGNOSTICS|RESOLUTION|DISPATCH|NOTIFICATION)=)' ;;
+    care-executor) echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_CREDIT_|CARE_STATUS_|CARE_FEED_|CARE_LINE_|CARE_DISPATCH_|CARE_VISIT_|OSS_KEY_EXECUTOR=)' ;;
     care-ingest)   echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_NOTIFY_|OSS_KEY_INGEST=)' ;;
   esac
 }
@@ -31,6 +44,15 @@ start() {
       continue
     fi
     grep -E "$(allowed_variables "$service")" .env >"var/run/$service.env"
+    if [ -n "${DEMO_HOLD_SECONDS:-}" ]; then
+      case "$DEMO_HOLD_SECONDS" in
+        ''|*[!0-9]*) echo "DEMO_HOLD_SECONDS must be a whole number of seconds" >&2; exit 2 ;;
+      esac
+      grep -Ev '^(CARE_DISPATCH_HOLD_SECONDS|CARE_NETWORK_RECHECK_SECONDS)=' \
+        "var/run/$service.env" >"var/run/$service.env.tmp" || true
+      demo_timings "$service" >>"var/run/$service.env.tmp"
+      mv "var/run/$service.env.tmp" "var/run/$service.env"
+    fi
     nohup env -i PATH="$PATH" HOME="$HOME" \
       uv run --env-file "var/run/$service.env" "$service" >"var/log/$service.log" 2>&1 &
     echo $! >"var/run/$service.pid"

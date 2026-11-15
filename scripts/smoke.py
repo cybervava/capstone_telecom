@@ -22,6 +22,7 @@ Exits non-zero if any check fails. It changes simulator state and restores it at
 from __future__ import annotations
 
 import os
+import re
 import sys
 import time
 import uuid
@@ -35,6 +36,9 @@ API = "http://{}:{}".format(
 )
 OSS = os.environ.get("CARE_OSS_BASE_URL", "http://127.0.0.1:8081")
 WAIT_SECONDS = 20.0
+# The hold before a visit is offered is only waited out when it is this short (`make demo`).
+SHORT_HOLD_MINUTES = 1
+HOLD_WAIT_SECONDS = 150.0
 SEARCH = {"service_type": "broadband", "mapping_defect": "none", "status": "active"}
 failures: list[str] = []
 
@@ -71,15 +75,15 @@ def open_contact(
     return response.json()["data"], elapsed_ms
 
 
-def eventually[T](what: str, probe: Callable[[], T | None]) -> T:
+def eventually[T](what: str, probe: Callable[[], T | None], within: float = WAIT_SECONDS) -> T:
     """Poll until ``probe`` returns something, or fail with what was being waited for."""
-    deadline = time.monotonic() + WAIT_SECONDS
+    deadline = time.monotonic() + within
     while time.monotonic() < deadline:
         found = probe()
         if found:
             return found
         time.sleep(0.3)
-    raise TimeoutError(f"{what}: nothing within {WAIT_SECONDS}s")
+    raise TimeoutError(f"{what}: nothing within {within}s")
 
 
 def outbound(contact: dict[str, Any]) -> list[str]:
@@ -278,7 +282,9 @@ def restoration(
     check("the node's incident is resolved", [i["status"] for i in incidents] == ["RESOLVED"])
 
 
-def failing_line_is_held(api: httpx.Client, sim: httpx.Client, customer: dict[str, Any]) -> None:
+def failing_line_is_held(
+    api: httpx.Client, sim: httpx.Client, customer: dict[str, Any]
+) -> tuple[dict[str, str], str, str]:
     sim.post(
         "/admin/v1/line-faults", json={"service_id": customer["service_id"], "fault": True}
     ).raise_for_status()
@@ -296,6 +302,56 @@ def failing_line_is_held(api: httpx.Client, sim: httpx.Client, customer: dict[st
     tables = sim.get("/admin/v1/state").json()["tables"]
     check("no technician booked", tables["appointments"] == 0)
     say(f"\n     assistant: {reply}")
+    return headers, accepted["contact_id"], reply
+
+
+def visit_is_booked_after_the_hold(
+    api: httpx.Client,
+    sim: httpx.Client,
+    customer: dict[str, Any],
+    waiting: tuple[dict[str, str], str, str],
+) -> None:
+    """The contact of the journey before, once its hold is over: offer, choice, booking."""
+    headers, contact_id, hold_reply = waiting
+    minutes = re.search(r"up to (\d+) minutes?", hold_reply)
+    if minutes is None or int(minutes.group(1)) > SHORT_HOLD_MINUTES:
+        say(
+            "  [--] not run: the hold before a visit is offered is"
+            f" {minutes.group(1) if minutes else '?'} minutes here."
+            " `make demo` starts the stack with a 20-second hold."
+        )
+        return
+
+    def reply_with(phrase: str) -> str | None:
+        contact = api.get(f"/v1/contacts/{contact_id}", headers=headers).json()["data"]
+        return next((text for text in reversed(outbound(contact)) if phrase in text), None)
+
+    offer = eventually(
+        "visit offer", lambda: reply_with("I can book a visit"), within=HOLD_WAIT_SECONDS
+    )
+    check("after the hold the line is tested again", "tested again at" in offer)
+    check("a visit is offered with numbered slots", "\n1. " in offer and "\n2. " in offer)
+    booked = sim.get("/field/v1/appointments", params={"service_id": customer["service_id"]})
+    check("nothing is booked before the customer chooses", booked.json()["appointments"] == [])
+    say(f"\n     assistant: {offer}")
+    api.post(
+        f"/v1/contacts/{contact_id}/messages",
+        json={"text": "2", "client_message_id": uuid.uuid4().hex},
+        headers=headers,
+    ).raise_for_status()
+    say("\n     customer: 2")
+    confirmation = eventually("visit confirmation", lambda: reply_with("visit is booked for"))
+    appointments = sim.get(
+        "/field/v1/appointments", params={"service_id": customer["service_id"]}
+    ).json()["appointments"]
+    check("exactly one visit was booked", len(appointments) == 1, str(len(appointments)))
+    second_slot = offer.split("\n2. ", 1)[1].split("\n", 1)[0]
+    check("it is the slot the customer chose", second_slot in confirmation, second_slot)
+    check(
+        "the confirmation carries the appointment number",
+        bool(appointments) and appointments[0]["appointment_id"] in confirmation,
+    )
+    say(f"\n     assistant: {confirmation}")
 
 
 def guided_steps_are_cited(api: httpx.Client, sim: httpx.Client, customer: dict[str, Any]) -> None:
@@ -407,13 +463,16 @@ def main() -> int:
         restoration(api, sim, headers, accepted, outage_id)
 
         say(f"\n5. A failing line on healthy node {on_a_healthy_node['true_node_id']}")
-        failing_line_is_held(api, sim, on_a_healthy_node)
+        held = failing_line_is_held(api, sim, on_a_healthy_node)
 
         say(f"\n6. A {with_a_good_line['router_model']} router on a healthy node and line")
         guided_steps_are_cited(api, sim, with_a_good_line)
 
         say(f"\n7. A five-hour outage on {long_outage['true_node_id']}: credit and approval")
         credit_is_approved_and_applied(api, sim, long_outage)
+
+        say("\n8. The held line still fails after the hold: a technician visit")
+        visit_is_booked_after_the_hold(api, sim, on_a_healthy_node, held)
     finally:
         sim.delete("/admin/v1/chaos")
         sim.post(

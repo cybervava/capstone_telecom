@@ -7,7 +7,7 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 ## Status
 
-Milestones M0 (foundations) and M1 (reference-first outage path) are built and tested. M2 is in progress: its first five slices (the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval) are built; the rest of M2 and everything after it is not.
+Milestones M0 (foundations) and M1 (reference-first outage path) are built and tested. M2 is in progress: its first six slices (the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits) are built; the rest of M2 and everything after it is not.
 
 **Works today**
 
@@ -21,13 +21,14 @@ Milestones M0 (foundations) and M1 (reference-first outage path) are built and t
 - **Remote line tests.** The test names the node that really serves the line, which repairs a missing, ambiguous, stale or simply wrong address mapping. A failed line on a healthy-looking node is watched for the NOC's detection window before any repair is arranged.
 - **Guided troubleshooting.** With the node confirmed clear and the customer's line passing its test, a customer who asks gets the steps from the guide for **their own router model**, quoted verbatim with guide, section and version. The model comes from the service record, never from the message. Factory reset is never offered; steps are given once, then a person takes over.
 - **Service credits.** When an outage a customer waited on is resolved, a credit is worked out in code from the versioned policy file (never by a model, never from what the customer wrote) and offered in the same message. It is proposed with its amount frozen; an agent, or a supervisor above INR 500, approves that exact request through the API; only then does the executor apply it to Billing, one customer at a time and never twice. The customer is told the outcome, and the contact stays open until it is settled.
+- **Technician visits.** A visit is offered only when the customer's own line still fails its test after the hold, on a node proven clear. The customer is shown the earliest free slots and chooses one; the reply is read by rules and narrowly, so "I can't do 2" or "ok, how much is it?" books nothing and is asked again. The executor books the visit after looking at the node, the line's last test and Field Service's bookings for itself, and declines when any of it has changed: an outage declared in the meantime means no visit, however the customer answered. One visit per service.
 - **Degraded mode.** When nothing can be verified: reference still issued, no all-clear, no device steps; the status is re-checked on a timer and a person takes over if it stays unverified.
 - Per-contact audit trail, API with roles, per-caller rate limits, demo console.
 
 **Not built yet**
 
 - A screen for approvals (the API exists: `GET /v1/approvals`, `POST /v1/approvals/{id}/decision`). Credits for affected customers who did not contact us.
-- Technician dispatch (a line that still fails after the hold goes to a person for now).
+- Changing or cancelling a booked visit (a person does that); a visit for a line that passes its test.
 - The "network says outage, customer says device" conflict path; a mobile journey.
 - A learned embedding model for retrieval (the index uses a deterministic hashing embedder; see "Guide retrieval").
 - Surge test, circuit breaker, dashboards and alerts, evaluation reports.
@@ -50,8 +51,11 @@ make install     # installs the locked dependencies
 make up          # PostgreSQL with pgvector, on 127.0.0.1:55432
 make data        # synthetic data pack, 40,000 customers (CUSTOMERS=400000 for full scale)
 make dev         # migrate, seed, then start the gateway, API, orchestrator, executor and feed consumer
-make smoke       # seven live journeys over HTTP, with checks
+make smoke       # live journeys over HTTP, with checks
+make demo        # instead of `make dev`: the wait before a visit is offered is 20 seconds, not 10 minutes
 ```
+
+`make smoke` runs seven journeys against `make dev`. Against `make demo` it runs an eighth: the failing line is still failing after the hold, a visit is offered, the customer picks the second slot and the executor books it.
 
 Open <http://127.0.0.1:8080/>. Leave the customer ID empty to arrive as an unidentified guest, or enter one; `make smoke` prints an outage being started, and the simulator can find customers for you:
 
@@ -116,7 +120,8 @@ All settings come from the environment. `.env.example` lists every variable; `ma
 | `OSS_KEY_ADMIN` | simulator controls | Scenario and fault injection. No care process holds it |
 | `CARE_STATUS_MAX_AGE_SECONDS`, `CARE_FEED_MAX_AGE_SECONDS` | orchestrator | How old network evidence may be |
 | `CARE_LINE_TEST_CLUSTER_THRESHOLD`, `CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS`, `CARE_LINE_RETEST_SECONDS` | orchestrator | How many lines failing on one node, within what time, count as a node fault; how soon a line may be tested again |
-| `CARE_DISPATCH_HOLD_SECONDS` | orchestrator | How long a failed line on a healthy-looking node is watched before a repair is arranged |
+| `CARE_DISPATCH_HOLD_SECONDS` | orchestrator, executor | How long a failed line on a healthy-looking node is watched before a visit is offered. Both judge it: the executor checks the visit again before booking |
+| `CARE_VISIT_SLOTS_OFFERED`, `CARE_VISIT_LINE_TEST_MAX_AGE_SECONDS`, `CARE_VISIT_EVIDENCE_MAX_AGE_SECONDS` | orchestrator, executor | How many slots are offered; how old the failing line test may be when a visit is proposed, and when it is booked |
 | `CARE_NETWORK_RECHECK_SECONDS`, `CARE_NETWORK_RECHECK_LIMIT`, `CARE_SUSPECTED_WAIT_SECONDS` | orchestrator | How often an unverified network status is looked at again, and how long before a person takes over |
 | `CARE_OUTAGE_RECHECK_SECONDS` | orchestrator | How often the live status is looked at for a customer waiting on a declared outage, behind the event feed |
 | `CARE_CLOSE_QUIET_SECONDS` | orchestrator | How long a contact waits for the customer before it is closed (assumption; default 24 h) |
@@ -143,6 +148,26 @@ To see a credit locally, start an outage that began five hours ago, contact as a
 curl -s -X POST -H "X-API-Key: $OSS_KEY_ADMIN" -H "Content-Type: application/json" \
   -d '{"node_id":"<node>","cause":"FIBRE_CUT","started_minutes_ago":300}' \
   http://127.0.0.1:8081/admin/v1/outages
+```
+
+### Technician visits
+
+A visit is the remedy that costs a journey, and the one most often arranged for nothing: a line that fails in the minutes before the NOC declares an outage is repaired by the NOC, not by a technician at the door. The rule (`domain/dispatch.py`, pure and unit-tested) asks for proof on every point and says what is missing:
+
+| Needed | Otherwise |
+|---|---|
+| Service active, no visit still to come for it | `SERVICE_INACTIVE`, `VISIT_ALREADY_BOOKED` |
+| Node `CONFIRMED_CLEAR` on a live answer taken after the hold and fresh now | `OUTAGE_ACTIVE`, `NETWORK_UNVERIFIED`, `CLEAR_NOT_FRESH` |
+| The line failed, the hold has passed since the first failure, and a recent test made after the hold still fails | `LINE_PASSING`, `LINE_FAULT_NOT_PROVEN`, `HOLD_NOT_OVER`, `RETEST_NEEDED` |
+| The customer chose a slot | `NO_CONSENT` (checked last, so it means "everything else holds: ask") |
+
+The rule is applied twice. The orchestrator applies it after a fresh diagnosis, offers slots, reads the customer's reply and proposes a `VISIT_BOOK` action tied to the message that made the choice. The executor applies it again immediately before booking, on evidence it reads with its own key (the node's live state and the feed, the line's latest stored test, Field Service's bookings for the service), and ends the action as `SKIPPED` with the reason when it no longer holds. A unique index allows one booking in progress per service. A slot that filled up in the meantime leads to a fresh offer; a booking the customer could not be told about because a person had taken over is told from there.
+
+To see it locally, `make demo`, then make a line fail and contact as that customer:
+
+```bash
+curl -s -X POST -H "X-API-Key: $OSS_KEY_ADMIN" -H "Content-Type: application/json" \
+  -d '{"service_id":"<service>","fault":true}' http://127.0.0.1:8081/admin/v1/line-faults
 ```
 
 ### Guide retrieval
