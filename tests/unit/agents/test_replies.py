@@ -226,3 +226,33 @@ def test_line_fault_reply_says_the_line_was_tested_again() -> None:
     assert "still there (tested again at 10:31 IST on 15 Nov)" in reply.text
     assert "the line itself needs a repair" in reply.text
     assert REF in reply.text
+
+
+def test_guided_steps_reply_quotes_the_steps_and_says_where_they_come_from() -> None:
+    reply = replies.guided_steps(
+        REF,
+        guide_title="Aerolink AX1800 troubleshooting guide",
+        section_title="Wi-Fi problems",
+        steps=["Find the network name.", "Check the password on the label."],
+        citation="guide-al-ax18 §wifi v1.1",
+        evidence_at=NOW,
+        tested_at=NOW,
+    )
+
+    assert 'from the Aerolink AX1800 troubleshooting guide, section "Wi-Fi problems":' in reply.text
+    assert "\n1. Find the network name.\n2. Check the password on the label.\n" in reply.text
+    assert "Source: guide-al-ax18 §wifi v1.1." in reply.text
+    assert "Reply here to tell me whether that fixed it" in reply.text
+    assert REF in reply.text
+    assert reply.facts["citation"] == "guide-al-ax18 §wifi v1.1"
+
+
+def test_checks_clear_notice_asks_and_does_not_instruct() -> None:
+    reply = replies.checks_clear(REF, evidence_at=NOW, tested_at=NOW)
+
+    assert "no outage has been reported for your area as of 10:31 IST" in reply.text
+    assert "passed" in reply.text
+    assert "If your service is still not working, reply here" in reply.text
+    assert "restart" not in reply.text.lower()
+    assert "\n1. " not in reply.text
+    assert REF in reply.text

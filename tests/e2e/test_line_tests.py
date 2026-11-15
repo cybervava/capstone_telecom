@@ -108,7 +108,8 @@ async def test_line_that_recovers_during_the_hold_is_not_sent_for_repair(
     hold, verdict = await platform.replies(intake.contact_id)
     assert "found a fault" in hold
     assert "passed" in verdict
-    assert await handoff_reasons(platform) == ["TROUBLESHOOTING"]
+    assert "needs a repair" not in verdict
+    assert await handoff_reasons(platform) == []  # the line is fine: steps to try, not a repair
 
 
 async def test_hold_ends_with_the_outage_when_the_noc_declares_one(

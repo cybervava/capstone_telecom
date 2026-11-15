@@ -10,6 +10,7 @@ Times are shown in Indian Standard Time and always say so.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -166,6 +167,49 @@ def line_ok(complaint_ref: str, *, evidence_at: datetime, tested_at: datetime) -
         " passed. I'm passing you to a support specialist to look at your equipment with you."
         f" Your complaint reference is {complaint_ref}.",
         "line_ok.v1",
+        {"evidence_at": evidence_at.isoformat(), "line_tested_at": tested_at.isoformat()},
+    )
+
+
+def guided_steps(
+    complaint_ref: str,
+    *,
+    guide_title: str,
+    section_title: str,
+    steps: Sequence[str],
+    citation: str,
+    evidence_at: datetime,
+    tested_at: datetime,
+) -> Reply:
+    """Steps quoted from the guide for the customer's own router, with where they come from."""
+    numbered = "\n".join(f"{number}. {step}" for number, step in enumerate(steps, start=1))
+    return Reply(
+        f"{AI_DISCLOSURE} I've checked the network: no outage has been reported for your area"
+        f" as of {clock(evidence_at)}, and a remote test of your line at {clock(tested_at)}"
+        " passed, so the problem is most likely in the equipment at your home."
+        f' Please try these steps from the {guide_title}, section "{section_title}":\n'
+        f"{numbered}\n"
+        f"Source: {citation}.\n"
+        "Reply here to tell me whether that fixed it; if it did not, a specialist will take"
+        f" over. Your complaint reference is {complaint_ref}.",
+        "guided_steps.v1",
+        {
+            "citation": citation,
+            "steps": len(steps),
+            "evidence_at": evidence_at.isoformat(),
+            "line_tested_at": tested_at.isoformat(),
+        },
+    )
+
+
+def checks_clear(complaint_ref: str, *, evidence_at: datetime, tested_at: datetime) -> Reply:
+    """News nobody asked for just now: the checks are clear. Ask, do not instruct."""
+    return Reply(
+        f"{AI_DISCLOSURE} An update on your complaint {complaint_ref}: no outage has been"
+        f" reported for your area as of {clock(evidence_at)}, and a remote test of your line at"
+        f" {clock(tested_at)} passed. If your service is still not working, reply here and I'll"
+        " take you through some checks for your router.",
+        "checks_clear.v1",
         {"evidence_at": evidence_at.isoformat(), "line_tested_at": tested_at.isoformat()},
     )
 

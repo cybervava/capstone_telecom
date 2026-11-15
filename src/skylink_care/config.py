@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     oss_base_url: str = "http://127.0.0.1:8081"
 
     credit_policy_path: Path = Path("data/policies/credit_policy.v0.yaml")
+    # The knowledge pack; its router guides are indexed with `care-admin index-guides`.
+    knowledge_dir: Path = Path("data/knowledge")
     credit_review_all: bool = True
 
     status_max_age_seconds: int = Field(default=60, gt=0)

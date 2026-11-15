@@ -83,6 +83,8 @@ def handoff_summary(state: ContactState, reason: str) -> str:
     mapping_status = (state.get("mapping") or {}).get("status")
     if mapping_status and mapping_status != "RESOLVED":
         parts.append(f"Address mapping: {mapping_status}.")
+    if state.get("guidance_told"):
+        parts.append(f"Guide steps already given: {state['guidance_told']}.")
     if state.get("line_fault_seen_at"):
         parts.append(f"Line fault first seen at {state['line_fault_seen_at']}; held since.")
     rechecks = state.get("network_rechecks", 0)

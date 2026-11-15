@@ -53,6 +53,7 @@ seed: migrate ## Re-seed the mock gateway and start the care platform from a cle
 	uv run --env-file .env mock-oss seed --data $(DATA_DIR)
 	uv run --env-file .env care-admin reset-runtime
 	uv run --env-file .env care-admin load-reference --data $(DATA_DIR)
+	uv run --env-file .env care-admin index-guides
 
 profile: ## Write the mapping-quality profile to reports/data_profile.md
 	uv run --env-file .env care-admin profile

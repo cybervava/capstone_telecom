@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncIterator
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -25,7 +26,9 @@ from skylink_care.db.inbox import InboxRepository
 from skylink_care.db.messages import MessageRepository
 from skylink_care.db.migrate import migrate
 from skylink_care.db.reference import ReferenceRepository
+from skylink_care.pipelines.guide_index import build_guide_index
 
+KNOWLEDGE_DIR = Path(__file__).resolve().parents[2] / "data" / "knowledge"
 _MUTABLE_TABLES = (
     "approvals, actions, handoffs, inbox, timers, line_tests, contact_messages, contacts,"
     " node_episodes,"
@@ -52,6 +55,12 @@ async def database_conninfo() -> AsyncIterator[str]:
         pytest.skip(f"PostgreSQL not reachable ({exc}); run `make up`")
     conninfo = settings.database_conninfo(dbname=name)
     await migrate(conninfo)
+    # The guide index is static reference material: built once for the whole session.
+    database = await Database.open(conninfo, max_size=2)
+    try:
+        await build_guide_index(database, KNOWLEDGE_DIR)
+    finally:
+        await database.close()
     yield conninfo
     async with await AsyncConnection.connect(admin, autocommit=True) as conn:
         await conn.execute(

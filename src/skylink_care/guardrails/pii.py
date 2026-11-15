@@ -20,7 +20,9 @@ _KEEP = "KEEP"
 # Order matters: the first alternative that matches at a position wins.
 _PATTERNS: tuple[tuple[str, str], ...] = (
     (_KEEP, r"SKL-\d{6}-\d{6,}-\d"),  # complaint reference: not personal data, must survive
-    ("EMAIL", r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
+    # Bounded and anchored on its left edge: without that, a long run of letters with no "@"
+    # is re-scanned from every position.
+    ("EMAIL", r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,24}"),
     ("CUSTOMER_ID", r"\b[Cc]\d{7}\b"),
     ("SERVICE_ID", r"\b[Ss]\d{7}\b"),
     ("PHONE", r"(?<![\d-])(?:\+91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5}(?!\d)"),

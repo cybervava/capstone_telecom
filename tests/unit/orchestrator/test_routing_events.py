@@ -341,7 +341,7 @@ def after_triage(**overrides: Any) -> ContactState:
 
 
 def test_it_works_now_closes_the_contact_once_restoration_was_announced() -> None:
-    assert decide_route(after_triage(restoration_told=True)).route is Route.CLOSE
+    assert decide_route(after_triage(asked_if_working=True)).route is Route.CLOSE
 
 
 def test_it_works_now_means_nothing_before_restoration_was_announced() -> None:
@@ -349,14 +349,14 @@ def test_it_works_now_means_nothing_before_restoration_was_announced() -> None:
 
 
 def test_asking_for_a_person_beats_a_confirmation() -> None:
-    state = after_triage(restoration_told=True)
+    state = after_triage(asked_if_working=True)
     state["intent"] = {**state["intent"], "wants_human": True}
 
     assert decide_route(state).route is Route.HANDOFF
 
 
 def test_confirmation_inside_an_injection_attempt_closes_nothing() -> None:
-    state = after_triage(restoration_told=True)
+    state = after_triage(asked_if_working=True)
     state["intent"] = {**state["intent"], "abusive_or_off_topic": True}
 
     assert decide_route(state).route is Route.OUT_OF_SCOPE
@@ -400,7 +400,7 @@ def test_resolution_arriving_together_with_a_customer_message_is_still_noted() -
 
 @pytest.mark.parametrize("also", ["requests_credit", "requests_technician", "insists_device_fault"])
 def test_it_works_now_with_something_else_asked_for_does_not_close_the_contact(also: str) -> None:
-    state = after_triage(restoration_told=True)
+    state = after_triage(asked_if_working=True)
     state["intent"] = {**state["intent"], also: True}
 
     assert decide_route(state).route is not Route.CLOSE
@@ -418,7 +418,8 @@ def clear(**state: Any) -> ContactState:
     [
         (clear(line_test={"result": "FAIL"}), Route.LINE_HOLD),
         (clear(line_test={"result": "FAIL"}, line_hold_over=True), Route.CLEAR_REPLY),
-        (clear(line_test={"result": "PASS"}), Route.CLEAR_REPLY),
+        (clear(line_test={"result": "PASS"}), Route.GUIDE),
+        (clear(line_test={"result": "PASS"}, guidance_told="guide-x §wifi v1"), Route.CLEAR_REPLY),
         (clear(line_test={"result": "INCONCLUSIVE"}), Route.CLEAR_REPLY),
         (clear(line_test=None), Route.CLEAR_REPLY),
         # An outage the customer waited on has ended: that news comes first.
@@ -427,8 +428,9 @@ def clear(**state: Any) -> ContactState:
     ids=[
         "failing line is held",
         "still failing when the hold is over",
-        "passing line",
-        "inconclusive test",
+        "passing line: steps from the guide",
+        "passing line, steps already given: a person",
+        "inconclusive test: no device steps",
         "no test could be run",
         "restoration outranks the line",
     ],
@@ -481,3 +483,16 @@ def test_customer_who_asks_while_the_line_cannot_be_retested_is_still_answered()
     )
 
     assert decide_route(state, LIMITS).route is Route.LINE_HOLD
+
+
+def test_it_works_now_after_guide_steps_closes_the_contact() -> None:
+    state = after_triage(guidance_told="guide-al-ax18 §wifi v1.1", asked_if_working=True)
+
+    assert decide_route(state).route is Route.CLOSE
+
+
+def test_it_works_now_closes_nothing_once_the_question_was_withdrawn() -> None:
+    """Steps were given, then an outage began: "it works" is no longer an answer to anything."""
+    state = after_triage(guidance_told="guide-al-ax18 §wifi v1.1", asked_if_working=False)
+
+    assert decide_route(state).route is Route.DIAGNOSE

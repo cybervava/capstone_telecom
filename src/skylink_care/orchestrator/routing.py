@@ -138,12 +138,12 @@ def _after_triage(state: ContactState) -> Decision:
     if intent.get("abusive_or_off_topic"):
         return Decision(Route.OUT_OF_SCOPE)
     if (
-        state.get("restoration_told")
+        state.get("asked_if_working")
         and intent.get("confirms_working")
         and not any(intent.get(flag) for flag in _STILL_WANTS_SOMETHING)
     ):
-        # We said service was restored and asked; the customer says it works and asks for
-        # nothing else. There is nothing to check.
+        # We asked whether the service works (after a restoration, a clear check or steps to
+        # try); the customer says it does and asks for nothing else. There is nothing to check.
         return Decision(Route.CLOSE)
     if intent.get("intent") == Intent.OTHER.value:
         if intent.get("degraded"):
@@ -202,6 +202,10 @@ def _after_diagnosis(state: ContactState, limits: RoutingLimits) -> Decision:
             if by_customer:
                 return Decision(Route.LINE_HOLD)
             return _keep_waiting(state, limits, reason, give_up=LINE_TEST_UNAVAILABLE)
+        if result == LINE_PASSED and not state.get("guidance_told"):
+            # A clear node and a passing line point at the equipment in the home: the one case
+            # in which the customer is given steps to try, once.
+            return Decision(Route.GUIDE)
         return Decision(Route.CLEAR_REPLY)
 
     # UNKNOWN, or anything unrecognised: never the device flow.

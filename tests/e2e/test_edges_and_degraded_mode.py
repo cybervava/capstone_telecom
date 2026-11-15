@@ -327,7 +327,7 @@ async def test_defective_mapping_that_cannot_be_repaired_goes_to_a_person_withou
     assert "MAPPING_UNRESOLVED" in await handoff_reasons(platform)
 
 
-async def test_confirmed_clear_says_none_reported_and_passes_to_a_person(
+async def test_confirmed_clear_with_a_passing_line_gets_steps_from_the_guide(
     platform: Platform, simulator: Simulator
 ) -> None:
     customer = await customer_with(simulator)
@@ -341,12 +341,11 @@ async def test_confirmed_clear_says_none_reported_and_passes_to_a_person(
     assert "no outage has been reported for your area as of" in reply
     assert "a remote test of your line" in reply
     assert "passed" in reply
+    assert f"Source: guide-{customer['router_model'].lower()} §" in reply
     contact = await platform.runtime.contacts.get(intake.contact_id)
     assert contact is not None
-    assert contact.network_state == "CONFIRMED_CLEAR"
-    (handoff,) = await platform.runtime.handoffs.list_open()
-    assert handoff.reason == "TROUBLESHOOTING"
-    assert "Line test: PASS" in handoff.summary  # the person starts with the evidence
+    assert (contact.network_state, contact.status) == ("CONFIRMED_CLEAR", "AWAITING_CUSTOMER")
+    assert await handoff_reasons(platform) == []
     assert (await simulator.state())["tables"]["appointments"] == 0
 
 

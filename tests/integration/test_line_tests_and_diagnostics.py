@@ -7,17 +7,18 @@ and a node the mapping cannot name is found by asking the line, not by guessing.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from skylink_care.adapters.models import LineTestDto, NodeStatusDto
 from skylink_care.adapters.result import Err, ErrorKind, Ok, Result
 from skylink_care.agents.diagnostics import DiagnosticsAgent, LineTestPolicy, Subject
 from skylink_care.db.audit import AuditRepository
+from skylink_care.db.contacts import ContactRepository, NewContact
 from skylink_care.db.database import Database
 from skylink_care.db.line_tests import LineTest, LineTestRepository
 from skylink_care.db.read_model import ReadModelRepository
 from skylink_care.db.reference import ReferenceRepository
-from skylink_care.domain.models import MappingStatus, NetworkState
+from skylink_care.domain.models import Channel, MappingStatus, NetworkState
 from skylink_care.domain.network import DecisionLimits, DecisionReason
 from skylink_care.observability.audit import Auditor
 from tests.integration.test_audit_and_reference import seed_reference
@@ -122,13 +123,28 @@ def agent(db: Database, network: ScriptedNetwork) -> DiagnosticsAgent:
     )
 
 
-def subject(address_id: str = "A-GOOD", service_id: str = "S1") -> Subject:
+def subject(
+    address_id: str = "A-GOOD", service_id: str = "S1", *, contact_id: UUID | None = None
+) -> Subject:
     return Subject(
-        contact_id=None,
+        contact_id=contact_id,
         service_id=service_id,
         service_type="broadband",
         address_id=address_id,
     )
+
+
+async def a_contact(contacts: ContactRepository) -> UUID:
+    intake = await contacts.accept(
+        NewContact(
+            channel=Channel.CHAT,
+            client_request_id=uuid4().hex,
+            text="internet down",
+            correlation_id=uuid4().hex,
+            received_at=NOW,
+        )
+    )
+    return intake.contact_id
 
 
 def auditor(db: Database) -> Auditor:
@@ -188,21 +204,26 @@ async def test_customer_with_several_lines_on_a_node_counts_once(db: Database) -
     assert failing == 2  # customer C1, and the line whose owner is not on record
 
 
-async def test_latest_result_for_a_line_is_found_only_inside_the_window(db: Database) -> None:
+async def test_contact_finds_its_own_recent_result_and_nobody_elses(
+    db: Database, contacts: ContactRepository
+) -> None:
     tests = LineTestRepository(db)
+    mine, theirs = await a_contact(contacts), await a_contact(contacts)
     older, newer = (
         line_result("S1", "FAIL", minutes_ago=10),
         line_result("S1", "PASS", minutes_ago=3),
     )
-    await tests.record(older, contact_id=None)
-    await tests.record(newer, contact_id=None)
-    await tests.record(newer, contact_id=None)  # the same test stored twice changes nothing
+    await tests.record(older, contact_id=mine)
+    await tests.record(newer, contact_id=mine)
+    await tests.record(newer, contact_id=mine)  # the same test stored twice changes nothing
 
-    recent = await tests.latest_for_service("S1", since=NOW - timedelta(minutes=5))
+    recent = await tests.latest_for_contact(mine, "S1", since=NOW - timedelta(minutes=5))
 
     assert recent == newer
-    assert await tests.latest_for_service("S1", since=NOW - timedelta(minutes=1)) is None
-    assert await tests.latest_for_service("S9", since=NOW - timedelta(hours=1)) is None
+    assert await tests.latest_for_contact(mine, "S1", since=NOW - timedelta(minutes=1)) is None
+    assert await tests.latest_for_contact(mine, "S9", since=NOW - timedelta(hours=1)) is None
+    # Another conversation about the same line does not inherit the result.
+    assert await tests.latest_for_contact(theirs, "S1", since=NOW - timedelta(hours=1)) is None
 
 
 # --- the agent -----------------------------------------------------------------------------------
@@ -287,20 +308,26 @@ async def test_mapping_that_cannot_be_repaired_stays_unresolved(db: Database) ->
     assert (diagnosis.line_test, network.status_calls) == (None, [])
 
 
-async def test_recent_result_is_reused_unless_a_fresh_one_is_asked_for(db: Database) -> None:
+async def test_recent_result_is_reused_within_a_contact_unless_a_fresh_one_is_asked_for(
+    db: Database, contacts: ContactRepository
+) -> None:
     await seed_reference(db)
     network = ScriptedNetwork({NODE: operational(NODE)}, line_answer(NODE, "PASS"))
     diagnostics = agent(db, network)
+    mine, another = await a_contact(contacts), await a_contact(contacts)
     earlier = line_result("S1", "FAIL", minutes_ago=1)
-    await LineTestRepository(db).record(earlier, contact_id=None)
+    await LineTestRepository(db).record(earlier, contact_id=mine)
 
-    reused = await diagnostics.run(subject(), audit=auditor(db))
-    fresh = await diagnostics.run(subject(), audit=auditor(db), fresh_line_test=True)
+    reused = await diagnostics.run(subject(contact_id=mine), audit=auditor(db))
+    fresh = await diagnostics.run(subject(contact_id=mine), audit=auditor(db), fresh_line_test=True)
+    new_complaint = await diagnostics.run(subject(contact_id=another), audit=auditor(db))
 
     assert reused.line_test == earlier
     assert fresh.line_test is not None
     assert fresh.line_test.result == "PASS"
-    assert network.line_calls == ["S1"]  # one real test for two diagnoses
+    assert new_complaint.line_test is not None
+    assert new_complaint.line_test.result == "PASS"  # tested for itself, not handed the old FAIL
+    assert network.line_calls == ["S1", "S1"]  # one reuse, two real tests
 
 
 async def test_stale_word_of_an_outage_does_not_spare_the_line_its_test(db: Database) -> None:

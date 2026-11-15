@@ -220,7 +220,10 @@ async def test_suspected_fault_that_clears_closes_its_ticket_and_moves_the_custo
     suspected, clear = await platform.replies(intake.contact_id)
     assert "signs of a possible network problem" in suspected
     assert "no outage has been reported for your area as of" in clear
-    assert await handoff_reasons(platform) == ["TROUBLESHOOTING"]
+    # Nobody asked just now, so the customer is told and asked, not instructed.
+    assert "If your service is still not working, reply here" in clear
+    assert "Source: guide-" not in clear
+    assert await handoff_reasons(platform) == []
 
 
 async def test_suspected_fault_nobody_declares_goes_to_a_person_after_the_longer_wait(
@@ -391,13 +394,13 @@ async def test_customer_who_says_it_still_fails_after_restoration_is_not_closed(
     await platform.say(intake.contact_id, "no, my internet is still not working")
     await platform.settle()
 
+    replies = await platform.replies(intake.contact_id)
+    assert not any("closed complaint" in reply for reply in replies)
+    assert "Source: guide-" in replies[-1]  # the network is clear now: on to the equipment
     contact = await platform.runtime.contacts.get(intake.contact_id)
     assert contact is not None
-    assert contact.status == "HANDOFF"
-    assert await handoff_reasons(platform) == ["TROUBLESHOOTING"]
-    assert not any(
-        "closed complaint" in reply for reply in await platform.replies(intake.contact_id)
-    )
+    assert contact.status == "AWAITING_CUSTOMER"
+    assert contact.closed_at is None
 
 
 async def test_resolution_reported_by_the_feed_is_passed_on_while_the_network_api_is_down(

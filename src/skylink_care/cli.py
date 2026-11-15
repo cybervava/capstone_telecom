@@ -12,8 +12,10 @@ from skylink_care.config import get_settings
 from skylink_care.db.database import Database
 from skylink_care.db.migrate import migrate, reset_runtime
 from skylink_care.db.read_model import ReadModelRepository
+from skylink_care.pipelines.guide_index import KnowledgePackError, build_guide_index
 from skylink_care.pipelines.profile import build_profile, render_markdown
 from skylink_care.pipelines.reference_loader import DataPackError, load_reference
+from skylink_care.rag.documents import GuideError
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -25,6 +27,8 @@ def _parser() -> argparse.ArgumentParser:
     profile = commands.add_parser("profile", help="write the mapping-quality profile")
     profile.add_argument("--out", type=Path, default=Path("reports/data_profile.md"))
     profile.add_argument("--source", default="data/generated", help="label for the report")
+    guides = commands.add_parser("index-guides", help="build the index of the router guides")
+    guides.add_argument("--knowledge", type=Path, help="knowledge pack (default: from settings)")
     commands.add_parser(
         "reset-runtime",
         help="development only: forget contacts, actions and network state after a gateway re-seed",
@@ -66,6 +70,24 @@ async def _profile(source: str) -> str:
     finally:
         await database.close()
     return render_markdown(profile, generated_at=datetime.now(UTC), source=source)
+
+
+async def _index_guides(knowledge: Path | None) -> int:
+    settings = get_settings()
+    database = await Database.open(settings.database_conninfo(), max_size=2)
+    try:
+        info = await build_guide_index(database, knowledge or settings.knowledge_dir)
+    except (KnowledgePackError, GuideError) as exc:
+        # One unusable guide fails the whole build: the previous index stays in place.
+        sys.stderr.write(f"knowledge pack rejected: {exc}\n")
+        return 2
+    finally:
+        await database.close()
+    sys.stdout.write(
+        f"indexed {info.documents} guides, {info.chunks} sections"
+        f" (index {info.index_version}, embedder {info.embedder})\n"
+    )
+    return 0
 
 
 async def _reset_runtime() -> int:
@@ -130,6 +152,8 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_migrate())
     if args.command == "load-reference":
         return asyncio.run(_load_reference(args.data))
+    if args.command == "index-guides":
+        return asyncio.run(_index_guides(args.knowledge))
     if args.command == "reset-runtime":
         return asyncio.run(_reset_runtime())
     if args.command == "feed-status":

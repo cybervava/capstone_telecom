@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import pytest
 
 from skylink_care.guardrails.pii import extract_identifiers, mask_pii
@@ -149,3 +151,22 @@ def test_an_email_split_by_an_invisible_character_is_masked_whole() -> None:
     masked = mask_pii("write to j\u200bohn@example.com")
 
     assert masked.text == "write to <EMAIL_1>"
+
+
+def test_long_text_without_an_address_is_masked_in_linear_time() -> None:
+    """A long run of letters used to be re-scanned from every position by the e-mail pattern."""
+    text = "a" * 20_000 + " reach me at asha.rao@example.com or 9845012345"
+
+    started = time.perf_counter()
+    masked = mask_pii(text)
+    elapsed = time.perf_counter() - started
+
+    assert masked.text.endswith("reach me at <EMAIL_1> or <PHONE_1>")
+    assert elapsed < 0.25
+
+
+def test_address_inside_other_text_is_still_found_by_the_bounded_pattern() -> None:
+    masked = mask_pii("mail:asha@example.com, <asha.rao+care@mail.example.co.in>")
+
+    assert "example" not in masked.text
+    assert masked.text.count("<EMAIL_") == 2

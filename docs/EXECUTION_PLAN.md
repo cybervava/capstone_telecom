@@ -217,7 +217,7 @@ Each task lists its acceptance check. Tests are written first for `domain/` and 
 
 ### M2 Six capabilities (summary)
 
-Built in slices, each committed when its tests and a live run pass: **A** event feed, read model, timers · **B** proactive notifications and restoration · **C** line tests, mapping repair, line-test clustering · D guide index and cited troubleshooting · E credits, approvals, billing write · F dispatch · G conflict path and mobile journey · H supervisor console · I evaluations. A, B and C are done (see the progress log).
+Built in slices, each committed when its tests and a live run pass: **A** event feed, read model, timers · **B** proactive notifications and restoration · **C** line tests, mapping repair, line-test clustering · **D** guide index and cited troubleshooting · E credits, approvals, billing write · F dispatch · G conflict path and mobile journey · H supervisor console · I evaluations. A, B, C and D are done (see the progress log).
 
 Event consumer with dedupe, version checks, applied-sequence tracking and heartbeat; alarm state per node; notification fan-out to resolved mappings only, consent checked at send time, one message per customer, outage and template; line-test tool and mapping repair; suspected-fault hold (critical alarm, or several failed line tests on one node) that opens an episode without an outage id; retroactive confirmation when the outage is declared; index build and filtered retrieval; step-by-step guided troubleshooting with citations; credit proposals only after restoration, priced from frozen inputs; approval records carrying the hash the approver saw; billing write under a per-customer lock; dispatch rules (failed re-test, fresh `CONFIRMED_CLEAR` after the hold-down, customer consent, one open visit per service); conflict path for "the network says outage, the customer says device"; handoff queue with summary; one mobile outage journey.
 
@@ -303,10 +303,12 @@ Items 1, 2, 8 and 9 (deck, problem statement, ROI workbook, contribution matrix)
 
 | 15 Nov | **M2 slice C: remote line tests** | **Done.** A line test names the node that really serves the line, which repairs a missing, ambiguous or stale mapping for the contact (the three defective-mapping journeys now end in the outage reply instead of a human queue). A failed line on a node that looks healthy is watched for the NOC's detection window before any repair is arranged; three distinct lines failing on one node are treated as a suspected node fault with one ticket. Dispatch itself is slice F |
 
+| 15 Nov | **M2 slice D: guide index and cited troubleshooting** | **Done.** The twelve router guides are indexed by section in PostgreSQL (text search and pgvector). With a clear node and a passing line, a customer who asks gets the steps for their own router model, quoted with guide, section and version; a different router model gets a different guide for the same complaint (gate input 2). Steps are given once. On a turn the platform starts itself the customer is told the checks are clear and asked, not instructed |
+
 ### Evidence at this point
 
-- `make test-all`: 1,208 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 94% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
-- `make smoke` passes against the host processes at 400,000-customer scale. Five journeys: declared outage → sourced reply, one incident, complaint linked, and 168 neighbours on the node notified once each (none without consent, checked in the gateway's own store); Network API down → the feed still proves the outage; same failure for a customer on another node → no all-clear and no device steps; outage resolved → the waiting customer is told, confirms, the contact closes and the node's incident is resolved; a failing line on a healthy node → held, nothing booked.
+- `make test-all`: 1,387 tests pass (unit, integration on PostgreSQL, adapter contract tests against the mock, end-to-end journeys); 94% branch coverage on `skylink_care`; `ruff` and `mypy --strict` clean.
+- `make smoke` passes against the host processes at 400,000-customer scale. Six journeys: declared outage → sourced reply, one incident, complaint linked, and 168 neighbours on the node notified once each (none without consent, checked in the gateway's own store); Network API down → the feed still proves the outage; same failure for a customer on another node → no all-clear and no device steps; outage resolved → the waiting customer is told, confirms, the contact closes and the node's incident is resolved; a failing line on a healthy node → held, nothing booked; a passing line on a healthy node → steps from the guide for the customer's own router, with the source.
 - `make smoke` also passes against the container stack (40,000 customers), where the feed consumer runs as its own service. Its first run there failed, usefully: re-seeding the gateway restarts its event sequence and empties its tickets, while the care database still held the cursor and ticket references of the previous gateway. The consumer refused the feed (sequence running backwards) exactly as designed. `make seed` and the container set-up now clear the care platform's runtime state in the same step (`care-admin reset-runtime`, refused unless `CARE_ENV` is `dev` or `test`).
 - The console was checked in a browser at 1440 px and 375 px (M1; unchanged since).
 
@@ -361,9 +363,26 @@ One independent correctness review, before the commit. Fixed and covered by test
 | A mapping that looked sound but named the wrong node was believed over the line test | The line test's node wins when it differs and the reference data knows it as active; an unknown or retired node repairs nothing |
 | One customer with several lines could make a node look faulty; a line since found on another node still counted on the old one | Customers are counted, by the latest test of each of their lines |
 
+### What the review of M2 slice D changed
+
+One independent security review, and two findings from the live run. Fixed and covered by tests:
+
+| Finding | Fix |
+|---|---|
+| Guide steps could be sent on a turn the platform started itself (a re-check hours after the customer wrote) | Steps are given only to a customer who has just written. Otherwise the customer is told the checks are clear and asked whether they still need help |
+| "It works now" closed the contact after guide steps even when an outage had begun since | One flag records that the customer was asked whether the service works; any later news about the network withdraws it |
+| Live run: "wifi keeps dropping" found the slow-speed section, because customers write "wifi" and guides "Wi-Fi", and other sections mention the word in passing | Spelling variants are folded on both sides of the search and a match on the section's own topic outranks passing mentions. Checked with ten customer phrasings against all twelve guides |
+| Live run: a line test made two minutes earlier for another conversation was reused, so a line that had since failed was treated as healthy | A recent result is reused only within the same contact |
+| Steps go to customers verbatim, and nothing checked what a guide's quotable sections say | The index build refuses a guide whose quotable steps tell the customer to reset, open the unit or touch the fibre, unless the step forbids it |
+| A second guide for the same model could be indexed and a superseded section quoted; identifiers from a guide's front matter went into the citation unchecked | One guide per model; document id, version and model must have their fixed shape |
+| The whole conversation was masked and searched on every guide turn, and the e-mail pattern was quadratic on long input | The search uses the customer's most recent text only; the pattern is bounded |
+| A text with nothing to search for scored every section equally | No section is returned and a person takes over |
+
 ### Known gaps carried into M2 and M3
 
-- A line that still fails after the hold goes to a person (`LINE_FAULT`); booking a visit is slice F. A line that passes goes to a person for the equipment check; guided troubleshooting is slice D.
+- A line that still fails after the hold goes to a person (`LINE_FAULT`); booking a visit is slice F.
+- Retrieval uses a deterministic hashing embedder, not a learned model (A5 and D2 are open), and is checked by fixed phrasings in the tests, not yet by a scored evaluation on the labelled transcripts (slice I). Guidance is one round: the best-matching section, once.
+- Guide steps are quoted verbatim, including their cross-references to other sections of the same guide.
 - A held line is tested again about every two minutes during the hold (bounded by `CARE_LINE_RETEST_SECONDS`), which keeps the per-node picture current at the cost of extra probes.
 - Two outages that overlap on one node get one ticket each, opened one after the other. Each is closed with its own outage and they are never both open for the same outage, but the brief's "one ticket per node" is read here as one per node *episode*.
 - A feed event that cannot be parsed stops the consumer at that event. This fails safe (the read model goes stale and stops being trusted, the error is recorded) but needs a person; there is no dead-letter for feed events yet.

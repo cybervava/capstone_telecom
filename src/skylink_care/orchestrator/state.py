@@ -39,6 +39,7 @@ class Route(StrEnum):
     UNKNOWN_REPLY = "unknown_reply"
     CLEAR_REPLY = "clear_reply"
     LINE_HOLD = "line_hold"
+    GUIDE = "guide"
     RESTORED = "restored"
     KEEP_WAITING = "keep_waiting"
     CLOSE = "close"
@@ -89,5 +90,10 @@ class ContactState(TypedDict, total=False):
     suspected_told: bool
     # Key of the armed quiet-close timer, set whenever a turn ends waiting for the customer.
     close_key: str | None
-    # "Service restored" has been said: a reply that it works now closes the contact.
-    restoration_told: bool
+    # The last thing said ended by asking whether the service works (after a restoration, after
+    # guide steps, after a clear check). Only then does "it works now" close the contact. Any
+    # later news about the network withdraws the question.
+    asked_if_working: bool
+    # Guide steps the customer has been given (the citation). Given once; if they do not help,
+    # a person takes over rather than the same steps being repeated.
+    guidance_told: str | None

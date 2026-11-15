@@ -38,6 +38,7 @@ _SPECIALISTS = (
     Route.UNKNOWN_REPLY,
     Route.CLEAR_REPLY,
     Route.LINE_HOLD,
+    Route.GUIDE,
     Route.RESTORED,
     Route.KEEP_WAITING,
     Route.CLOSE,

@@ -232,9 +232,13 @@ class DiagnosticsAgent:
 
     async def _test_line(self, subject: Subject, audit: Auditor, *, fresh: bool) -> LineTest | None:
         """Run a line test, or reuse a very recent one. None when no result could be had."""
-        if not fresh:
-            recent = await self._line_tests.latest_for_service(
-                subject.service_id, since=self._now() - self._policy.retest_after
+        if not fresh and subject.contact_id is not None:
+            # The limit protects the equipment from one conversation re-testing it every turn.
+            # A new complaint is new information and gets a test of its own.
+            recent = await self._line_tests.latest_for_contact(
+                subject.contact_id,
+                subject.service_id,
+                since=self._now() - self._policy.retest_after,
             )
             if recent is not None:
                 return recent

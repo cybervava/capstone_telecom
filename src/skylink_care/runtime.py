@@ -13,6 +13,7 @@ from uuid import UUID
 from skylink_care.adapters.gateway import OssGateway
 from skylink_care.agents.diagnostics import DiagnosticsAgent, FeedViewSource, LineTestPolicy
 from skylink_care.agents.triage import TriageAgent
+from skylink_care.agents.troubleshooting import TroubleshootingAgent
 from skylink_care.clock import Clock, utc_now
 from skylink_care.config import Settings
 from skylink_care.db.actions import ActionRepository
@@ -30,6 +31,8 @@ from skylink_care.db.timers import TimerRepository
 from skylink_care.domain.network import DecisionLimits
 from skylink_care.llm.gateway import LLMGateway, build_gateway
 from skylink_care.observability.audit import Auditor
+from skylink_care.rag.embedding import HashingEmbedder
+from skylink_care.rag.index import GuideIndex
 
 __all__ = ["Clock", "OrchestratorRuntime", "build_orchestrator_runtime", "utc_now"]
 
@@ -49,6 +52,7 @@ class OrchestratorRuntime:
     read_model: ReadModelRepository
     triage: TriageAgent
     diagnostics: DiagnosticsAgent
+    troubleshooting: TroubleshootingAgent
     now: Clock
 
     def auditor(self, contact_id: UUID, correlation_id: str) -> Auditor:
@@ -101,5 +105,6 @@ def build_orchestrator_runtime(
             ),
             now,
         ),
+        troubleshooting=TroubleshootingAgent(GuideIndex(database, HashingEmbedder())),
         now=now,
     )

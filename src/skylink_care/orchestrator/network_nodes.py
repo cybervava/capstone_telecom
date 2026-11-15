@@ -35,6 +35,8 @@ from skylink_care.orchestrator.handover import handoff_summary
 from skylink_care.orchestrator.node_support import NodeSupport
 from skylink_care.orchestrator.state import ContactState, Phase, Trigger
 
+# How much of what the customer wrote is used to find the guide section.
+MAX_PROBLEM_CHARS = 2000
 # A hold on a failed line belongs to the moment it was started in. Once the line passes, or the
 # customer has been told about an outage or its end, a later fault starts a hold of its own.
 _NO_LINE_HOLD: dict[str, Any] = {
@@ -160,7 +162,7 @@ class NetworkNodes(NodeSupport):
             "told_outage_id": outage.outage_id,
             "resolved_outage_id": outage.outage_id if resolving else None,
             "close_key": None,
-            "restoration_told": False,
+            "asked_if_working": False,
         }
 
     async def unknown_reply(self, state: ContactState) -> dict[str, Any]:
@@ -183,7 +185,7 @@ class NetworkNodes(NodeSupport):
         if reason is DecisionReason.MAPPING_UNRESOLVED:
             return await self._hand_over_unmapped(contact, state)
 
-        updates: dict[str, Any] = {"close_key": None}
+        updates: dict[str, Any] = {"close_key": None, "asked_if_working": False}
         changes: dict[str, Any] = {"status": "AWAITING_NETWORK"}
         if reason is DecisionReason.SUSPECTED_NODE_FAULT and network.get("node_id"):
             episode = await self._suspect_node(contact, state)
@@ -225,7 +227,11 @@ class NetworkNodes(NodeSupport):
         first = not state.get("line_hold_until")
         line = state.get("line_test") or {}
         # The hold has its own end; re-checks during it are not failures to verify the network.
-        updates: dict[str, Any] = {"close_key": None, "network_rechecks": 0}
+        updates: dict[str, Any] = {
+            "close_key": None,
+            "network_rechecks": 0,
+            "asked_if_working": False,
+        }
         if first:
             until = self._rt.now() + timedelta(seconds=settings.dispatch_hold_seconds)
             updates["line_hold_until"] = until.isoformat()
@@ -246,6 +252,64 @@ class NetworkNodes(NodeSupport):
         updates |= await self._arm_recheck(contact, state)
         await self._rt.contacts.update(contact.contact_id, status="AWAITING_NETWORK")
         return {**updates, "phase": Phase.REPLIED.value}
+
+    async def guide(self, state: ContactState) -> dict[str, Any]:
+        """Clear node, passing line: the problem is most likely the equipment in the home.
+
+        A customer who has just written is given the steps for their own router, once. On a
+        turn the platform started itself (a re-check, a feed event) nobody has asked anything:
+        the customer is told the checks are clear and asked whether they still need help, and
+        gets the steps when they say so. Asking someone to restart their router out of the
+        blue, from a conversation that may be hours old, is not help.
+        """
+        contact = await self._contact(state)
+        line = state.get("line_test") or {}
+        tested_at = parse_time(line.get("tested_at"))
+        if tested_at is None:
+            return await self.clear_reply(state)
+        evidence_at = parse_time(state["network"].get("evidence_at")) or self._rt.now()
+        steps_given = None
+        if state.get("trigger") != Trigger.CUSTOMER.value:
+            reply = replies.checks_clear(
+                contact.complaint_ref, evidence_at=evidence_at, tested_at=tested_at
+            )
+        else:
+            guidance = await self._rt.troubleshooting.guide(
+                router_model=(state.get("service") or {}).get("router_model"),
+                problem=await self._everything_the_customer_wrote(contact),
+                audit=self._rt.auditor(contact.contact_id, contact.correlation_id),
+            )
+            if guidance is None:
+                return await self.clear_reply(state)
+            passage = guidance.passage
+            steps_given = passage.citation
+            reply = replies.guided_steps(
+                contact.complaint_ref,
+                guide_title=passage.title.split(":")[0],
+                section_title=passage.title.split(":", 1)[-1].strip(),
+                steps=passage.steps,
+                citation=passage.citation,
+                evidence_at=evidence_at,
+                tested_at=tested_at,
+            )
+        await self._say(contact, state, reply, author="agent:troubleshooting")
+        await self._rt.timers.cancel(contact.contact_id)
+        armed = await self._arm_close(contact, state)
+        await self._rt.contacts.update(contact.contact_id, status="AWAITING_CUSTOMER")
+        return {
+            **_TOLD_THE_NEWS,
+            **armed,
+            "phase": Phase.REPLIED.value,
+            "asked_if_working": True,
+            "guidance_told": steps_given or state.get("guidance_told"),
+        }
+
+    async def _everything_the_customer_wrote(self, contact: Contact) -> str:
+        """The customer's side of the conversation, as the search query for the guide."""
+        messages = await self._rt.messages.list_for_contact(contact.contact_id)
+        written = "\n".join(m.body for m in messages if m.direction == "inbound")
+        # The most recent words describe the problem best, and bounding the text bounds the work.
+        return written[-MAX_PROBLEM_CHARS:]
 
     async def clear_reply(self, state: ContactState) -> dict[str, Any]:
         """Confirmed clear: what happens next depends on the customer's own line.
@@ -311,7 +375,7 @@ class NetworkNodes(NodeSupport):
             **armed,
             "phase": Phase.REPLIED.value,
             "told_outage_id": None,
-            "restoration_told": True,
+            "asked_if_working": True,
         }
 
     # --- the node's incident ticket -----------------------------------------------------------

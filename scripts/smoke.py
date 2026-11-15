@@ -9,7 +9,9 @@ systems:
 3. a customer on a different node in the same conditions (no proof either way: no all-clear),
 4. the outage is resolved: the waiting customer is told, confirms, and the contact closes,
 5. a customer whose own line fails its remote test while the node looks healthy: the fault is
-   watched for the NOC's detection window, and no repair is arranged meanwhile.
+   watched for the NOC's detection window, and no repair is arranged meanwhile,
+6. a customer on a healthy node with a passing line: steps quoted from the guide for their own
+   router model, with the source.
 
 Run with:  uv run --env-file .env python scripts/smoke.py
 Exits non-zero if any check fails. It changes simulator state and restores it at the end.
@@ -119,7 +121,7 @@ def decision_reason(api: httpx.Client, contact_id: str) -> str:
 
 
 def pick_customers(sim: httpx.Client) -> tuple[dict[str, Any], ...]:
-    """Two customers on one node, and two more on two other nodes."""
+    """Two customers on one node, and three more on three other nodes."""
     people = sim.get("/admin/v1/customers/search", params={**SEARCH, "limit": 50}).json()[
         "customers"
     ]
@@ -133,7 +135,12 @@ def pick_customers(sim: httpx.Client) -> tuple[dict[str, Any], ...]:
     third_node = next(
         p for p in people if p["true_node_id"] not in {node_id, elsewhere["true_node_id"]}
     )
-    return first, second, elsewhere, third_node
+    fourth_node = next(
+        p
+        for p in people
+        if p["true_node_id"] not in {node_id, elsewhere["true_node_id"], third_node["true_node_id"]}
+    )
+    return first, second, elsewhere, third_node, fourth_node
 
 
 def declared_outage(
@@ -278,6 +285,26 @@ def failing_line_is_held(api: httpx.Client, sim: httpx.Client, customer: dict[st
     say(f"\n     assistant: {reply}")
 
 
+def guided_steps_are_cited(api: httpx.Client, sim: httpx.Client, customer: dict[str, Any]) -> None:
+    sim.post(
+        "/admin/v1/line-faults", json={"service_id": customer["service_id"], "fault": False}
+    ).raise_for_status()
+    headers = token(api, "customer", customer["customer_id"])
+    accepted, _ = open_contact(api, headers, "the wifi keeps dropping on my phone")
+    contact = wait_for_replies(api, headers, accepted["contact_id"])
+    reply = outbound(contact)[-1]
+    guide = f"guide-{customer['router_model'].lower()}"
+    check("steps come from the guide for the customer's own router", f"Source: {guide} §" in reply)
+    check("the section fits what the customer described", f"{guide} §wifi " in reply)
+    check("steps are numbered", "\n1. " in reply)
+    check("no factory reset is offered", "factory reset" not in reply.lower())
+    check(
+        "contact waits for the customer's answer",
+        wait_for_status(api, headers, accepted["contact_id"], "AWAITING_CUSTOMER"),
+    )
+    say(f"\n     assistant: {reply}")
+
+
 def main() -> int:
     admin_key = os.environ.get("OSS_KEY_ADMIN")
     if not admin_key:
@@ -286,7 +313,7 @@ def main() -> int:
     api = httpx.Client(base_url=API, timeout=10.0)
     sim = httpx.Client(base_url=OSS, timeout=10.0, headers={"X-API-Key": admin_key})
     sim.post("/admin/v1/reset").raise_for_status()
-    first, second, elsewhere, on_a_healthy_node = pick_customers(sim)
+    first, second, elsewhere, on_a_healthy_node, with_a_good_line = pick_customers(sim)
     node_id = first["true_node_id"]
     outage_id = None
     try:
@@ -309,6 +336,9 @@ def main() -> int:
 
         say(f"\n5. A failing line on healthy node {on_a_healthy_node['true_node_id']}")
         failing_line_is_held(api, sim, on_a_healthy_node)
+
+        say(f"\n6. A {with_a_good_line['router_model']} router on a healthy node and line")
+        guided_steps_are_cited(api, sim, with_a_good_line)
     finally:
         sim.delete("/admin/v1/chaos")
         sim.post(

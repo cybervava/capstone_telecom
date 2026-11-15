@@ -47,13 +47,16 @@ class LineTestRepository(Repository):
                 ),
             )
 
-    async def latest_for_service(self, service_id: str, *, since: datetime) -> LineTest | None:
-        """The most recent test of this line, if one was run since ``since``."""
+    async def latest_for_contact(
+        self, contact_id: UUID, service_id: str, *, since: datetime
+    ) -> LineTest | None:
+        """The most recent test this contact ran on this line, if any since ``since``."""
         async with self._db.connection() as conn:
             cursor = await conn.execute(
                 f"SELECT {_COLUMNS} FROM line_tests"  # noqa: S608 - constant column list
-                " WHERE service_id = %s AND tested_at >= %s ORDER BY tested_at DESC LIMIT 1",
-                (service_id, since),
+                " WHERE contact_id = %s AND service_id = %s AND tested_at >= %s"
+                " ORDER BY tested_at DESC, test_id DESC LIMIT 1",
+                (contact_id, service_id, since),
             )
             row = await cursor.fetchone()
         return LineTest(**row) if row else None

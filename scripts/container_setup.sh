@@ -17,3 +17,4 @@ care-admin migrate
 mock-oss seed --data "$DATA_DIR" --db /state/mock_oss.sqlite
 care-admin reset-runtime
 care-admin load-reference --data "$DATA_DIR"
+care-admin index-guides
