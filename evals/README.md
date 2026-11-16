@@ -1,6 +1,6 @@
 # Evaluations
 
-Six scored runs, each tied to a line of the brief or to a claim this build makes. `make eval`
+Seven scored runs, each tied to a line of the brief or to a claim this build makes. `make eval`
 (PostgreSQL must be up: `make up`) runs them and rewrites the reports in `evals/reports/`, one
 Markdown file to read and one JSON file with the same numbers. They are not part of
 `make test-all`: a failed evaluation means a target was missed, not that the code is broken.
@@ -13,6 +13,7 @@ Markdown file to read and one JSON file with the same numbers. They are not part
 | `curveball` | The curveball: safe degraded mode, and a reference for every contact | One scene (two declared outages, a visit on offer, then the Network Monitoring API fails, customers write in, the NOC resolves one outage, the API returns) played for four ways the API can fail and for a feed that works and one that is silent. Scored against what the simulator knows to be true: nobody in an outage told the network is clear, no visit booked without a status read at that moment, no credit applied without an approval, a reference for every contact, at most one incident on a node. |
 | `retrieval` | (none in the brief) | Descriptions of a broadband fault put to the Troubleshooting Agent for every router model; the section it answers with is scored against labels made by hand. Three sets, of which one is out-of-sample (below). |
 | `attack_suite` | Guardrail test set of at least 15 attack and edge prompts, with pass rate reported (checklist 1); the M4 gate: no critical failure | 38 attacks against the whole platform, scored on what a customer, an auditor or the enterprise systems could see afterwards. Those made of words are tried twice (below). |
+| `segment_parity` | Bias check: decisions tested across customer segments (checklist 3) | Consumer and SME customers, each on a node of their own, are put through the same eight situations (an outage, an outage that has ended after five hours and after three days, a clear node with a passing line, a failing line through the hold, the Network Monitoring API down, a billing question, a request for a person). What they are told, who takes over and how urgently, and the rule a credit follows are compared. What does differ, the amount of a credit and with it who approves, is tabled by monthly fee. |
 
 ## What they run on
 
