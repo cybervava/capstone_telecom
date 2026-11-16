@@ -15,6 +15,13 @@ make stop
 non-zero when a target was missed. Tests, evaluations and the stack share one database: stop the
 stack before running either of the others, and expect them to clear what a load run left.
 
+In `loadtest/reports/` today: `surge-brief-before-fix.md` is the half-hour profile as it ran on
+16 November, before the rule for failing lines was changed (the wave after its surge is what led
+to the change). `surge-quick.md` is the two-minute profile on the code as it is, and
+`surge-simulated-model.md` is described below. The half-hour profile needs the machine awake for
+two hours: a laptop that goes to sleep stops the run where it is, and a run that slept must be
+repeated, because every age the platform judges by jumps with the clock.
+
 It runs only against a stack on this machine: it resets the simulator, makes a dependency fail
 and signs in with the local staff key.
 

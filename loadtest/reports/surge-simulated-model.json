@@ -1,0 +1,195 @@
+{
+  "name": "surge-simulated-model",
+  "written_at": "2026-11-16T14:30:49+00:00",
+  "target": "Contacts offered at 1 a second rising to 10 within 1 minute and held for 1 minute, once with every dependency up and once with the Network Monitoring API down. In both runs: at least 99.5% of the offered contacts accepted, every complaint reference within 120 s, no first contact turned away by a rate limit, every contact answered. When the outage ends, every customer who waited on it is told within 30 minutes.",
+  "met": true,
+  "verdict": "met",
+  "headline": "Every dependency up: 100.00% (893 of 893) accepted, slowest reference 0.11 s, every target met.",
+  "llm_provider": "as recorded for each message read: simulated-1.5s 511 \u00b7 rules-v1 (without the model: load_shed) 382. No model was called: `simulated` is the rules' answer after the time a model call takes",
+  "numbers": {
+    "baseline": {
+      "fault": null,
+      "started_at": "2026-11-16T14:27:07.487982+00:00",
+      "ended_at": "2026-11-16T14:29:30.507383+00:00",
+      "outages": [
+        "OUT-20261116-0001"
+      ],
+      "nodes_out": 12,
+      "targets": [
+        {
+          "name": "Offered contacts accepted",
+          "target": "at least 99.5%",
+          "measured": "100.00% (893 of 893)",
+          "met": true
+        },
+        {
+          "name": "Slowest complaint reference",
+          "target": "within 120 s",
+          "measured": "0.11 s",
+          "met": true
+        },
+        {
+          "name": "First contacts turned away by a rate limit",
+          "target": "none",
+          "measured": "0",
+          "met": true
+        },
+        {
+          "name": "Contacts answered when the surge was over",
+          "target": "all",
+          "measured": "893 of 893",
+          "met": true
+        },
+        {
+          "name": "Waiting customers told that the outage is over",
+          "target": "all, within 30 minutes of its end",
+          "measured": "625 of 625",
+          "met": true
+        }
+      ],
+      "callers": {
+        "offered": 893,
+        "accepted": 893,
+        "without_reference_in_time": 0,
+        "rate_limited": 0,
+        "sent_more_than_once": 0,
+        "told_delayed": 448,
+        "by_route": {
+          "channel": 279,
+          "web": 614
+        },
+        "affected": 625,
+        "reference_seconds": {
+          "p50": 0.015,
+          "p95": 0.02,
+          "p99": 0.026,
+          "max": 0.105
+        },
+        "stayed_for_the_reply": 614,
+        "saw_a_reply": 614,
+        "reply_seconds": {
+          "p50": 13.468,
+          "p95": 18.498,
+          "p99": 20.768,
+          "max": 21.921
+        },
+        "not_accepted_because": {}
+      },
+      "platform": {
+        "contacts": 893,
+        "replied": 893,
+        "first_reply_seconds": {
+          "p50": 11.659,
+          "p95": 15.688,
+          "p99": 16.85,
+          "max": 18.033
+        },
+        "reference_ms_at_the_server": {
+          "p50": 3.0,
+          "p99": 9.0,
+          "max": 39.0
+        },
+        "by_status": {
+          "AWAITING_NETWORK": 628,
+          "AWAITING_CUSTOMER": 220,
+          "HANDOFF": 45
+        },
+        "first_reply": {
+          "outage_active.v1": 625,
+          "guided_steps.v1": 203,
+          "handed_to_human.v1": 45,
+          "out_of_scope.v1": 17,
+          "line_fault_hold.v1": 3
+        },
+        "handoffs": {
+          "BILLING": 30,
+          "LOW_CONFIDENCE": 15
+        },
+        "read_by": {
+          "simulated-1.5s": 511,
+          "rules-v1 (without the model: load_shed)": 382
+        },
+        "writes": {
+          "COMPLAINT_REGISTER SUCCEEDED": 893,
+          "INCIDENT_LINK_COMPLAINT SUCCEEDED": 625
+        },
+        "notifications": {
+          "SUCCEEDED": 3454,
+          "SKIPPED": 949
+        },
+        "ops_items": {},
+        "dead_lettered": 0,
+        "said_clear": 206,
+        "turn_steps": [
+          {
+            "step": "triage.read_contact",
+            "calls": 893,
+            "p50_ms": 1500,
+            "p95_ms": 1501,
+            "max_ms": 1504
+          },
+          {
+            "step": "tool:network.line_test",
+            "calls": 206,
+            "p50_ms": 887,
+            "p95_ms": 1475,
+            "max_ms": 1511
+          },
+          {
+            "step": "tool:network.node_status",
+            "calls": 833,
+            "p50_ms": 7,
+            "p95_ms": 11,
+            "max_ms": 35
+          },
+          {
+            "step": "tool:crm.customer",
+            "calls": 893,
+            "p50_ms": 5,
+            "p95_ms": 9,
+            "max_ms": 27
+          },
+          {
+            "step": "tool:crm.lookup",
+            "calls": 279,
+            "p50_ms": 5,
+            "p95_ms": 9,
+            "max_ms": 20
+          }
+        ]
+      },
+      "backlog": {
+        "readings": 33,
+        "readings_missed": 0,
+        "generator_lag_seconds": 0.072,
+        "most_waiting_for_a_turn": 158,
+        "longest_wait_seconds": 16.0,
+        "seconds_behind": 10,
+        "drained_after_seconds": 2.0
+      },
+      "restoration": {
+        "waiting_on_the_outage": 625,
+        "told_it_is_over": 625,
+        "seconds": 78.3,
+        "allowed_seconds": 1800.0,
+        "not_told_stand_as": {},
+        "told_unverified_meanwhile": 0,
+        "lines_tested": 625,
+        "lines_failing": 3,
+        "suspected_tickets": 0,
+        "most_waiting_for_a_turn": 622,
+        "longest_wait_seconds": 71.0
+      }
+    }
+  },
+  "assumptions": [
+    "Run on one Linux machine with 16 CPU threads, which also ran the load generator, the simulator and PostgreSQL: the figures say that the design holds at this rate, not what a production deployment can carry.",
+    "The stack was the local processes of `make dev`: one process of each kind, the API with a pool of 8 database connections, the orchestrator running 8 contacts at a time.",
+    "Data: the synthetic pack of 400,000 customers. The OSS/BSS gateway is the simulator, which answers in a few milliseconds; real systems will be slower, and the time of a turn is mostly theirs.",
+    "Contacts were offered on a schedule fixed in advance (arrivals at random at the profile's rate, seed 42), each by a different customer. Every time is measured from the instant the contact was due, so the generator's own lag is inside it.",
+    "About seven callers in ten were customers on the failed nodes and the rest were elsewhere with an ordinary mix of problems. About seven in ten came by the web with their own sign-in and stayed on the page for the reply, asking as the page does; the others were relayed by a contact centre's integration, which states the caller's line. The first table has the counts.",
+    "A request that failed was sent again with the same request id until two minutes after the contact was due. A contact whose reference was not in the caller's hands by then counts as not accepted, also when the API issued one later.",
+    "With the Network Monitoring API down (down in the simulator) nothing else was made to fail. That the event feed went on working is seen in the first replies: an outage can be told to a customer only on proof, and with the status unreadable the feed is the only proof there is.",
+    "Not covered: several replicas of a process, a real language model, real enterprise systems, a network between the parts."
+  ]
+}

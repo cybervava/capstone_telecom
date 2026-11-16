@@ -7,7 +7,7 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 ## Status
 
-Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. M3 (the curveball and resilience) is in progress: four of its six slices are built. Everything after M3 is not built.
+Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. M3 (the curveball and resilience) is built as well: a circuit for each dependency, shared status reads, a check on what every message claims about the network, an operations queue, surge mode with a load test of the brief's surge, and the curveball as a scored drill with its decision record ([ADR 0001](docs/adr/0001-degraded-mode-when-the-network-api-fails.md)). Everything after M3 is not built.
 
 **Works today**
 
@@ -15,7 +15,7 @@ Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six ca
 - **Triage.** Identity from the signed-in channel, the caller line, or two things the customer knows; intent from masked text.
 - **Network truth from two sources.** A three-state decision (`ACTIVE`, `CONFIRMED_CLEAR`, `UNKNOWN`) from the live status and from a read model fed by the NOC event feed. The feed can prove an outage while the Network API is down; neither a silent nor a stale feed is ever an all-clear.
 - **Outage reply** with sourced ETA; one incident per node episode; complaint registered and linked, through an action ledger and a separate executor.
-- **Suspected faults.** A fault that is suspected but not yet declared (equipment alarm, or three lines failing on one node) is raised once for the node and every complaint is linked to that ticket. When the NOC declares the outage the same ticket is upgraded and the waiting customers are told.
+- **Suspected faults.** A fault that is suspected but not yet declared (an equipment alarm, or three or more customers' lines failing on one node when that is more than coincidence explains among the lines tested there) is raised once for the node and every complaint is linked to that ticket. When the NOC declares the outage the same ticket is upgraded and the waiting customers are told. When the suspicion ends without one (the alarm clears, the lines pass again) the ticket is closed.
 - **Proactive notifications.** Customers on an affected node are told when an outage is declared and again when it is resolved. Consent is read from the CRM at the moment of sending; one message per customer, outage and kind; nothing personal in the text.
 - **Restoration.** A waiting customer is told when their outage is resolved, and the contact closes when they confirm or after a quiet period.
 - **Remote line tests.** The test names the node that really serves the line, which repairs a missing, ambiguous, stale or simply wrong address mapping. A failed line on a healthy-looking node is watched for the NOC's detection window before any repair is arranged.
@@ -29,7 +29,9 @@ Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six ca
 - **Dependencies that fail.** Each API of the gateway has a circuit in the one HTTP path every agent uses. After five failures in a row the API is rested for ten seconds: calls to it are not made at all, and the caller is told "not attempted", which every reader treats as "not verified" and never as "nothing found". Then one call tries again. A read that fails fast is tried once more; the HTTP layer never repeats a write, and the executor replays one under its key, knowing whether it was sent. Every call has a limit on its whole duration. Contacts on one node that are diagnosed at the same moment share one status read.
 - **No claim about the network without proof.** Every message a conversation sends is built from a template, and the routing reaches a template only with the evidence it needs. A second lock stands where messages are stored: each template declares what it claims (no outage reported, an outage, service restored, a visit being arranged, nothing), and the message is stored only if the network decision of its turn, made on a status read within the last minute, backs that claim. A step that acts on what it is about to say (proposes a credit, raises a ticket, proposes a booking) asks first. A message that is stopped is recorded, and the contact goes to a person at once. The customer's page follows the same rule: "none reported" is shown only while the check is recent, and reads "not verified" after that.
 - **Operations queue.** A write that fails with no conversation waiting for it (a notification, a ticket update) and a feed that cannot go on by itself (a gap, an event that cannot be applied, a refused or unreadable page, a key that is rejected, ten minutes out of reach) are queued for staff: one item for one kind of trouble, counted when it is seen again, shown on the staff desk and closed there by operations staff or a supervisor.
-- **Evaluations** (`make eval`). Scored replays through the real workflow on the stand-in data: outage detected for 97.47% of affected contacts (target 95%); credits match the policy in 4,050 of 4,050 cases (target 100%); none of the baseline's unnecessary technician visits is booked by the workflow, and every needed one is. What these figures do and do not show is under "Test it".
+- **Surge mode.** When contacts queue for the orchestrator (200 waiting, or more waiting than it handles at once with one of them for 15 seconds), a caller is told at once, with the reference, that the reply will take longer and need not be sent again; the page asks less often; and customers' messages are read by the rules instead of the language model, so that a turn costs what the rules cost. Nothing else changes: what may be said about the network, and done on the strength of it, needs the same proof. Staff see on the desk how many contacts wait and for how long. The orchestrator refills each of its slots as it frees, so a turn that takes long does not hold up the contacts behind it. With a stand-in for a model that takes 1.5 s over every message, the same surge in two minutes is twice what the orchestrator can read with the model. The queue then hovered at the threshold, the longest wait for a turn 16 s, with surge mode switching on and off: 382 of 893 messages were read by the rules instead, 448 callers saw the notice of a delay while they waited, and every contact was accepted and answered (`loadtest/reports/surge-simulated-model.md`).
+- **Load test** (`make loadtest`). The surge of the brief offered to the running stack: one contact a second rising to ten within 15 minutes and held for 15, each from a different synthetic customer, once with every dependency up and once with the Network Monitoring API down. On one machine: 100.00% of 13,941 and 100.00% of 14,041 offered contacts accepted (target 99.5%), the slowest complaint reference in a caller's hands after 0.253 s and 0.11 s (target 120 s), no first contact turned away by a rate limit, every contact answered, and with the API down no message saying that the network is clear. The first reply came after 0.177 s at the median and 1.63 s at the 99th percentile (0.14 s and 0.326 s with the API down). When the outages ended, that run showed restored nodes being suspected again; the rule behind it is fixed (see the plan). The half-hour profile has not been repeated on the code after that fix: two attempts were cut short when the laptop running them went to sleep on battery, so that run's report is kept as `loadtest/reports/surge-brief-before-fix.md`. On the code as it is now, the same surge in two minutes a run (`loadtest/reports/surge-quick.md`) meets every target: 1,891 of 1,891 contacts accepted and answered, the slowest reference after 0.06 s, and when the outages ended all 1,324 customers who waited were told within 88 s, with no restored node suspected. The figures say that the design holds at this rate, not what a deployment can carry.
+- **Evaluations** (`make eval`). Scored replays through the real workflow on the stand-in data: outage detected for 97.47% of affected contacts (target 95%); credits match the policy in 4,050 of 4,050 cases (target 100%); none of the baseline's unnecessary technician visits is booked by the workflow, and every needed one is. The curveball of the brief, played for four ways the Network Monitoring API can fail with the event feed working and silent, breaks none of its rules in 8 of 8 playings. What these figures do and do not show is under "Test it".
 - Per-contact audit trail, API with roles, per-caller rate limits, customer desk.
 
 **Not built yet**
@@ -38,7 +40,6 @@ Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six ca
 - Changing or cancelling a booked visit (a person does that); a visit for a line that passes its test.
 - Anything for mobile beyond the outage path (no tower inference, no device guidance, no SIM or plan checks).
 - A learned embedding model for retrieval (the index uses a deterministic hashing embedder; see "Guide retrieval").
-- The rest of M3: surge mode with a load test, the curveball as a scored drill.
 - Dashboards and alerts. The state of a circuit is in the logs (`circuit_opened`, `circuit_closed`), not yet in a metric.
 - The evaluations on the container stack at 400,000 customers and on the demo's language model (they run in process, on a 1,000-customer pack, with the offline rules and with weights measured on the large pack).
 - Simulator controls in the console (outages and faults are started with the admin API or the smoke run).
@@ -115,7 +116,7 @@ make test-all           # everything with coverage (needs `make up`)
 ### Evaluations
 
 ```bash
-make eval               # four scored runs, about a minute (needs `make up`)
+make eval               # five scored runs, about three minutes (needs `make up`)
 ```
 
 `make eval` replays contacts through the real workflow and rewrites `evals/reports/`. Everything is measured on the synthetic stand-in data; none of it is a measurement of SkyLink's network, policy or customers. How each figure is measured is in [`evals/README.md`](evals/README.md); what it rests on is at the end of each report.
@@ -125,7 +126,19 @@ make eval               # four scored runs, about a minute (needs `make up`)
 | Outage detected for affected customers ≥ 95% | **97.47%** of affected contacts, weighted by how often each kind occurs in the 400,000-customer pack. 140 contacts replayed: before and after the NOC declares the outage, with and without an alarm, every kind of mapping defect. What is missed is mobile, which has no remote test: no hold before the NOC declares, no mapping repair | `outage_detection` |
 | Unnecessary truck rolls cut ≥ 50% (simulation) | The workflow books **none** of the baseline's 3,225 unnecessary visits, and every needed one after the 10-minute hold. A customer who goes on asking for a technician always ends with a person, so the cut end to end depends on what that person decides, which no replay can measure. If every customer insisted, the target would hold only while staff turn down at least half of them | `truck_rolls` |
 | Credits match policy 100% | **4,050 of 4,050** grid cases agree with an independent calculation in exact arithmetic, 14 of 14 with amounts worked out by hand | `credit_policy` |
+| The curveball: safe degraded mode, a reference within 2 minutes | **8 of 8** playings of one scene hold every rule, for 72 contacts in all: a reference for each, nobody in an outage told that the network is clear (and nobody at all while the status cannot be read), no visit booked without a status read at that moment, no credit without an approval, one incident a node. The API refuses, answers too late, fails every call or fails half of them; the event feed works or has been silent since before the outage. Under load the same rules are measured by the load test | `curveball` |
 | (no brief metric: guide retrieval) | Right section for **81.25%** of 48 descriptions written without sight of the retriever (always answering "No internet" would score 47.92%); 99% on the phrases its rules were written from. Never a step from another router model's guide | `retrieval` |
+
+### Load test
+
+```bash
+make dev                # the stack, freshly seeded
+make loadtest-quick     # the surge in two minutes a run; report in var/loadtest/
+make loadtest           # the profile of the brief, both runs: about two hours
+make stop
+```
+
+The load test offers contacts on a schedule fixed in advance, whatever the platform answers, and measures every time from the instant a contact was due. It runs only against a stack on this machine, and it shares the database with the tests and the evaluations: stop the stack before running those. What is offered, the targets and how to read the report are in [loadtest/README.md](loadtest/README.md).
 
 ## Configuration
 
@@ -145,7 +158,10 @@ All settings come from the environment. `.env.example` lists every variable; `ma
 | `OSS_KEY_INGEST` | feed consumer only | Reads the NOC event feed and nothing else |
 | `OSS_KEY_ADMIN` | simulator controls | Scenario and fault injection. No care process holds it |
 | `CARE_STATUS_MAX_AGE_SECONDS`, `CARE_FEED_MAX_AGE_SECONDS` | orchestrator, executor; the first also API | How old network evidence may be. The first is also how long a message, or the customer's page, may go on saying "none reported" after the status was read |
-| `CARE_LINE_TEST_CLUSTER_THRESHOLD`, `CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS`, `CARE_LINE_RETEST_SECONDS` | orchestrator | How many lines failing on one node, within what time, count as a node fault; how soon a line may be tested again |
+| `CARE_SURGE_WAITING_CONTACTS`, `CARE_SURGE_WAITING_SECONDS` | API, orchestrator | When the assistant counts as behind (surge mode): 200 contacts waiting for a turn, or more waiting than it handles at once and one of them for 15 s |
+| `CARE_WORKER_CONCURRENCY` | orchestrator; API, to judge the backlog | How many contacts one orchestrator process handles at once (8). Each may be calling the enterprise systems at that moment |
+| `CARE_LINE_TEST_CLUSTER_THRESHOLD`, `CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS`, `CARE_LINE_RETEST_SECONDS` | orchestrator | How many customers' lines failing on one node, within what time, can count as a node fault; how soon a line may be tested again |
+| `CARE_LINE_OWN_FAULT_RATE`, `CARE_LINE_TEST_CLUSTER_CHANCE` | orchestrator, executor | Failing lines count against a node only when that many failures among the lines tested there would be a coincidence less often than the chance (0.001), with a line failing for reasons of its own at the rate (0.02). Stand-ins: the rate is in SkyLink's line-test records |
 | `CARE_DISPATCH_HOLD_SECONDS` | orchestrator, executor | How long a failed line on a healthy-looking node is watched before a visit is offered. Both judge it: the executor checks the visit again before booking |
 | `CARE_VISIT_SLOTS_OFFERED`, `CARE_VISIT_LINE_TEST_MAX_AGE_SECONDS`, `CARE_VISIT_EVIDENCE_MAX_AGE_SECONDS` | orchestrator, executor | How many slots are offered; how old the failing line test may be when a visit is proposed, and when it is booked |
 | `CARE_NETWORK_RECHECK_SECONDS`, `CARE_NETWORK_RECHECK_LIMIT`, `CARE_SUSPECTED_WAIT_SECONDS` | orchestrator | How often an unverified network status is looked at again, and how long before a person takes over |
@@ -209,6 +225,8 @@ The index build refuses, as a whole, any document that is not a device guide, a 
 `CARE_LLM_PROVIDER=offline` (the default) uses deterministic keyword rules: no network, no key. It is also the fallback whenever a model call fails or times out.
 
 `CARE_LLM_PROVIDER=anthropic` uses Claude through the official SDK with a JSON-schema output; set `ANTHROPIC_API_KEY`. The default model is `claude-opus-5-5`, and the request opts into the API's server-side refusal fallback. This path is unit-tested against a stand-in client but **has not been run against the live API**: no key was available on the build machine. Which model the team may use for the demo is an open decision (D2 in the plan).
+
+`CARE_LLM_PROVIDER=simulated` is for load tests only: the rules' answer after `CARE_LLM_SIMULATED_LATENCY_SECONDS` (1.5), with no model called. It puts a model's seconds on every turn, which is what surge mode sheds. `SIMULATED_MODEL_SECONDS=1.5 make dev` starts the stack with it.
 
 The model only reads the customer's message for intent, on masked text, and only once the customer is identified. It never decides identity, network status, eligibility or amounts.
 

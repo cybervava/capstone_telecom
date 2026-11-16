@@ -40,7 +40,7 @@ The platform does less when it knows less, and says so. It never fills the gap w
 - A customer on a healthy node gets no help with their own equipment until the node can be read. After about five minutes they are with a person.
 - A slot the customer picks while the status cannot be read is not booked. They are told that the status cannot be verified, the offer is withdrawn, and when the node can be read again and the line still fails, a visit is offered afresh: the customer chooses a second time.
 - With the feed silent as well, a customer who waits on an outage that has ended hears of it from the slow watch on the live status, up to fifteen minutes after the API returns. With the feed working they hear at once.
-- A long failure of the API fills the human queue. Every contact on a node with no declared outage reaches a person after five looks, a minute apart; how many that is under load is in the load test's report, and how long such contacts should wait is decision D11.
+- A long failure of the API fills the human queue. Every contact on a node with no declared outage reaches a person after five looks, a minute apart; in the load test's half hour with the API down that was 2,693 of 3,361 such contacts. How long they should wait is decision D11.
 - For up to ten seconds after the API returns, a process that rested it still answers as if it were down.
 - When an outage ends, every waiting line is tested before its customer is told. After a large outage that is thousands of line tests in a row, and the news travels at their pace (see the load test's report). Testing a sample of lines per node instead is decision D10.
 
@@ -56,5 +56,5 @@ The platform does less when it knows less, and says so. It never fills the gap w
 | Claim | Evidence |
 |---|---|
 | Safe in every way the API can fail, with the feed working and silent | `evals/reports/curveball.md` (`make eval`): the scene of the brief played for four kinds of failure and two states of the feed, scored against what the simulator knows to be true. It also shows what customers were told instead, what they heard once the API was back, and what became of a visit chosen meanwhile |
-| The reference rule under a tenfold surge, with the API up and down; every contact answered; no all-clear; everyone told when the outage ends | `loadtest/reports/surge-brief.md` (`make loadtest`) |
+| The reference rule under a tenfold surge, with the API up and down; every contact answered; no all-clear; everyone told when the outage ends | `loadtest/reports/surge-brief-before-fix.md` (the half-hour profile, run before the fix to the rule for failing lines) and `surge-quick.md` (two minutes a run, on the code as it is); `make loadtest` |
 | Each rule on its own | `tests/e2e/test_edges_and_degraded_mode.py`, `test_resting_dependencies.py`, `test_message_claims.py`, `test_visits.py`, `test_surge_mode.py`; `tests/unit/guardrails/` |
