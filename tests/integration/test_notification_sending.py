@@ -7,6 +7,7 @@ platform's own decision, not the gateway's refusal.
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
@@ -29,8 +30,9 @@ from skylink_care.db.audit import AuditRepository
 from skylink_care.db.contacts import ContactRepository, NewContact
 from skylink_care.db.database import Database
 from skylink_care.db.handoffs import HandoffRepository
+from skylink_care.db.ops import OpsRepository
 from skylink_care.domain.models import Channel, OutageInfo
-from skylink_care.executor.worker import ActionExecutor
+from skylink_care.executor.worker import ActionExecutor, _ops_subject
 
 OUTAGE = OutageInfo(
     outage_id="OUT-1",
@@ -391,3 +393,136 @@ async def test_many_proposals_are_recorded_once_and_found_again_by_key(
     assert set(found) == {batch[0].action_key}
     assert found[batch[0].action_key].status is ActionStatus.READY
     assert empty == {}
+
+
+# --- a failure that no conversation is waiting for -----------------------------------------------
+
+
+async def test_failed_notification_no_contact_waits_for_is_queued_for_operations(
+    db: Database, actions: ActionRepository, handoffs: HandoffRepository
+) -> None:
+    """It used to be a log line. Now a person is told, in the queue that is theirs."""
+    await actions.propose(notice())
+    unknown = Err(ErrorKind.NOT_FOUND, "no such customer", status_code=404, code="NOT_FOUND")
+
+    await executor(db, ScriptedCrm(unknown), ScriptedNotify()).run_once()
+
+    assert (await stored(actions)).status is ActionStatus.FAILED
+    (item,) = await OpsRepository(db).list_open()
+    assert item.kind == "ACTION_FAILED"
+    # About the outage and the message, not about one customer.
+    assert item.subject == f"notify:OUT-1:{notifications.OUTAGE_STARTED}"
+    assert "NOTIFY_SEND" in item.summary
+    assert "NOT_FOUND" in item.summary
+    assert item.details["action_type"] == NOTIFY_SEND
+    assert item.details["last_action_key"] == KEY
+    assert await handoffs.list_open() == []  # there is no conversation to hand to a person
+
+
+async def test_notifications_failing_for_one_outage_are_one_item_that_counts_them(
+    db: Database, actions: ActionRepository
+) -> None:
+    unknown = Err(ErrorKind.NOT_FOUND, "no such customer", status_code=404, code="NOT_FOUND")
+    for customer in ("C1", "C2", "C3"):
+        key = notifications.action_key(customer, "OUT-1", notifications.OUTAGE_STARTED)
+        body = notifications.request_body(MESSAGE, customer_id=customer, outage_id="OUT-1")
+        await actions.propose(notice(key, request_body=body))
+
+    await executor(db, ScriptedCrm(unknown), ScriptedNotify()).run_once()
+
+    (item,) = await OpsRepository(db).list_open()
+    assert item.occurrences == 3
+
+
+async def test_notification_that_keeps_being_put_off_is_queued_for_operations_while_it_goes_on(
+    db: Database, actions: ActionRepository
+) -> None:
+    await actions.propose(notice())
+    worker = executor(db, ScriptedCrm(DOWN), ScriptedNotify(), alert_after_attempts=2)
+
+    for _ in range(40):
+        await worker.run_once()
+        if await OpsRepository(db).list_open():
+            break
+        await asyncio.sleep(0.02)
+
+    (item,) = await OpsRepository(db).list_open()
+    assert item.kind == "ACTION_DELAYED"
+    assert (await stored(actions)).status is ActionStatus.IN_FLIGHT  # still being tried
+
+
+async def test_failure_a_conversation_waits_for_goes_to_that_conversations_queue(
+    db: Database,
+    actions: ActionRepository,
+    contacts: ContactRepository,
+    handoffs: HandoffRepository,
+) -> None:
+    intake = await contacts.accept(
+        NewContact(
+            channel=Channel.CHAT,
+            client_request_id=uuid4().hex,
+            text="hello",
+            correlation_id=uuid4().hex,
+            received_at=datetime.now(UTC),
+        )
+    )
+    await actions.propose(notice(contact_id=intake.contact_id))
+    unknown = Err(ErrorKind.NOT_FOUND, "no such customer", status_code=404, code="NOT_FOUND")
+
+    await executor(db, ScriptedCrm(unknown), ScriptedNotify()).run_once()
+
+    assert [item.reason for item in await handoffs.list_open()] == ["ACTION_FAILED"]
+    assert await OpsRepository(db).list_open() == []
+
+
+async def test_failing_write_of_one_kind_is_one_item_whatever_it_was_for(
+    db: Database, actions: ActionRepository
+) -> None:
+    """Found by review: only notifications were counted together. A ticket API that is down
+    in a large outage refuses a write for every node, and that is one line to read."""
+    await actions.propose(notice())
+    stored_notice = await stored(actions)
+    for_a_node = replace(stored_notice, action_type="INCIDENT_UPDATE", action_key="incident:N1:2")
+    for_another = replace(stored_notice, action_type="INCIDENT_UPDATE", action_key="incident:N2:1")
+
+    assert _ops_subject(for_a_node) == _ops_subject(for_another) == "write:INCIDENT_UPDATE"
+    assert _ops_subject(stored_notice) == f"notify:OUT-1:{notifications.OUTAGE_STARTED}"
+
+
+async def test_queue_that_refuses_the_item_does_not_disturb_the_executor(
+    db: Database, actions: ActionRepository, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await actions.propose(notice())
+    unknown = Err(ErrorKind.NOT_FOUND, "no such customer", status_code=404, code="NOT_FOUND")
+
+    async def refuses(*_: Any, **__: Any) -> bool:
+        raise RuntimeError("the queue is not there")
+
+    monkeypatch.setattr(OpsRepository, "raise_item", refuses)
+    await executor(db, ScriptedCrm(unknown), ScriptedNotify()).run_once()
+
+    assert (await stored(actions)).status is ActionStatus.FAILED
+
+
+async def test_what_a_gateway_says_is_masked_before_staff_read_it(
+    db: Database, actions: ActionRepository
+) -> None:
+    await actions.propose(notice())
+    echoes = Err(
+        ErrorKind.UNAVAILABLE,
+        "could not look up 9876543210 (a.kumar@example.com)",
+        status_code=503,
+    )
+    worker = executor(db, ScriptedCrm(echoes), ScriptedNotify(), alert_after_attempts=2)
+
+    for _ in range(40):
+        await worker.run_once()
+        if await OpsRepository(db).list_open():
+            break
+        await asyncio.sleep(0.02)
+
+    (item,) = await OpsRepository(db).list_open()
+    shown = item.summary + str(item.details)
+    assert "9876543210" not in shown
+    assert "a.kumar@example.com" not in shown
+    assert "<PHONE>" in item.summary

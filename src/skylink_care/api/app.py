@@ -28,6 +28,7 @@ from starlette.types import Lifespan
 from skylink_care.api.approvals import register_approval_routes
 from skylink_care.api.auth import Principal, Role, check_secret, issue_token, require
 from skylink_care.api.handoffs import register_handoff_routes
+from skylink_care.api.ops import register_ops_routes
 from skylink_care.api.ratelimit import RateLimiter
 from skylink_care.api.schemas import (
     ContactAccepted,
@@ -239,6 +240,7 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
         return ok(jsonable_encoder([record.__dict__ for record in trail]))
 
     register_handoff_routes(app, deps.database, deps.now)
+    register_ops_routes(app, deps.database, deps.now)
     register_approval_routes(app, deps.database, deps.now)
 
     if deps.env == "dev":

@@ -12,6 +12,11 @@ class Repository:
     def __init__(self, database: Database) -> None:
         self._db = database
 
+    @property
+    def database(self) -> Database:
+        """The database this repository reads and writes."""
+        return self._db
+
     @asynccontextmanager
     async def _conn(self, conn: Connection | None) -> AsyncIterator[Connection]:
         """Yield ``conn`` when the caller is inside a transaction, otherwise a pooled connection."""

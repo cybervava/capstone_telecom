@@ -21,6 +21,7 @@
           <select id="role" name="role">
             <option value="agent">Agent</option>
             <option value="supervisor">Supervisor</option>
+            <option value="ops">Operations</option>
           </select>
         </label>
         <label for="name">Name <span class="hint">goes on every decision</span>
@@ -51,6 +52,15 @@
       </div>
       <p class="hint">Most urgent first. Open one to read the case.</p>
       <ol id="queue" class="queue" aria-live="polite"></ol>
+    </section>
+
+    <section class="panel panel--ops" aria-labelledby="ops-heading">
+      <div class="panel__head">
+        <h2 id="ops-heading">Operations</h2>
+        <span class="tally" id="ops-count" aria-label="open operations items">0</span>
+      </div>
+      <p class="hint">What went wrong with no customer waiting on it. Closed by operations staff or a supervisor.</p>
+      <ol id="ops" class="slips" aria-live="polite"></ol>
     </section>
 
     <section class="panel panel--case" aria-labelledby="case-heading" id="case" hidden>

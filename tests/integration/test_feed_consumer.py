@@ -20,6 +20,7 @@ from skylink_care.db.contacts import ContactRepository, NewContact
 from skylink_care.db.database import Database
 from skylink_care.db.episodes import EpisodeRepository
 from skylink_care.db.inbox import InboxRepository
+from skylink_care.db.ops import OpsRepository
 from skylink_care.db.read_model import ReadModelRepository
 from skylink_care.db.reference import ReferenceRepository
 from skylink_care.domain.models import Channel
@@ -55,7 +56,7 @@ class ScriptedFeed:
         return self._pages.pop(0) if self._pages else page(last_seq=after_seq)
 
 
-def build(db: Database, feed: Any, **options: Any) -> FeedConsumer:
+def build(db: Database, feed: Any, *, now: Any = lambda: NOW, **options: Any) -> FeedConsumer:
     read_model = ReadModelRepository(db)
     reactions = OutageReactions(
         ReferenceRepository(db),
@@ -65,7 +66,7 @@ def build(db: Database, feed: Any, **options: Any) -> FeedConsumer:
         read_model,
         announce_within=timedelta(minutes=15),
     )
-    return FeedConsumer(feed, db, read_model, reactions, now=lambda: NOW, **options)
+    return FeedConsumer(feed, db, read_model, reactions, now=now, **options)
 
 
 async def waiting_contact(contacts: ContactRepository, **columns: Any) -> UUID:
@@ -522,6 +523,178 @@ async def test_unexpected_failure_is_recorded_where_an_operator_looks(
     state = await ReadModelRepository(db).feed_state()
     assert state.last_error == "UNEXPECTED: RuntimeError"
     assert state.heartbeat_at is None
+    # Found by review: this is the failure that holds up everything behind it, and it was
+    # the one that reached no person.
+    items = await open_feed_items(db)
+    assert "feed:stuck" in items
+    assert "RuntimeError" in items["feed:stuck"].summary
+
+
+# --- a feed that cannot go on by itself is a person's to look at ----------------------------------
+
+
+async def open_feed_items(db: Database) -> dict[str, Any]:
+    return {item.subject: item for item in await OpsRepository(db).list_open()}
+
+
+async def test_hole_in_the_sequence_is_queued_for_operations(db: Database) -> None:
+    await seed_reference(db)
+    consumer = build(db, ScriptedFeed(page(outage_event(1)), page(outage_event(5, version=2))))
+
+    await consumer.poll_once()
+    await consumer.poll_once()
+
+    items = await open_feed_items(db)
+    assert list(items) == ["feed:gap"]
+    assert items["feed:gap"].kind == "FEED_NEEDS_ATTENTION"
+    assert items["feed:gap"].priority == 1
+    assert "expected seq 2, received 5" in items["feed:gap"].summary
+
+
+async def test_outage_event_that_cannot_be_applied_is_queued_for_operations(db: Database) -> None:
+    await seed_reference(db)
+    unusable = outage_event(2, "OUTAGE_RESOLVED", version=None)
+    consumer = build(db, ScriptedFeed(page(outage_event(1), unusable)))
+
+    await consumer.poll_once()
+
+    items = await open_feed_items(db)
+    item = items["feed:malformed outage event"]
+    assert "OUTAGE_RESOLVED" in item.summary
+    assert "care-admin feed-clear-gap" in item.summary  # what a person does about it
+    assert (item.details["seq"], item.priority) == (2, 1)
+
+
+async def test_event_that_hides_no_outage_does_not_bury_the_one_that_may(db: Database) -> None:
+    """Found by review: both went onto one item, and the later, lesser one overwrote what
+    the item said. Which outage event was lost is what a person needs to know."""
+    await seed_reference(db)
+    unusable = outage_event(2, "OUTAGE_RESOLVED", version=None)
+    nameless_alarm = alarm_event(3, "ALARM_RAISED", node_id=NODE).model_copy(
+        update={"alarm_id": None}
+    )
+    consumer = build(db, ScriptedFeed(page(outage_event(1), unusable, nameless_alarm)))
+
+    await consumer.poll_once()
+
+    items = await open_feed_items(db)
+    assert "OUTAGE_RESOLVED" in items["feed:malformed outage event"].summary
+    assert items["feed:malformed outage event"].priority == 1
+    assert "ALARM_RAISED" in items["feed:malformed event"].summary
+    assert items["feed:malformed event"].priority == 3
+
+
+async def test_refused_page_is_queued_once_and_counted_by_the_minute_while_it_lasts(
+    db: Database,
+) -> None:
+    """The same refusal comes at every poll, every couple of seconds. It is one item, and it
+    is put to the queue once a minute, not once a poll."""
+    await seed_reference(db)
+    moment = [NOW]
+    backwards = page(outage_event(2, outage_id="OUT-2"), last_seq=2)
+    feed = ScriptedFeed(page(outage_event(7)), *[backwards] * 5)
+    consumer = build(db, feed, now=lambda: moment[0])
+
+    for _ in range(4):
+        await consumer.poll_once()
+    first_minute = (await open_feed_items(db))["feed:refused"].occurrences
+    moment[0] = NOW + timedelta(seconds=61)
+    await consumer.poll_once()
+    await consumer.poll_once()
+
+    items = await open_feed_items(db)
+    assert list(items) == ["feed:refused"]
+    assert (first_minute, items["feed:refused"].occurrences) == (1, 2)
+    assert "SEQUENCE_REGRESSION" in items["feed:refused"].summary
+
+
+async def test_page_that_cannot_be_parsed_is_queued_for_operations(db: Database) -> None:
+    unreadable = Err(ErrorKind.PROTOCOL, "events[0].seq: not an integer", status_code=200)
+    consumer = build(db, ScriptedFeed(unreadable))
+
+    await consumer.poll_once()
+
+    assert list(await open_feed_items(db)) == ["feed:unreadable"]
+
+
+@pytest.mark.parametrize(
+    ("kind", "status"),
+    [
+        (ErrorKind.UNAUTHORIZED, 401),
+        (ErrorKind.FORBIDDEN, 403),
+        (ErrorKind.NOT_FOUND, 404),
+        (ErrorKind.INVALID, 400),
+    ],
+)
+async def test_feed_that_refuses_us_is_queued_at_once(
+    db: Database, kind: ErrorKind, status: int
+) -> None:
+    """Found by review: a revoked key answered 401 every two seconds all night, and nobody
+    was told. Waiting does not cure a refusal."""
+    consumer = build(
+        db, ScriptedFeed(Err(kind, "the feed refused the request", status_code=status))
+    )
+
+    await consumer.poll_once()
+
+    items = await open_feed_items(db)
+    assert list(items) == ["feed:rejected"]
+    assert "OSS_KEY_INGEST" in items["feed:rejected"].summary
+
+
+async def test_feed_out_of_reach_for_long_is_queued_and_one_that_comes_back_starts_afresh(
+    db: Database,
+) -> None:
+    moment = [NOW]
+    down = Err(ErrorKind.UNAVAILABLE, "upstream unavailable", status_code=503)
+    feed = ScriptedFeed(down, down, page(last_seq=0), down, down)
+    consumer = build(db, feed, now=lambda: moment[0])
+
+    await consumer.poll_once()  # out of reach from now
+    moment[0] = NOW + timedelta(minutes=10)
+    await consumer.poll_once()  # still, ten minutes on
+    queued = dict(await open_feed_items(db))
+    await consumer.poll_once()  # back
+    moment[0] = NOW + timedelta(minutes=15)
+    await consumer.poll_once()  # gone again: counted from now, not from before
+    moment[0] = NOW + timedelta(minutes=20)
+    await consumer.poll_once()
+
+    assert list(queued) == ["feed:out of reach"]
+    assert queued["feed:out of reach"].occurrences == 1
+    assert (await open_feed_items(db))["feed:out of reach"].occurrences == 1
+
+
+async def test_queue_that_refuses_the_item_does_not_hold_the_feed_up(
+    db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Found by review: the item was written inside the page's transaction. A queue that
+    failed would have failed the page, at every poll, for ever."""
+    await seed_reference(db)
+
+    async def refuses(*_: Any, **__: Any) -> bool:
+        raise RuntimeError("the queue is not there")
+
+    monkeypatch.setattr(OpsRepository, "raise_item", refuses)
+    consumer = build(db, ScriptedFeed(page(outage_event(1)), page(outage_event(5, version=2))))
+
+    await consumer.poll_once()
+    outcome = await consumer.poll_once()
+
+    state = await ReadModelRepository(db).feed_state()
+    assert outcome.applied == 1
+    assert (state.applied_seq, state.intact) == (5, False)  # applied, and the gap recorded
+
+
+@pytest.mark.parametrize("kind", [ErrorKind.TIMEOUT, ErrorKind.UNAVAILABLE, ErrorKind.CIRCUIT_OPEN])
+async def test_feed_that_is_only_out_of_reach_is_not_queued(db: Database, kind: ErrorKind) -> None:
+    """It may be back at the next poll, and the read model already stops being trusted. A
+    person is not asked to look at every hiccup."""
+    consumer = build(db, ScriptedFeed(Err(kind, "no answer")))
+
+    await consumer.poll_once()
+
+    assert await open_feed_items(db) == {}
 
 
 def _incident_open(episode_id: UUID) -> NewAction:

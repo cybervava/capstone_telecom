@@ -55,6 +55,7 @@ from skylink_care.db.approvals import ApprovalRepository
 from skylink_care.db.audit import AuditRepository
 from skylink_care.db.database import Database
 from skylink_care.db.handoffs import HandoffRepository
+from skylink_care.db.ops import OpsRepository
 from skylink_care.domain.credit import CreditPolicy, load_policy
 from skylink_care.executor.credits import CreditApplier
 from skylink_care.executor.outcomes import (
@@ -120,8 +121,11 @@ class ActionExecutor:
         visits: Handler | None = None,
         now: Clock = utc_now,
         approval_clock: Clock | None = None,
+        ops: OpsRepository | None = None,
     ) -> None:
         self._actions = actions
+        # Where a failure goes that no conversation is waiting for.
+        self._ops = ops or OpsRepository(handoffs.database)
         self._approvals = approvals
         # Business time: an approval's expiry and a billing cycle are stamped by other systems
         # and judged by this clock. Ages of ledger rows are judged by ``now``.
@@ -309,6 +313,38 @@ class ActionExecutor:
                 outputs={"error": error, "retry_in_seconds": delay},
             )
 
+    async def _tell_operations(
+        self, action: Action, status: ActionStatus, error: str, reason: str
+    ) -> None:
+        """No conversation waits for this write, so there is no contact to hand to a person:
+        it goes to the operations queue, one item for one kind of trouble.
+
+        The action is final by now and will not come this way again. Should the queue refuse
+        the item, that is logged and nothing else is disturbed.
+        """
+        said = str(redact_for_log(error))  # a gateway's message can quote what it was sent
+        try:
+            await self._ops.raise_item(
+                kind=reason,
+                subject=_ops_subject(action),
+                summary=(
+                    f"Enterprise write {action.action_type} is {status.value} after"
+                    f" {action.attempts} attempt(s): {said}. No conversation is waiting for"
+                    " it, so nobody else has been told. Check the target system before"
+                    " repeating it by hand."
+                ),
+                details={
+                    "action_type": action.action_type,
+                    "status": status.value,
+                    "error": said,
+                    "attempts": action.attempts,
+                    "last_action_key": action.action_key,
+                },
+                priority=2,
+            )
+        except Exception:
+            log.exception("ops_item_not_raised", action_key=action.action_key, kind=reason)
+
     async def _finish(
         self,
         action: Action,
@@ -364,6 +400,7 @@ class ActionExecutor:
             error=error,
         )
         if action.contact_id is None:
+            await self._tell_operations(action, status, error, reason)
             return
         await self._handoffs.open(
             action.contact_id,
@@ -461,6 +498,16 @@ class ActionExecutor:
         if prerequisite is None or not prerequisite.external_ref:
             raise MissingPrerequisiteError("the incident has no external reference yet")
         return prerequisite.external_ref
+
+
+def _ops_subject(action: Action) -> str:
+    """What the trouble is about, for the operations queue: the kind of write, and for a
+    notification the outage and the message as well. Never the customer, the node or the
+    ticket: an API that refuses one write refuses them all, and that is one line to read."""
+    if action.action_type == NOTIFY_SEND:
+        body = action.request_body
+        return f"notify:{body.get('outage_id')}:{body.get('template_id')}"
+    return f"write:{action.action_type}"
 
 
 def _is_definite_rejection(error: Err) -> bool:

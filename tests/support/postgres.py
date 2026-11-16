@@ -30,7 +30,8 @@ from skylink_care.pipelines.guide_index import build_guide_index
 
 KNOWLEDGE_DIR = Path(__file__).resolve().parents[2] / "data" / "knowledge"
 _MUTABLE_TABLES = (
-    "approvals, actions, handoffs, inbox, timers, line_tests, contact_messages, contacts,"
+    "approvals, actions, handoffs, ops_items, inbox, timers, line_tests, contact_messages,"
+    " contacts,"
     " node_episodes,"
     " outage_nodes, outages, node_alarms, address_node_map, service_index, nodes"
 )

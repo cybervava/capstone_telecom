@@ -131,29 +131,101 @@ function closeCase() {
   el("case").hidden = true;
 }
 
+// --- operations ----------------------------------------------------------------------------------
+
+const MAY_CLOSE_OPS = new Set(["ops", "supervisor"]);
+
+function opsSlip(item) {
+  const status = node("p", { className: "status" });
+  status.setAttribute("role", "status");
+  const parts = [
+    node("p", { className: "slip__kind", text: item.kind.replaceAll("_", " ").toLowerCase() }),
+    node("p", { className: "summary", text: item.summary }),
+    node(
+      "dl",
+      { className: "docket__facts" },
+      fact("About", item.subject),
+      fact("Seen", `${item.occurrences} time${item.occurrences === 1 ? "" : "s"}`),
+      fact("First", ago(item.created_at)),
+      fact("Last", ago(item.last_seen_at)),
+    ),
+  ];
+  if (MAY_CLOSE_OPS.has(state.role)) {
+    const note = node("input", { className: "slip__note" });
+    note.maxLength = 500;
+    note.placeholder = "What was done (optional, kept in the audit log)";
+    note.setAttribute("aria-label", `What was done about ${item.subject}`);
+    const done = node("button", { text: "Mark done" });
+    done.type = "button";
+    done.addEventListener("click", async () => {
+      done.disabled = true;
+      try {
+        const text = note.value.trim();
+        await call(`/v1/ops/${item.item_id}/done`, { method: "POST", body: text ? { note: text } : {} });
+        await refresh();
+      } catch (error) {
+        status.textContent = `Not recorded: ${error.message}`;
+        done.disabled = false;
+      }
+    });
+    parts.push(node("div", { className: "slip__decide" }, note, done));
+  }
+  const made = node("li", { className: "slip", dataset: { level: item.priority <= 1 ? "supervisor" : "agent" } }, ...parts, status);
+  made.dataset.id = item.item_id;
+  return made;
+}
+
+function showOps({ items, total }) {
+  // The list is the most urgent hundred. The tally is all of them.
+  el("ops-count").textContent = total > items.length ? `${items.length} of ${total}` : total;
+  // An item someone is typing a note on is not redrawn under their hands.
+  const busy = el("ops").contains(document.activeElement);
+  const shown = [...el("ops").children].map((child) => child.dataset.id).join();
+  if (!busy || shown !== items.map((item) => item.item_id).join()) {
+    el("ops").replaceChildren(...items.map(opsSlip));
+  }
+}
+
 // --- loading -------------------------------------------------------------------------------------
+
+function showApprovals(approvals) {
+  el("approvals-count").textContent = approvals.length;
+  // A slip someone is typing a note on, or has opened, is not redrawn under their hands.
+  const busy = el("approvals").contains(document.activeElement) || el("approvals").querySelector("details[open]");
+  const shown = [...el("approvals").children].map((child) => child.dataset.id).join();
+  if (!busy || shown !== approvals.map((a) => a.approval_id).join()) {
+    el("approvals").replaceChildren(...approvals.map((approval) => {
+      const made = slip(approval);
+      made.dataset.id = approval.approval_id;
+      return made;
+    }));
+  }
+}
+
+function showQueue(queue) {
+  el("queue-count").textContent = queue.length;
+  el("queue").replaceChildren(...queue.map(queueRow));
+}
 
 async function refresh() {
   if (!state.token) return;
-  try {
-    const [approvals, queue] = await Promise.all([call("/v1/approvals"), call("/v1/handoffs")]);
-    el("approvals-count").textContent = approvals.length;
-    el("queue-count").textContent = queue.length;
-    // A slip someone is typing a note on, or has opened, is not redrawn under their hands.
-    const busy = el("approvals").contains(document.activeElement) || el("approvals").querySelector("details[open]");
-    const shown = [...el("approvals").children].map((child) => child.dataset.id).join();
-    if (!busy || shown !== approvals.map((a) => a.approval_id).join()) {
-      el("approvals").replaceChildren(...approvals.map((approval) => {
-        const made = slip(approval);
-        made.dataset.id = approval.approval_id;
-        return made;
-      }));
-    }
-    el("queue").replaceChildren(...queue.map(queueRow));
-    el("sign-status").textContent = `Signed in as ${state.who}. Updated ${new Date().toLocaleTimeString("en-IN")}.`;
-  } catch (error) {
-    el("sign-status").textContent = `Could not load the desk: ${error.message}`;
-  }
+  // Credits are decided by agents and supervisors; operations staff are not shown them.
+  const credits = state.role === "ops" ? Promise.resolve([]) : call("/v1/approvals");
+  // Each list is loaded and shown for itself: one that fails does not blank the others.
+  const lists = [
+    ["credits", credits, showApprovals],
+    ["queue", call("/v1/handoffs"), showQueue],
+    ["operations", call("/v1/ops"), showOps],
+  ];
+  const settled = await Promise.allSettled(lists.map(([, loading]) => loading));
+  const failed = [];
+  settled.forEach((result, index) => {
+    const [name, , show] = lists[index];
+    if (result.status === "fulfilled") show(result.value);
+    else failed.push(`${name} (${result.reason.message})`);
+  });
+  const updated = `Signed in as ${state.who}. Updated ${new Date().toLocaleTimeString("en-IN")}.`;
+  el("sign-status").textContent = failed.length ? `${updated} Could not load: ${failed.join(", ")}.` : updated;
 }
 
 el("sign-form").addEventListener("submit", async (event) => {
