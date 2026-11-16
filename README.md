@@ -7,7 +7,7 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 ## Status
 
-Milestones M0 (foundations) and M1 (reference-first outage path) are built and tested. M2 is in progress: eight of its nine slices are built (the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk); the evaluations and everything after M2 are not.
+Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. Everything after M2 is not built.
 
 **Works today**
 
@@ -26,6 +26,7 @@ Milestones M0 (foundations) and M1 (reference-first outage path) are built and t
 - **Mobile, as a thin path.** A tower outage is told, ticketed, restored and credited (by the mobile rule of the policy) like a broadband outage, in words that never mention a router. There is no remote test of a mobile connection here and no guide for a phone: on a working tower the customer is told what the network shows and a person takes over.
 - **Degraded mode.** When nothing can be verified: reference still issued, no all-clear, no device steps; the status is re-checked on a timer and a person takes over if it stays unverified.
 - **Staff desk** (`/staff.html`). What the assistant could not or may not settle on its own: the credits that wait for a decision, each shown exactly as it was frozen, with its working, and approved or rejected there; and the queue of contacts passed to a person, each with the handover summary, the conversation and the audit trail, closed with a note once dealt with. Every decision carries the name of who took it.
+- **Evaluations** (`make eval`). Scored replays through the real workflow on the stand-in data: outage detected for 97.47% of affected contacts (target 95%); credits match the policy in 4,050 of 4,050 cases (target 100%); none of the baseline's unnecessary technician visits is booked by the workflow, and every needed one is. What these figures do and do not show is under "Test it".
 - Per-contact audit trail, API with roles, per-caller rate limits, customer desk.
 
 **Not built yet**
@@ -34,7 +35,8 @@ Milestones M0 (foundations) and M1 (reference-first outage path) are built and t
 - Changing or cancelling a booked visit (a person does that); a visit for a line that passes its test.
 - Anything for mobile beyond the outage path (no tower inference, no device guidance, no SIM or plan checks).
 - A learned embedding model for retrieval (the index uses a deterministic hashing embedder; see "Guide retrieval").
-- Surge test, circuit breaker, dashboards and alerts, evaluation reports.
+- Surge test, circuit breaker, dashboards and alerts.
+- The evaluations on the container stack at 400,000 customers and on the demo's language model (they run in process, on a 1,000-customer pack, with the offline rules and with weights measured on the large pack).
 - Simulator controls in the console (outages and faults are started with the admin API or the smoke run).
 
 ## Two things that are stand-ins
@@ -106,6 +108,21 @@ make test-all           # everything with coverage (needs `make up`)
 
 `make test-all` runs unit, integration (real PostgreSQL), contract (adapters against the mock gateway, in process) and end-to-end journey tests. The language model is replaced by the offline rules provider in tests; nothing else is stubbed.
 
+### Evaluations
+
+```bash
+make eval               # four scored runs, about a minute (needs `make up`)
+```
+
+`make eval` replays contacts through the real workflow and rewrites `evals/reports/`. Everything is measured on the synthetic stand-in data; none of it is a measurement of SkyLink's network, policy or customers. How each figure is measured is in [`evals/README.md`](evals/README.md); what it rests on is at the end of each report.
+
+| Brief metric | Result on the stand-in data | Report |
+|---|---|---|
+| Outage detected for affected customers ≥ 95% | **97.47%** of affected contacts, weighted by how often each kind occurs in the 400,000-customer pack. 140 contacts replayed: before and after the NOC declares the outage, with and without an alarm, every kind of mapping defect. What is missed is mobile, which has no remote test: no hold before the NOC declares, no mapping repair | `outage_detection` |
+| Unnecessary truck rolls cut ≥ 50% (simulation) | The workflow books **none** of the baseline's 3,225 unnecessary visits, and every needed one after the 10-minute hold. A customer who goes on asking for a technician always ends with a person, so the cut end to end depends on what that person decides, which no replay can measure. If every customer insisted, the target would hold only while staff turn down at least half of them | `truck_rolls` |
+| Credits match policy 100% | **4,050 of 4,050** grid cases agree with an independent calculation in exact arithmetic, 14 of 14 with amounts worked out by hand | `credit_policy` |
+| (no brief metric: guide retrieval) | Right section for **81.25%** of 48 descriptions written without sight of the retriever (always answering "No internet" would score 47.92%); 99% on the phrases its rules were written from. Never a step from another router model's guide | `retrieval` |
+
 ## Configuration
 
 All settings come from the environment. `.env.example` lists every variable; `make init` creates `.env` from it. No secret is committed, and no process reads `.env` by itself: the launchers pass each process only what it needs.
@@ -176,9 +193,9 @@ curl -s -X POST -H "X-API-Key: $OSS_KEY_ADMIN" -H "Content-Type: application/jso
 
 ### Guide retrieval
 
-`care-admin index-guides` (part of `make seed`) reads the twelve router guides, splits them into their sections and stores them in PostgreSQL with a text-search column and a pgvector column. A search is filtered before it is ranked: the customer's router model (from the service record), the role, and the list of sections an automated answer may quote are conditions of the query itself. Ranking then adds three signals: the customer's words name the section's topic, they occur in its text, and the texts are close in vector space.
+`care-admin index-guides` (part of `make seed`) reads the twelve router guides, splits them into their sections and stores them in PostgreSQL with a text-search column and a pgvector column. A search is filtered before it is ranked: the customer's router model (from the service record), the role, and the list of sections an automated answer may quote are conditions of the query itself. Ranking then adds four signals: the kind of fault the customer's latest message names (keyword rules in `rag/symptoms.py`: no service, Wi-Fi, slow) points to a section; the customer's words name the section's topic; they occur in its text; and the texts are close in vector space.
 
-The vectors come from a **deterministic hashing embedder**: no model, no download, no network, and the same index on every machine. It is a lexical signal in vector form, not a language model, and the index records it as such. A learned embedding model can replace it behind the same interface; an index built by one embedder refuses queries from another. Retrieval is checked in the tests with ten customer phrasings against each of the twelve guides; a scored evaluation on the labelled transcripts is still to come.
+The vectors come from a **deterministic hashing embedder**: no model, no download, no network, and the same index on every machine. It is a lexical signal in vector form, not a language model, and the index records it as such. A learned embedding model can replace it behind the same interface; an index built by one embedder refuses queries from another. Retrieval is checked in the tests with ten customer phrasings against each of the twelve guides, and scored by `make eval`: the right section for 81.25% of descriptions written without sight of the retriever, against 99% for the phrases its rules were written from. The gap is what keyword rules cost; they stand in for a model that reads the fault (decision D2).
 
 The index build refuses, as a whole, any document that is not a device guide, a second guide for the same model, and any guide whose quotable steps tell the customer to do something hazardous (reset, open the unit, unplug the fibre).
 
@@ -215,4 +232,4 @@ Five processes run from one image, each with only its own credentials: the API (
 
 ## AI assistance
 
-This repository was written with **Claude Code** (Anthropic), model Claude Fable 5.2. Claude Code produced the execution plan, the code and the tests in this repository. Within that session, sub-agents wrote the synthetic data generator and the mock gateway from written contracts, and other sub-agents reviewed the plan, the architecture and the code (Python, security and silent-failure reviews); their findings were fixed and are covered by tests. The two supplied documents (the brief and the team's action plan) were written by people and are not modified here.
+This repository was written with **Claude Code** (Anthropic), model Claude Fable 5.2. Claude Code produced the execution plan, the code and the tests in this repository. Within that session, sub-agents wrote the synthetic data generator and the mock gateway from written contracts, and other sub-agents reviewed the plan, the architecture and the code (Python, security and silent-failure reviews); their findings were fixed and are covered by tests. For the retrieval evaluation a sub-agent that was shown one router guide and none of the retriever wrote and labelled the independent descriptions, and other sub-agents reviewed the evaluations for whether each report claims only what was measured. The two supplied documents (the brief and the team's action plan) were written by people and are not modified here.
