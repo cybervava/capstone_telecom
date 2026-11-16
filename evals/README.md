@@ -1,6 +1,6 @@
 # Evaluations
 
-Four scored runs, each tied to a line of the brief or to a claim this build makes. `make eval`
+Five scored runs, each tied to a line of the brief or to a claim this build makes. `make eval`
 (PostgreSQL must be up: `make up`) runs them and rewrites the reports in `evals/reports/`, one
 Markdown file to read and one JSON file with the same numbers. They are not part of
 `make test-all`: a failed evaluation means a target was missed, not that the code is broken.
@@ -10,6 +10,7 @@ Markdown file to read and one JSON file with the same numbers. They are not part
 | `outage_detection` | Outage detected for affected customers ≥ 95% | Contacts from customers whose true node is in outage are replayed through the real workflow: after the NOC has declared the outage and before, with and without an alarm, broadband and mobile, every kind of mapping defect. Each kind is scored and weighted by how often it occurs in the data pack. |
 | `truck_rolls` | Unnecessary truck rolls cut ≥ 50% (simulation) | The three kinds of contact that ended in a technician visit in the data pack are replayed with a customer who asks for a technician, takes one whenever offered, and goes on asking until a person takes over. Visits the workflow books are compared with the baseline's. |
 | `credit_policy` | Credits match policy 100% | The credit engine against an independent calculation in exact arithmetic over a grid on every boundary of the policy, and against amounts worked out by hand. |
+| `curveball` | The curveball: safe degraded mode, and a reference for every contact | One scene (two declared outages, a visit on offer, then the Network Monitoring API fails, customers write in, the NOC resolves one outage, the API returns) played for four ways the API can fail and for a feed that works and one that is silent. Scored against what the simulator knows to be true: nobody in an outage told the network is clear, no visit booked without a status read at that moment, no credit applied without an approval, a reference for every contact, at most one incident on a node. |
 | `retrieval` | (none in the brief) | Descriptions of a broadband fault put to the Troubleshooting Agent for every router model; the section it answers with is scored against labels made by hand. Three sets, of which one is out-of-sample (below). |
 
 ## What they run on
