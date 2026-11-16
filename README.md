@@ -7,7 +7,7 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 ## Status
 
-Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. M3 (the curveball and resilience) is built as well: a circuit for each dependency, shared status reads, a check on what every message claims about the network, an operations queue, surge mode with a load test of the brief's surge, and the curveball as a scored drill with its decision record ([ADR 0001](docs/adr/0001-degraded-mode-when-the-network-api-fails.md)). M4 (trust) is in progress: the first four of its seven slices are built. Everything after M4 is not built.
+Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. M3 (the curveball and resilience) is built as well: a circuit for each dependency, shared status reads, a check on what every message claims about the network, an operations queue, surge mode with a load test of the brief's surge, and the curveball as a scored drill with its decision record ([ADR 0001](docs/adr/0001-degraded-mode-when-the-network-api-fails.md)). M4 (trust) is in progress: the first five of its seven slices are built. Everything after M4 is not built.
 
 **Works today**
 
@@ -156,7 +156,7 @@ All settings come from the environment. `.env.example` lists every variable; `ma
 | `CARE_API_HOST`, `CARE_API_PORT` | API | Listen address |
 | `CARE_OSS_BASE_URL` | orchestrator, executor, feed consumer | OSS/BSS gateway |
 | `CARE_OSS_BREAKER_FAILURES`, `CARE_OSS_BREAKER_REST_SECONDS`, `CARE_OSS_READ_RETRIES` | orchestrator, executor, feed consumer | A dependency that fails this many times in a row (5) is rested for this long (10 s): calls to it are not made, and the caller is told "not attempted", which every reader treats as "not verified". Then one call tries again. A read that fails fast is tried once more; a write never is |
-| `OSS_KEY_TRIAGE`, `OSS_KEY_DIAGNOSTICS`, `OSS_KEY_RESOLUTION`, `OSS_KEY_DISPATCH`, `OSS_KEY_NOTIFICATION` | orchestrator | One read-only key per agent identity |
+| `OSS_KEY_TRIAGE`, `OSS_KEY_DIAGNOSTICS`, `OSS_KEY_RESOLUTION`, `OSS_KEY_DISPATCH` | orchestrator | One read-only key per agent identity, with the scopes of that agent's own tools. Only triage can read a customer's profile; the executor can ask the CRM whether a customer may be sent a notice, and nothing else |
 | `OSS_KEY_EXECUTOR` | executor only | The only key that can write to enterprise systems |
 | `OSS_KEY_INGEST` | feed consumer only | Reads the NOC event feed and nothing else |
 | `OSS_KEY_ADMIN` | simulator controls | Scenario and fault injection. No care process holds it |
@@ -169,6 +169,7 @@ All settings come from the environment. `.env.example` lists every variable; `ma
 | `CARE_VISIT_SLOTS_OFFERED`, `CARE_VISIT_LINE_TEST_MAX_AGE_SECONDS`, `CARE_VISIT_EVIDENCE_MAX_AGE_SECONDS` | orchestrator, executor | How many slots are offered; how old the failing line test may be when a visit is proposed, and when it is booked |
 | `CARE_NETWORK_RECHECK_SECONDS`, `CARE_NETWORK_RECHECK_LIMIT`, `CARE_SUSPECTED_WAIT_SECONDS` | orchestrator | How often an unverified network status is looked at again, and how long before a person takes over |
 | `CARE_IDENTITY_FAIL_LIMIT`, `CARE_IDENTITY_FAIL_WINDOW_SECONDS`, `CARE_IDENTITY_FAIL_DAILY_LIMIT`, `CARE_IDENTITY_SPREAD_ALERT_CUSTOMERS` | orchestrator | How many wrong answers to the identity check one customer ID may have within the window (5 in 3600 s) and within a day (10), in any conversations, before further answers for it are refused unchecked; and wrong answers for how many different customers within the window are told to staff (50) |
+| `CARE_API_CONTACTS_PER_MINUTE`, `CARE_API_MESSAGES_PER_MINUTE`, `CARE_API_CHANNEL_CONTACTS_PER_SECOND`, `CARE_API_CHANNEL_BURST` | API | What one caller may do in a minute: further contacts after the first (5; a first contact is never limited, it must get its reference) and messages in one contact (20); and what one channel integration may open in all (60 a second, 600 at once). Counted in each API process: limits at the edge belong to the deployment |
 | `CARE_OUTAGE_RECHECK_SECONDS` | orchestrator | How often the live status is looked at for a customer waiting on a declared outage, behind the event feed |
 | `CARE_CLOSE_QUIET_SECONDS` | orchestrator | How long a contact waits for the customer before it is closed (assumption; default 24 h) |
 | `CARE_NOTIFY_MAX_EVENT_AGE_SECONDS` | feed consumer | An outage learnt later than this is recorded but not announced |
