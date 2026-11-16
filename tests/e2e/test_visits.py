@@ -578,3 +578,25 @@ async def test_field_service_that_cannot_be_read_sends_the_repair_to_a_person(
     *_, latest = await platform.replies(intake.contact_id)
     assert "A member of our team will arrange it" in latest
     assert await handoff_reasons(platform) == ["LINE_FAULT"]
+
+
+async def test_slot_found_taken_long_after_it_was_chosen_is_still_offered_again(
+    platform: Platform, simulator: Simulator
+) -> None:
+    """Found by review: the answer about a slot can come back well after the look at the
+    network the choice rested on. The reply lists what is free and promises nothing, so it is
+    not held back for want of a fresh look. A booking still needs one."""
+    customer = await customer_on_a_healthy_node(simulator)
+    intake, _ = await offered_a_visit(platform, simulator, customer)
+    (first_id, *_) = await offered_slot_ids(platform, intake)
+    await simulator.fill_slot(first_id, not_for=customer["service_id"])
+    await platform.say(intake.contact_id, "1")
+    await platform.worker.run_once()  # the booking is proposed
+
+    platform.advance(platform.runtime.settings.status_max_age_seconds + 60)
+    await platform.settle()
+
+    said = await platform.replies(intake.contact_id)
+    assert "The slot you chose has just been taken" in said[-1]
+    assert await appointments(simulator, customer) == []
+    assert await handoff_reasons(platform) == []

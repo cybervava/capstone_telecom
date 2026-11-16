@@ -25,10 +25,12 @@ from skylink_care.db.actions import ACTION_FINISHED_EVENT, TERMINAL, Action
 from skylink_care.db.contacts import Contact
 from skylink_care.db.database import Database
 from skylink_care.db.inbox import InboxEvent
+from skylink_care.guardrails.claims import UnbackedClaimError
 from skylink_care.guardrails.pii import redact_for_log
 from skylink_care.observability.logging import configure_logging
 from skylink_care.orchestrator.graph import RECURSION_LIMIT, ContactGraph, build_graph
 from skylink_care.orchestrator.late_outcomes import OWED_TO_THE_CUSTOMER, tell_late_outcome
+from skylink_care.orchestrator.outgoing import store_reply
 from skylink_care.orchestrator.routing import CUSTOMER_EVENTS
 from skylink_care.runtime import OrchestratorRuntime, build_orchestrator_runtime
 
@@ -38,6 +40,10 @@ WAKE = "wake"
 # Statuses in which the automated workflow no longer acts on a contact.
 BOT_DONE = frozenset({"HANDOFF", "RESOLVED", "CLOSED"})
 WORKFLOW_ERROR = "WORKFLOW_ERROR"
+# A message to the customer was stopped for what it claimed about the network.
+MESSAGE_BLOCKED = "MESSAGE_BLOCKED"
+# What the customer is told when the workflow lets go of their contact for either reason.
+APOLOGY = "I ran into a problem while handling your request."
 CUSTOMER_FOLLOW_UP = "CUSTOMER_FOLLOW_UP"
 DEFAULT_CONCURRENCY = 8
 # Query connections beyond one per concurrent run (checkpointer, scheduling, bursts).
@@ -165,44 +171,51 @@ class OrchestratorWorker:
         Dead-lettering, the handoff, the status change and the message to the customer commit
         together: a contact is never left with its events discarded and nobody told.
         """
+        blocked = isinstance(error, UnbackedClaimError)
         async with self._rt.db.transaction() as conn:
             outcome = await self._rt.inbox.record_failure(
                 contact_id,
                 # An exception can quote the data it failed on; it is masked before it is stored.
                 str(redact_for_log(repr(error))),
-                max_attempts=self._max_attempts,
+                # A message stopped for what it claimed would be stopped again: the turn would
+                # find the same evidence. No second try.
+                max_attempts=1 if blocked else self._max_attempts,
                 backoff_seconds=self._retry_backoff_seconds,
                 conn=conn,
             )
             if not outcome.dead_lettered:
                 return
+            reason = MESSAGE_BLOCKED if blocked else WORKFLOW_ERROR
             await self._rt.handoffs.open(
                 contact_id,
-                reason=WORKFLOW_ERROR,
-                summary=(
-                    f"Reason: {WORKFLOW_ERROR}. The automated workflow failed"
-                    f" {outcome.attempts} times ({type(error).__name__}). Nothing further was"
-                    " done automatically; see the audit trail and the conversation."
-                ),
+                reason=reason,
+                summary=_why_a_person(error, outcome.attempts),
                 priority=2,
                 conn=conn,
             )
             await self._rt.contacts.update(contact_id, conn=conn, status="HANDOFF")
             contact = await self._rt.contacts.get(contact_id, conn=conn)
             if contact is not None:
-                apology = replies.handed_to_human(
-                    contact.complaint_ref, "I ran into a problem while handling your request."
-                )
-                await self._rt.messages.add(
-                    contact_id,
-                    direction="outbound",
-                    author="system",
-                    body=apology.text,
-                    dedupe_key="workflow-error",
-                    meta={"template_id": apology.template_id},
-                    conn=conn,
-                )
-        log.error("contact_dead_lettered", contact_id=str(contact_id), attempts=outcome.attempts)
+                apology = replies.handed_to_human(contact.complaint_ref, APOLOGY)
+                try:
+                    await store_reply(
+                        self._rt,
+                        contact,
+                        apology,
+                        author="system",
+                        dedupe_key="workflow-error",
+                        conn=conn,
+                    )
+                except UnbackedClaimError:
+                    # The apology claims nothing, and a test holds it to that. Should it ever
+                    # be stopped, the handoff must stand: a person is told, whatever else.
+                    log.exception("apology_blocked", contact_id=str(contact_id))
+        log.error(
+            "contact_dead_lettered",
+            contact_id=str(contact_id),
+            attempts=outcome.attempts,
+            reason=reason,
+        )
 
     async def _note_follow_up(self, contact: Contact) -> None:
         """Events arrived for a contact the workflow no longer handles: tell its owner.
@@ -269,6 +282,25 @@ class OrchestratorWorker:
         events = await self._rt.inbox.fetch_unapplied(contact_id)
         if events:
             await self._rt.inbox.mark_applied(contact_id, events[-1].seq)
+
+
+def _why_a_person(error: Exception, attempts: int) -> str:
+    """What the person who takes the contact is told about why the workflow let go of it."""
+    if isinstance(error, UnbackedClaimError):
+        stopped = error.violation
+        return (
+            f"Reason: {MESSAGE_BLOCKED}. A message to the customer was stopped before it was"
+            f" sent: it would have said something about the network ({stopped.claim}) that the"
+            f" checks of that moment did not back ({stopped.code}, template"
+            f" {stopped.template_id}, network {stopped.network_state or 'not looked at'})."
+            " The customer was told only that a person is taking over. Nothing further was done"
+            " automatically; see the audit trail and the conversation."
+        )
+    return (
+        f"Reason: {WORKFLOW_ERROR}. The automated workflow failed {attempts} times"
+        f" ({type(error).__name__}). Nothing further was done automatically; see the audit"
+        " trail and the conversation."
+    )
 
 
 async def _main() -> None:

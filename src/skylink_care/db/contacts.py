@@ -92,13 +92,15 @@ class Contact:
     episode_id: UUID | None
     closed_at: datetime | None
     created_by: str | None
+    # When the network state above was decided. Without it the state is of no known age.
+    network_checked_at: datetime | None = None
 
 
 _CONTACT_COLUMNS = (
     "contact_id, channel, complaint_ref, status, correlation_id, received_at,"
     " reference_issued_at, reference_latency_ms, session_id, authenticated_customer_id,"
     " caller_phone, customer_id, service_id, service_type, node_id, intent, network_state,"
-    " outage_id, episode_id, closed_at, created_by"
+    " outage_id, episode_id, closed_at, created_by, network_checked_at"
 )
 
 # Workflow-owned columns that ``update`` may set. Anything else is rejected.
@@ -111,6 +113,7 @@ _UPDATABLE = frozenset(
         "node_id",
         "intent",
         "network_state",
+        "network_checked_at",
         "outage_id",
         "episode_id",
         "closed_at",

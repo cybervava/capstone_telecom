@@ -59,6 +59,16 @@ function showNetwork(contact) {
   chip.dataset.state = contact.network_state ?? "none";
   const labels = { ACTIVE: "outage confirmed", CONFIRMED_CLEAR: "none reported", UNKNOWN: "not verified" };
   chip.textContent = labels[contact.network_state] ?? "not checked";
+  if (contact.network_checked_at) {
+    // The server takes "none reported" back when the check is no longer recent; the time says
+    // how old the rest is.
+    // Indian time, and said to be: the same clock the assistant's messages name.
+    const time = new Date(contact.network_checked_at).toLocaleTimeString("en-IN", {
+      hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata",
+    });
+    chip.title = `Last checked at ${time} IST`;
+    chip.textContent += ` · ${time} IST`;
+  }
   const parts = [chip];
   if (contact.outage_id) {
     const outage = document.createElement("span");

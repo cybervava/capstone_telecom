@@ -11,7 +11,7 @@ import hmac
 import re
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID, uuid4
@@ -47,6 +47,7 @@ from skylink_care.db.database import Database
 from skylink_care.db.inbox import InboxRepository
 from skylink_care.db.messages import MessageRepository
 from skylink_care.domain.models import Channel
+from skylink_care.guardrails.claims import network_state_to_show
 
 log = structlog.get_logger(__name__)
 
@@ -84,6 +85,8 @@ class ApiDeps:
     now: Clock = utc_now
     # What a person must know to get a staff token from the dev token endpoint. None: nobody.
     dev_staff_key: str | None = None
+    # How long a network status stays evidence: what a page may still show as "none reported".
+    status_max_age_seconds: int = 60
 
 
 def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> FastAPI:
@@ -185,7 +188,13 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
             channel=contact.channel.value,
             received_at=contact.received_at,
             reference_issued_at=contact.reference_issued_at,
-            network_state=contact.network_state,
+            network_state=network_state_to_show(
+                contact.network_state,
+                contact.network_checked_at,
+                now=deps.now(),
+                max_age=timedelta(seconds=deps.status_max_age_seconds),
+            ),
+            network_checked_at=contact.network_checked_at,
             outage_id=contact.outage_id,
             messages=[
                 MessageView(

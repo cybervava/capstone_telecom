@@ -12,6 +12,8 @@ from skylink_care.agents.replies import Reply
 from skylink_care.config import Settings
 from skylink_care.db.contacts import Contact
 from skylink_care.db.timers import CLOSE_QUIET, RECHECK_NETWORK
+from skylink_care.guardrails.claims import Claim
+from skylink_care.orchestrator.outgoing import must_be_backed, store_reply
 from skylink_care.orchestrator.routing import RoutingLimits
 from skylink_care.orchestrator.state import ContactState
 from skylink_care.runtime import OrchestratorRuntime
@@ -51,14 +53,37 @@ class NodeSupport:
     async def _say(
         self, contact: Contact, state: ContactState, reply: Reply, *, author: str
     ) -> None:
-        """Store one outbound message for this turn. A re-run of the turn stores nothing new."""
-        await self._rt.messages.add(
-            contact.contact_id,
-            direction="outbound",
+        """Store one outbound message for this turn, if the network decision of the turn backs
+        what it claims. A re-run of the turn stores nothing new."""
+        await store_reply(
+            self._rt,
+            contact,
+            reply,
             author=author,
-            body=reply.text,
             dedupe_key=f"turn-{state.get('turn', 0)}:{reply.template_id}",
-            meta={"template_id": reply.template_id, "facts": reply.facts},
+            network=state.get("network"),
+        )
+
+    async def _must_be_backed(
+        self,
+        contact: Contact,
+        state: ContactState,
+        claim: Claim,
+        *,
+        template_id: str,
+        outage_id: str | None = None,
+        resolution_reported: bool = True,
+    ) -> None:
+        """Stop the step before it does anything, if the network decision of the turn does not
+        back what it is about to tell the customer."""
+        await must_be_backed(
+            self._rt,
+            contact,
+            claim,
+            template_id=template_id,
+            network=state.get("network"),
+            outage_id=outage_id,
+            resolution_reported=resolution_reported,
         )
 
     async def _arm_recheck(

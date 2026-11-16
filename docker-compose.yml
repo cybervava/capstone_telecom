@@ -103,6 +103,7 @@ services:
       CARE_DEV_STAFF_KEY: ${CARE_DEV_STAFF_KEY:-}
       CARE_API_HOST: 0.0.0.0
       CARE_API_PORT: "8080"
+      CARE_STATUS_MAX_AGE_SECONDS: ${CARE_STATUS_MAX_AGE_SECONDS:-60}
     ports:
       - "127.0.0.1:${CARE_API_PORT:-8080}:8080"
     healthcheck:

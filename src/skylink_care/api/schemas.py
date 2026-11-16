@@ -73,7 +73,10 @@ class ContactView(BaseModel):
     channel: str
     received_at: datetime
     reference_issued_at: datetime
+    # What the last look at the network found, and when. "None reported" is given only while
+    # that look is recent; after that the state reads as not verified.
     network_state: str | None
+    network_checked_at: datetime | None
     outage_id: str | None
     messages: list[MessageView]
 

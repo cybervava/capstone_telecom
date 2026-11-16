@@ -39,6 +39,7 @@ from skylink_care.domain.dispatch import (
     decide_visit,
 )
 from skylink_care.domain.models import NetworkState
+from skylink_care.guardrails.claims import Claim
 from skylink_care.orchestrator.evidence import parse_time
 from skylink_care.orchestrator.handover import handoff_summary
 from skylink_care.orchestrator.node_support import NodeSupport
@@ -226,6 +227,9 @@ class VisitNodes(NodeSupport):
         and never while another booking for the service is in progress."""
         visit = state.get("visit") or {}
         retries = int(visit.get("retries", 0)) if visit.get("status") == VISIT_CHOSEN else 0
+        # Before a booking is proposed: is the node proven clear, now? The executor asks the
+        # same of evidence it reads itself; this keeps the proposal from being made at all.
+        await self._must_be_backed(contact, state, Claim.VISIT, template_id="visit_being_booked.v1")
         proposal = await self._rt.actions.propose_only_one_open(
             self._booking(contact, state, choice, retries)
         )

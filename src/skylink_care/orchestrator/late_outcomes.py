@@ -16,6 +16,7 @@ from skylink_care.db.contacts import Contact
 from skylink_care.db.database import Connection
 from skylink_care.domain.dispatch import VisitReason
 from skylink_care.orchestrator.credit_nodes import credit_outcome, outcome_note, tell_outcome
+from skylink_care.orchestrator.outgoing import store_reply
 from skylink_care.runtime import OrchestratorRuntime
 
 # Actions whose outcome the customer's conversation is told.
@@ -29,18 +30,17 @@ async def tell_late_outcome(
     """Tell the customer how the action ended, once, and hand on what a person must do."""
     if action.action_type == CREDIT_APPLY:
         outcome = credit_outcome(contact.complaint_ref, action)
-        await tell_outcome(rt.messages, contact, str(action.action_id), outcome, conn=conn)
+        await tell_outcome(rt, contact, str(action.action_id), outcome, conn=conn)
         follow_up = outcome.follow_up
         note = outcome_note(follow_up, action) if follow_up else ""
     else:
         reply, follow_up, note = _visit_outcome(contact.complaint_ref, action)
-        await rt.messages.add(
-            contact.contact_id,
-            direction="outbound",
+        await store_reply(
+            rt,
+            contact,
+            reply,
             author="agent:dispatch",
-            body=reply.text,
             dedupe_key=f"visit-outcome:{action.action_id}",
-            meta={"template_id": reply.template_id, "facts": reply.facts},
             conn=conn,
         )
     if follow_up is None:

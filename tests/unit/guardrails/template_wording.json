@@ -1,0 +1,306 @@
+{
+  "checks_clear": {
+    "template_id": "checks_clear.v1",
+    "text": "I'm SkyLink's automated assistant. An update on your complaint SKL-261115-000001-9: no outage has been reported for your area as of 10:05 IST on 15 Nov, and a remote test of your line at 10:05 IST on 15 Nov passed. If your service is still not working, reply here and I'll take you through some checks for your router."
+  },
+  "closed_confirmed": {
+    "template_id": "closed_confirmed.v1",
+    "text": "I'm SkyLink's automated assistant. Thank you for confirming. I've closed complaint SKL-261115-000001-9. If the problem comes back, contact us and quote this reference."
+  },
+  "closed_quiet": {
+    "template_id": "closed_quiet.v1",
+    "text": "I'm SkyLink's automated assistant. We haven't heard back from you, so complaint SKL-261115-000001-9 is now closed. If you still have a problem, contact us and quote this reference."
+  },
+  "closing_after_credit": {
+    "template_id": "closing_after_credit.v1",
+    "text": "I'm SkyLink's automated assistant. Thank you. I'll keep complaint SKL-261115-000001-9 open until the service credit is settled, and confirm here when it is."
+  },
+  "credit_already_there": {
+    "template_id": "credit_already_there.v1",
+    "text": "I'm SkyLink's automated assistant. A service credit for this outage is already on your account, so no second one has been added. Your complaint reference is SKL-261115-000001-9."
+  },
+  "credit_applied": {
+    "template_id": "credit_applied.v1",
+    "text": "I'm SkyLink's automated assistant. The service credit of INR 120.50 for your outage has been applied to your account (credit reference CR-1). It will show on your next bill. Your complaint reference is SKL-261115-000001-9."
+  },
+  "credit_applied/no reference": {
+    "template_id": "credit_applied.v1",
+    "text": "I'm SkyLink's automated assistant. The service credit of INR 120.50 for your outage has been applied to your account. It will show on your next bill. Your complaint reference is SKL-261115-000001-9."
+  },
+  "credit_not_applied": {
+    "template_id": "credit_not_applied.v1",
+    "text": "I'm SkyLink's automated assistant. The service credit for your outage has not been applied. A member of our team will review it and contact you; you don't need to do anything. Your complaint reference is SKL-261115-000001-9."
+  },
+  "credit_unconfirmed": {
+    "template_id": "credit_unconfirmed.v1",
+    "text": "I'm SkyLink's automated assistant. I could not confirm that the service credit for your outage has been applied. A member of our team will check your account and contact you; you don't need to do anything. Your complaint reference is SKL-261115-000001-9."
+  },
+  "guided_steps": {
+    "template_id": "guided_steps.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: no outage has been reported for your area as of 10:05 IST on 15 Nov, and a remote test of your line at 10:05 IST on 15 Nov passed, so the problem is most likely in the equipment at your home. Please try these steps from the Tarang FG7 guide, section \"No internet\":\n1. Check the cable.\n2. Wait two minutes.\nSource: guide-tg-fg7 v1 #no-internet.\nReply here to tell me whether that fixed it; if it did not, a specialist will take over. Your complaint reference is SKL-261115-000001-9."
+  },
+  "handed_to_human/BILLING": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. Billing questions are handled by our billing team. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/CRM_UNAVAILABLE": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I couldn't reach our account system to verify your details. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/CUSTOMER_DISPUTES_OUTAGE": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. You've told me again that the fault is with your own equipment, and I can't settle that here while the outage in your area is active. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/CUSTOMER_REQUESTED_HUMAN": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. You asked to speak to a person. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/IDENTITY_UNRESOLVED": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I couldn't match the details you gave to an account. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/LINE_FAULT": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. Your line needs a repair. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/LINE_TEST_UNAVAILABLE": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. A test found a fault on your line earlier and I couldn't test it again to confirm. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/LOW_CONFIDENCE": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I want to be sure this is handled correctly. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/NETWORK_STATUS_UNVERIFIED": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I still can't verify the network status for your area. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/NO_SERVICE_ON_ACCOUNT": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I couldn't find a service on the account to check. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/TROUBLESHOOTING": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. Your line needs to be checked. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/VISIT_OFFER_UNANSWERED": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. Your line needs a repair and I haven't heard back from you about a technician visit. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/any other reason": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. This needs a member of our team. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "handed_to_human/apology": {
+    "template_id": "handed_to_human.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I ran into a problem while handling your request. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."
+  },
+  "line_fault": {
+    "template_id": "line_fault.v1",
+    "text": "I'm SkyLink's automated assistant. The fault on your line is still there (tested again at 10:05 IST on 15 Nov) and no network outage has been reported for your area, so the line itself needs a repair. I'm passing you to a specialist to arrange it. Your complaint reference is SKL-261115-000001-9."
+  },
+  "line_fault_hold/one minute": {
+    "template_id": "line_fault_hold.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: no outage has been reported for your area as of 10:05 IST on 15 Nov. A remote test of your line at 10:05 IST on 15 Nov found a fault. Before a repair is arranged I'm checking whether it is part of a wider network problem, which can take up to 1 minute. I'll update you here; you don't need to do anything meanwhile. Your complaint reference is SKL-261115-000001-9."
+  },
+  "line_fault_hold/ten minutes": {
+    "template_id": "line_fault_hold.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: no outage has been reported for your area as of 10:05 IST on 15 Nov. A remote test of your line at 10:05 IST on 15 Nov found a fault. Before a repair is arranged I'm checking whether it is part of a wider network problem, which can take up to 10 minutes. I'll update you here; you don't need to do anything meanwhile. Your complaint reference is SKL-261115-000001-9."
+  },
+  "line_ok": {
+    "template_id": "line_ok.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: no outage has been reported for your area as of 10:05 IST on 15 Nov, and a remote test of your line at 10:05 IST on 15 Nov passed. I'm passing you to a support specialist to look at your equipment with you. Your complaint reference is SKL-261115-000001-9."
+  },
+  "need_identifier": {
+    "template_id": "need_identifier.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. To check your service I need your SkyLink customer ID (it starts with C and has seven digits; it is printed on your bill)."
+  },
+  "need_verification": {
+    "template_id": "need_verification.v1",
+    "text": "I'm SkyLink's automated assistant. Thank you. To confirm this is your account, please send the last four digits of the mobile number registered on it. Your reference is SKL-261115-000001-9."
+  },
+  "network_unknown/CLEAR_NOT_CONFIRMED/broadband": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your router or book a technician, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/CLEAR_NOT_CONFIRMED/mobile": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your phone, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/CONFLICTING_EVIDENCE/broadband": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your router or book a technician, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/CONFLICTING_EVIDENCE/mobile": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your phone, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/FEED_OUTAGE/broadband": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your router or book a technician, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/FEED_OUTAGE/mobile": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your phone, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/LIVE_CLEAR/broadband": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your router or book a technician, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/LIVE_CLEAR/mobile": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your phone, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/LIVE_OUTAGE/broadband": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your router or book a technician, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/LIVE_OUTAGE/mobile": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your phone, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/MAPPING_UNRESOLVED/broadband": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I couldn't match your service address to our network records, so I can't check the network status for your line automatically. A specialist will check it and contact you. Until the status is confirmed I won't ask you to change anything on your router or book a technician, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/MAPPING_UNRESOLVED/mobile": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I couldn't match your mobile service to our network records, so I can't check the network status for your connection automatically. A specialist will check it and contact you. Until the status is confirmed I won't ask you to change anything on your phone, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/NO_FRESH_EVIDENCE/broadband": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your router or book a technician, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/NO_FRESH_EVIDENCE/mobile": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status for your area right now, so I can't tell you whether there is an outage. Until the status is confirmed I won't ask you to change anything on your phone, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/STALE_LAST_KNOWN_OUTAGE/broadband": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status right now. The last verified information at 10:05 IST on 15 Nov showed an outage in your area (outage OUT-1). I can't confirm whether it has ended. Until the status is confirmed I won't ask you to change anything on your router or book a technician, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/STALE_LAST_KNOWN_OUTAGE/mobile": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. I can't verify the live network status right now. The last verified information at 10:05 IST on 15 Nov showed an outage in your area (outage OUT-1). I can't confirm whether it has ended. Until the status is confirmed I won't ask you to change anything on your phone, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/SUSPECTED_NODE_FAULT/broadband": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. We are seeing signs of a possible network problem in your area and our network team is checking. No outage has been declared yet. Until the status is confirmed I won't ask you to change anything on your router or book a technician, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "network_unknown/SUSPECTED_NODE_FAULT/mobile": {
+    "template_id": "network_unknown.v1",
+    "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. We are seeing signs of a possible network problem in your area and our network team is checking. No outage has been declared yet. Until the status is confirmed I won't ask you to change anything on your phone, because that could waste your time. We will update you as soon as we can verify it."
+  },
+  "no_outage_reported/broadband": {
+    "template_id": "no_outage_reported.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: no outage has been reported for your area as of 10:05 IST on 15 Nov. Your complaint reference is SKL-261115-000001-9. I'm passing you to a support specialist to check your line."
+  },
+  "no_outage_reported/mobile": {
+    "template_id": "no_outage_reported.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: no outage has been reported for your area as of 10:05 IST on 15 Nov. Your complaint reference is SKL-261115-000001-9. I'm passing you to a support specialist to check your connection."
+  },
+  "out_of_scope": {
+    "template_id": "out_of_scope.v1",
+    "text": "I'm SkyLink's automated assistant. I can help with SkyLink broadband and mobile service problems, outages and related credits, and I can't help with other requests. If you have a service problem, tell me what is happening. Your reference is SKL-261115-000001-9."
+  },
+  "outage_active/broadband": {
+    "template_id": "outage_active.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: there is a confirmed outage in your area (outage OUT-1) caused by a fibre cut. It began at 09:45 IST on 15 Nov and our engineers are working on it. There is no restoration estimate yet; I will not guess one. This status was verified at 10:05 IST on 15 Nov. You don't need to restart or reset your router and no technician visit is needed: the fault is on our side. Your complaint reference is SKL-261115-000001-9. It is recorded against this outage and I'll update you when service is restored."
+  },
+  "outage_active/mobile": {
+    "template_id": "outage_active.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: there is a confirmed outage in your area (outage OUT-1) caused by a fibre cut. It began at 09:45 IST on 15 Nov and our engineers are working on it. There is no restoration estimate yet; I will not guess one. This status was verified at 10:05 IST on 15 Nov. You don't need to restart your phone or change its settings: the fault is on our side. Your complaint reference is SKL-261115-000001-9. It is recorded against this outage and I'll update you when service is restored."
+  },
+  "outage_active/planned": {
+    "template_id": "outage_active.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: your area is affected by planned maintenance (outage OUT-1) that began at 09:45 IST on 15 Nov. There is no restoration estimate yet; I will not guess one. This status was verified at 10:05 IST on 15 Nov. You don't need to restart or reset your router and no technician visit is needed: the fault is on our side. Your complaint reference is SKL-261115-000001-9. It is recorded against this outage and I'll update you when service is restored."
+  },
+  "outage_active/unverified time": {
+    "template_id": "outage_active.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: there is a confirmed outage in your area (outage OUT-1) caused by a fibre cut. It began at 09:45 IST on 15 Nov and our engineers are working on it. There is no restoration estimate yet; I will not guess one. You don't need to restart or reset your router and no technician visit is needed: the fault is on our side. Your complaint reference is SKL-261115-000001-9. It is recorded against this outage and I'll update you when service is restored."
+  },
+  "outage_active/with an estimate": {
+    "template_id": "outage_active.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: there is a confirmed outage in your area (outage OUT-1) caused by a fibre cut. It began at 09:45 IST on 15 Nov and our engineers are working on it. Service is expected back by 12:05 IST on 15 Nov (network operations centre estimate). This status was verified at 10:05 IST on 15 Nov. You don't need to restart or reset your router and no technician visit is needed: the fault is on our side. Your complaint reference is SKL-261115-000001-9. It is recorded against this outage and I'll update you when service is restored."
+  },
+  "outage_disputed/broadband": {
+    "template_id": "outage_disputed.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: there is a confirmed outage in your area (outage OUT-1) caused by a fibre cut. It began at 09:45 IST on 15 Nov and our engineers are working on it. There is no restoration estimate yet; I will not guess one. This status was verified at 10:05 IST on 15 Nov. I understand you believe the fault is with your own equipment. Restarting or replacing your router, or a technician visit, would not bring your service back while this outage is active, so I am not arranging any of them now. When the outage is resolved I'll tell you here, and if your service does not return then, I'll test your line straight away. If you would rather speak to a person now, reply \"agent\". Your complaint reference is SKL-261115-000001-9. It is recorded against this outage and I'll update you when service is restored."
+  },
+  "outage_disputed/mobile": {
+    "template_id": "outage_disputed.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: there is a confirmed outage in your area (outage OUT-1) caused by a fibre cut. It began at 09:45 IST on 15 Nov and our engineers are working on it. There is no restoration estimate yet; I will not guess one. This status was verified at 10:05 IST on 15 Nov. I understand you believe the fault is with your own phone. Restarting it, replacing it or changing its settings would not bring your service back while this outage is active, so there is nothing for you to do on it now. When the outage is resolved I'll tell you here, and if your service does not return then, I'll look at your connection straight away. If you would rather speak to a person now, reply \"agent\". Your complaint reference is SKL-261115-000001-9. It is recorded against this outage and I'll update you when service is restored."
+  },
+  "outage_restored/mobile": {
+    "template_id": "outage_restored.v1",
+    "text": "I'm SkyLink's automated assistant. Our network team has resolved the outage in your area (outage OUT-1) at 10:05 IST on 15 Nov. Your service should be working again. If it isn't back within 10 minutes, restart your phone once. If it still doesn't work after that, reply here and I'll have your connection checked. Your complaint reference is SKL-261115-000001-9."
+  },
+  "outage_restored/no outage named": {
+    "template_id": "outage_restored.v1",
+    "text": "I'm SkyLink's automated assistant. Our network checks no longer show a problem in your area. Your service should be working again. If it isn't back within 10 minutes, restart your router once. If it still doesn't work after that, reply here and I'll have your line checked. Your complaint reference is SKL-261115-000001-9."
+  },
+  "outage_restored/no time": {
+    "template_id": "outage_restored.v1",
+    "text": "I'm SkyLink's automated assistant. The outage in your area (outage OUT-1) is no longer active on our network. Your service should be working again. If it isn't back within 10 minutes, restart your router once. If it still doesn't work after that, reply here and I'll have your line checked. Your complaint reference is SKL-261115-000001-9."
+  },
+  "outage_restored/resolved": {
+    "template_id": "outage_restored.v1",
+    "text": "I'm SkyLink's automated assistant. Our network team has resolved the outage in your area (outage OUT-1) at 10:05 IST on 15 Nov. Your service should be working again. If it isn't back within 10 minutes, restart your router once. If it still doesn't work after that, reply here and I'll have your line checked. Your complaint reference is SKL-261115-000001-9."
+  },
+  "verification_failed": {
+    "template_id": "verification_failed.v1",
+    "text": "I'm SkyLink's automated assistant. Those details don't match our records. Please check your customer ID and send it again together with the last four digits of the registered mobile number. Your reference is SKL-261115-000001-9."
+  },
+  "visit_already_booked": {
+    "template_id": "visit_already_booked.v1",
+    "text": "I'm SkyLink's automated assistant. A technician visit is already booked for this service for Mon 16 Nov, 06:05 to 08:05, so I haven't booked another one. If you need to change it, reply here and a member of our team will help. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_already_booked/slot unknown": {
+    "template_id": "visit_already_booked.v1",
+    "text": "I'm SkyLink's automated assistant. A technician visit is already booked for this service, so I haven't booked another one. If you need to change it, reply here and a member of our team will help. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_being_arranged_elsewhere": {
+    "template_id": "visit_being_arranged_elsewhere.v1",
+    "text": "I'm SkyLink's automated assistant. A technician visit for this service is being arranged at this moment through another conversation with us, so I haven't started a second booking. Reply here in a few minutes and I'll tell you where it stands. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_being_booked": {
+    "template_id": "visit_being_booked.v1",
+    "text": "I'm SkyLink's automated assistant. Thank you. I'm booking a technician visit for Mon 16 Nov, 06:05 to 08:05 and will confirm here as soon as it is booked. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_booked": {
+    "template_id": "visit_booked.v1",
+    "text": "I'm SkyLink's automated assistant. Your technician visit is booked for Mon 16 Nov, 06:05 to 08:05 (appointment AP-1). Please make sure an adult is at the address during that time. If you need to change it, reply here and a member of our team will help. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_booked/no reference": {
+    "template_id": "visit_booked.v1",
+    "text": "I'm SkyLink's automated assistant. Your technician visit is booked for Mon 16 Nov, 06:05 to 08:05. Please make sure an adult is at the address during that time. If you need to change it, reply here and a member of our team will help. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_choice_unclear": {
+    "template_id": "visit_choice_unclear.v1",
+    "text": "I'm SkyLink's automated assistant. I couldn't tell which slot you would like, and I won't book a visit on a guess. These are the slots:\n1. Mon 16 Nov, 06:05 to 08:05\n2. Mon 16 Nov, 12:05 to 14:05\nReply with the number of the slot you want (or \"yes\" for the first one), or \"no\" if you don't want a visit. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_declined": {
+    "template_id": "visit_declined.v1",
+    "text": "I'm SkyLink's automated assistant. Understood, I haven't booked a visit. Your line still fails our test, so if you change your mind, reply here and I'll look for a slot again. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_needs_a_person": {
+    "template_id": "visit_needs_a_person.v1",
+    "text": "I'm SkyLink's automated assistant. I still couldn't tell whether you would like a technician visit, and your line does need a repair. I'm passing you to a member of our team, who will arrange it with you. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_not_booked": {
+    "template_id": "visit_not_booked.v1",
+    "text": "I'm SkyLink's automated assistant. I couldn't book a technician visit for you just now. A member of our team will arrange it and contact you; you don't need to do anything. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_offer": {
+    "template_id": "visit_offer.v1",
+    "text": "I'm SkyLink's automated assistant. The fault on your line is still there (tested again at 10:05 IST on 15 Nov) and no network outage has been reported for your area as of 10:05 IST on 15 Nov, so the line needs a technician at your address. I can book a visit in one of these slots:\n1. Mon 16 Nov, 06:05 to 08:05\n2. Mon 16 Nov, 12:05 to 14:05\nReply with the number of the slot you want (or \"yes\" for the first one), or \"no\" if you don't want a visit. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_slot_taken": {
+    "template_id": "visit_slot_taken.v1",
+    "text": "I'm SkyLink's automated assistant. The slot you chose has just been taken, so nothing is booked yet. These slots are free:\n1. Mon 16 Nov, 12:05 to 14:05\nReply with the number of the slot you want (or \"yes\" for the first one), or \"no\" if you don't want a visit. Your complaint reference is SKL-261115-000001-9."
+  },
+  "visit_still_being_booked": {
+    "template_id": "visit_still_being_booked.v1",
+    "text": "I'm SkyLink's automated assistant. Your technician visit for Mon 16 Nov, 06:05 to 08:05 is still being booked. I'll confirm here as soon as it is done. Your complaint reference is SKL-261115-000001-9."
+  }
+}

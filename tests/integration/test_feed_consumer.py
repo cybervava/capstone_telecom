@@ -386,6 +386,28 @@ async def test_resolution_reaches_only_those_who_were_told_and_wakes_who_waits(
     assert await events_of(inbox, waiting) == [("outage.resolved", {"outage_id": "OUT-1"})]
 
 
+async def test_resolution_that_reaches_us_late_is_not_announced_but_still_wakes_who_waits(
+    db: Database, contacts: ContactRepository, inbox: InboxRepository, actions: ActionRepository
+) -> None:
+    """Found by review: "the outage has been resolved" was sent however old the event was.
+    A consumer catching up after an hour would have announced it while, for all it knew, the
+    next outage was on. The waiting conversation is still woken: it looks for itself."""
+    await seed_reference(db)
+    waiting = await waiting_contact(contacts, outage_id="OUT-1")
+    long_ago = NOW - timedelta(hours=1)
+    resolved = outage_event(
+        2, "OUTAGE_RESOLVED", version=2, resolved_at=long_ago, emitted_at=long_ago
+    )
+    consumer = build(db, ScriptedFeed(page(outage_event(1)), page(resolved)))
+    await consumer.poll_once()
+
+    outcome = await consumer.poll_once()
+
+    assert (outcome.resolved, outcome.notifications, outcome.contacts_woken) == (1, 0, 1)
+    assert await actions.get_by_key("notify:C1:OUT-1:outage_resolved.v1") is None
+    assert await events_of(inbox, waiting) == [("outage.resolved", {"outage_id": "OUT-1"})]
+
+
 async def test_resolution_of_an_outage_nobody_was_told_about_notifies_nobody(
     db: Database, actions: ActionRepository
 ) -> None:

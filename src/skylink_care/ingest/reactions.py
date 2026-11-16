@@ -90,7 +90,13 @@ class OutageReactions:
         if change.outage is None:
             return ReactionSummary()
         if change.change is Change.RESOLVED:
-            return await self._resolved(conn, change.outage, change.node_ids, correlation_id)
+            return await self._resolved(
+                conn,
+                change.outage,
+                change.node_ids,
+                correlation_id,
+                announce=self._is_fresh(change.emitted_at, now),
+            )
         if change.change not in {Change.DECLARED, Change.UPDATED}:
             return ReactionSummary()
         if not change.new_node_ids:
@@ -179,8 +185,17 @@ class OutageReactions:
         return ReactionSummary(notifications=sent, contacts_woken=woken, incidents_updated=updated)
 
     async def _resolved(
-        self, conn: Connection, outage: OutageInfo, node_ids: tuple[str, ...], correlation_id: str
+        self,
+        conn: Connection,
+        outage: OutageInfo,
+        node_ids: tuple[str, ...],
+        correlation_id: str,
+        *,
+        announce: bool,
     ) -> ReactionSummary:
+        """Close the ticket, wake who waits and tell those who were told it started. The last
+        only while the news is current: a resolution that reaches us long after it happened
+        is not announced, for by then nobody here knows what the node is doing."""
         updated = 0
         for episode in await self._episodes.close_for_outage(outage.outage_id, conn=conn):
             updated += await self._resolve_incident(conn, episode, correlation_id)
@@ -195,7 +210,9 @@ class OutageReactions:
         }
         started = await self._actions.lookup_keys(conn, list(started_keys.values()))
         proposals: list[NewAction] = []
-        for customer_id, details in affected.items():
+        if not announce:
+            log.warning("outage_resolution_notice_withheld", outage_id=outage.outage_id)
+        for customer_id, details in affected.items() if announce else ():
             first = started.get(started_keys[customer_id])
             if first is None or first.status not in _DELIVERABLE:
                 continue

@@ -37,6 +37,7 @@ def build() -> FastAPI:
             jwt_secret=settings.require_jwt_secret(),
             env=settings.env,
             dev_staff_key=settings.staff_key_for_dev(),
+            status_max_age_seconds=settings.status_max_age_seconds,
         ),
         lifespan=lifespan,
     )

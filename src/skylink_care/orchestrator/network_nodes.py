@@ -31,6 +31,7 @@ from skylink_care.db.line_tests import LineTest
 from skylink_care.db.timers import CLOSE_QUIET
 from skylink_care.domain.models import NetworkState
 from skylink_care.domain.network import DecisionReason
+from skylink_care.guardrails.claims import Claim
 from skylink_care.orchestrator.credit_nodes import CreditNodes
 from skylink_care.orchestrator.evidence import decision_to_state, outage_from_state, parse_time
 from skylink_care.orchestrator.handover import handoff_summary
@@ -113,6 +114,8 @@ class NetworkNodes(CreditNodes, VisitNodes):
             contact.contact_id,
             node_id=decision.node_id,
             network_state=decision.state.value,
+            # The time of the status the decision rests on, where it rests on one.
+            network_checked_at=decision.evidence_at or decision.decided_at,
             outage_id=decision.outage.outage_id if decision.outage else None,
         )
         return {
@@ -144,6 +147,14 @@ class NetworkNodes(CreditNodes, VisitNodes):
         outage = outage_from_state(network["outage"])
         if outage is None or not network.get("node_id"):
             raise RuntimeError("outage_reply reached without an active outage on a known node")
+        # Before a ticket is raised on the strength of it: is the outage proven, now?
+        await self._must_be_backed(
+            contact,
+            state,
+            Claim.OUTAGE,
+            template_id="outage_active.v1",
+            outage_id=outage.outage_id,
+        )
         episode, already_over = await self._ticket_for(contact, state, outage.outage_id)
         # A customer who says the fault is their own equipment is told why nothing is arranged
         # for it while the outage lasts. Once: the second time a person takes it (routing).
@@ -402,6 +413,16 @@ class NetworkNodes(CreditNodes, VisitNodes):
         outage_id = state.get("resolved_outage_id") or state.get("told_outage_id")
         outage = await self._rt.read_model.get_outage(outage_id) if outage_id else None
         resolved_at = outage.resolved_at if outage else None
+        # Before a credit is proposed on the strength of it: is the restoration proven, now?
+        # Either the network is confirmed clear, or the NOC's own report of the end of this
+        # outage is to hand and nothing contradicts it.
+        await self._must_be_backed(
+            contact,
+            state,
+            Claim.RESTORED,
+            template_id="outage_restored.v1",
+            resolution_reported=resolved_at is not None,
+        )
         # A credit is assessed only for an outage the NOC has recorded as resolved: its amount
         # depends on when the outage ended, and that time must not be a guess.
         about_credit, credit = await self._offer_credit(contact, state, outage)

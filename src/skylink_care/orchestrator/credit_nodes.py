@@ -37,13 +37,14 @@ from skylink_care.db.actions import (
 )
 from skylink_care.db.contacts import Contact
 from skylink_care.db.database import Connection
-from skylink_care.db.messages import MessageRepository
 from skylink_care.domain.credit import OUTAGE_CREDIT, ApprovalLevel, CreditDecision
 from skylink_care.domain.models import OutageInfo
 from skylink_care.orchestrator.handover import CHECK_ACCOUNT_FIRST, UNCONFIRMED, handoff_summary
 from skylink_care.orchestrator.node_support import NodeSupport
+from skylink_care.orchestrator.outgoing import store_reply
 from skylink_care.orchestrator.routing import CUSTOMER_EVENTS
 from skylink_care.orchestrator.state import ContactState, Phase
+from skylink_care.runtime import OrchestratorRuntime
 
 AUTHOR = "agent:resolution"
 CREDIT_REVIEW = "CREDIT_REVIEW"
@@ -101,7 +102,7 @@ def outcome_note(reason: str, action: Action) -> str:
 
 
 async def tell_outcome(
-    messages: MessageRepository,
+    rt: OrchestratorRuntime,
     contact: Contact,
     action_id: str,
     outcome: CreditOutcome,
@@ -109,13 +110,12 @@ async def tell_outcome(
     conn: Connection | None = None,
 ) -> None:
     """Store the news of one credit's outcome, once, whichever path gets to it."""
-    await messages.add(
-        contact.contact_id,
-        direction="outbound",
+    await store_reply(
+        rt,
+        contact,
+        outcome.reply,
         author=AUTHOR,
-        body=outcome.reply.text,
         dedupe_key=f"credit-outcome:{action_id}",
-        meta={"template_id": outcome.reply.template_id, "facts": outcome.reply.facts},
         conn=conn,
     )
 
@@ -160,7 +160,7 @@ class CreditNodes(NodeSupport):
         if action is not None and action.status in OPEN:
             return credit, None  # its own news is still to come
         outcome = credit_outcome(contact.complaint_ref, action)
-        await tell_outcome(self._rt.messages, contact, credit["action_id"], outcome)
+        await tell_outcome(self._rt, contact, credit["action_id"], outcome)
         settled = {**credit, "pending": False, "status": outcome.status}
         await self._rt.auditor(contact.contact_id, contact.correlation_id).record(
             actor=AUTHOR,
