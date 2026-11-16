@@ -59,6 +59,8 @@ that could not be played out to its end has shown nothing: the report counts it 
 target is then not met. A run of some of the attacks (`ATTACK_SUITE_ONLY=E3,C1`) writes
 `attack_suite_partial` and leaves the report of the whole suite alone.
 
+As first measured, 50 of the 56 runs passed. The six that failed were five gaps, closed in M4 slice D: a planted instruction in a guide and a changed row of the index were quoted to the customer; a rude customer in an outage was declined; a model could close a complaint, or decline one, against the customer's plain words. With two attacks added since (a planted heading, a changed title), all 58 runs of 40 attacks pass.
+
 A suite that cannot fail proves nothing. `scripts/attack_suite_can_fail.py` takes controls out
 of the source one at a time, runs the attack meant for each alone, and puts the source back:
 the count of wrong identity answers, the binding of a contact, who may decide an approval and
