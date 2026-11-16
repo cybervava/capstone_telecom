@@ -36,6 +36,9 @@ API = "http://{}:{}".format(
 )
 OSS = os.environ.get("CARE_OSS_BASE_URL", "http://127.0.0.1:8081")
 WAIT_SECONDS = 20.0
+# After the journeys with the Network API down its circuit is open: the API is rested for this
+# long before a call tries it again, and until then every answer is still "can't verify".
+BREAKER_REST_SECONDS = float(os.environ.get("CARE_OSS_BREAKER_REST_SECONDS", "10"))
 # The hold before a visit is offered is only waited out when it is this short (`make demo`).
 SHORT_HOLD_MINUTES = 1
 HOLD_WAIT_SECONDS = 150.0
@@ -470,6 +473,12 @@ def main() -> int:
         say("\n4. The outage is resolved")
         sim.delete("/admin/v1/chaos")
         restoration(api, sim, headers, accepted, outage_id)
+
+        say(
+            f"\n   The Network API is back. It is rested for {BREAKER_REST_SECONDS:g} s after"
+            " failing, and asked again after that: waiting."
+        )
+        time.sleep(BREAKER_REST_SECONDS + 1.0)
 
         say(f"\n5. A failing line on healthy node {on_a_healthy_node['true_node_id']}")
         held = failing_line_is_held(api, sim, on_a_healthy_node)
