@@ -74,6 +74,25 @@ async def test_approval_given_long_after_the_proposal_still_gets_its_retry_windo
     assert waiting.ready_at > waiting.created_at + timedelta(hours=29)
 
 
+async def test_the_retry_window_is_counted_by_the_ledgers_clock_not_by_the_approvers(
+    db: Database, contacts: ContactRepository
+) -> None:
+    """When an action became runnable is a fact of the ledger, stamped by the database like
+    every other time the executor judges an age by. Taken from the clock the decision was made
+    by, a clock that reads a day behind would end an approved credit at Billing's first hiccup.
+    """
+    action = await proposed(db, await a_contact(contacts))
+    await decide(db, action, now=NOW - timedelta(days=30))
+    billing = ScriptedBilling(existing=BILLING_DOWN)
+
+    await executor(db, billing, give_up_after=timedelta(hours=24)).run_once()
+
+    waiting = await stored(db, action)
+    assert waiting.status is ActionStatus.IN_FLIGHT  # deferred, to be tried again
+    assert waiting.ready_at is not None
+    assert abs(waiting.ready_at - datetime.now(UTC)) < timedelta(seconds=30)
+
+
 async def test_action_that_needs_no_approval_is_runnable_from_its_proposal(
     db: Database, contacts: ContactRepository
 ) -> None:

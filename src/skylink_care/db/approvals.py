@@ -219,19 +219,20 @@ async def _named(conn: Connection, approval: Approval) -> DecidedAction | None:
 async def _apply(conn: Connection, approval: Approval, action_status: str) -> DecidedAction | None:
     """Carry a decision over to its action; wake the waiting contact unless it now runs.
 
-    An approved action is runnable from the moment of the decision: that is where the
-    executor's clock for it starts.
+    An approved action is runnable from the moment its approval is recorded: that is where the
+    executor's clock for it starts. The moment is the ledger's own, stamped by the database
+    like every other time the executor judges an action's age by. The time the decision was
+    made by the approver's clock stays on the approval.
     """
     cursor = await conn.execute(
         "UPDATE actions SET status = %s, updated_at = clock_timestamp(),"
-        " ready_at = CASE WHEN %s = 'READY' THEN %s ELSE ready_at END,"
+        " ready_at = CASE WHEN %s = 'READY' THEN clock_timestamp() ELSE ready_at END,"
         " last_error = CASE WHEN %s = 'READY' THEN last_error ELSE %s END"
         " WHERE action_id = %s AND status = 'PENDING_APPROVAL'"
         " RETURNING action_key, contact_id, correlation_id, policy_version",
         (
             action_status,
             action_status,
-            approval.decided_at,
             action_status,
             f"approval {approval.status.value}",
             approval.action_id,
