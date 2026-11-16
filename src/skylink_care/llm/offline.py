@@ -18,7 +18,14 @@ _CONNECTIVITY = (
     r"|does(?:n'?t| not) work|won'?t connect|can(?:'?t|not) connect"
     r"|buffering|disconnect|dropping|drops|red light|los\b|blinking|no range|call drop"
     r"|net nahi|net nahin|nahi chal|band hai|technician|engineer"
+    # A phone that cannot call or shows only SOS. Kept to words that name a fault: "mobile
+    # data" or "won't open" also turn up in questions about a bill.
+    r"|can(?:'?t|not) (?:make|receive|get) (?:any )?calls?|calls? (?:are |is )?not connecting"
+    r"|\bsos\b|no coverage"
 )
+# Pages that do not load. They speak of the connection only when the message is not about a
+# bill: "the payment page is not loading" is a question about paying.
+_NOTHING_LOADS = r"not loading|nothing loads"
 _BILLING = (
     r"bill\b|bills\b|billing|invoice|charge[sd]?\b|overcharg|payment|paid\b|pay\b|refund"
     r"|recharge|tariff|plan change|upgrade my plan|due date|late fee|receipt|auto-?debit"
@@ -83,6 +90,8 @@ def read_with_rules(text: str) -> TriageReading:
     """Classify one message with keyword rules. Pure and deterministic."""
     connectivity = _count(_CONNECTIVITY, text)
     billing = _count(_BILLING, text)
+    if billing == 0:
+        connectivity += _count(_NOTHING_LOADS, text)
     credit = _has(_CREDIT, text)
     off_topic = _has(_ABUSE, text) or _has(_INJECTION, text)
 

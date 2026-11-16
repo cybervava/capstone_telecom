@@ -13,7 +13,7 @@ from skylink_care.db.audit import AuditRepository
 from skylink_care.db.database import Database
 from skylink_care.observability.audit import Auditor
 from skylink_care.pipelines.guide_index import KnowledgePackError, build_guide_index
-from skylink_care.rag.documents import GuideError, load_guides
+from skylink_care.rag.documents import SELF_SERVICE_SECTIONS, GuideError, load_guides
 from skylink_care.rag.embedding import DIMENSIONS, HashingEmbedder
 from skylink_care.rag.index import GuideIndex, GuideIndexUnavailableError
 from tests.support.postgres import KNOWLEDGE_DIR
@@ -201,3 +201,24 @@ async def test_agent_gives_no_guidance_without_a_router_on_record_or_a_guide_for
         )
         outcomes = [row["outcome"] for row in await cursor.fetchall()]
     assert outcomes == ["NO_ROUTER_MODEL", "NO_GUIDE_FOR_MODEL", "OK"]
+
+
+async def test_section_the_caller_expects_wins_over_shared_words_and_only_within_the_guide(
+    db: Database,
+) -> None:
+    """The kind of fault read from the customer's words is told to the search as a preference.
+    It chooses between the sections of the customer's own router's guide and nothing else."""
+    guides = GuideIndex(db, HashingEmbedder())
+    asked = {"device_model": "TG-FG7", "role": "customer", "sections": SELF_SERVICE_SECTIONS}
+
+    by_words = await guides.search("my broadband is down", limit=1, **asked)
+    preferred = await guides.search(
+        "my broadband is down", limit=1, prefer="no-internet", preference=3.0, **asked
+    )
+    not_on_offer = await guides.search(
+        "my broadband is down", limit=4, prefer="factory-reset", preference=9.0, **asked
+    )
+
+    assert preferred[0].section_id == "no-internet"
+    assert preferred[0].device_model == by_words[0].device_model == "TG-FG7"
+    assert "factory-reset" not in {passage.section_id for passage in not_on_offer}

@@ -148,3 +148,49 @@ def test_plain_confirmation_that_service_is_back_is_recognised(text: str) -> Non
 def test_doubt_negation_or_a_question_is_never_a_confirmation(text: str) -> None:
     """A false confirmation would close a complaint that is not solved."""
     assert not read_with_rules(text).confirms_working
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "pages are not loading at all",
+        "data is on but nothing loads",
+        "i can't make any calls",
+        "calls are not connecting",
+        "only SOS showing on my phone",
+    ],
+)
+def test_service_that_does_not_work_is_recognised_without_the_word_internet(text: str) -> None:
+    """Each of these was once answered as out of scope: the outage evaluation found them."""
+    assert read_with_rules(text).intent == "connectivity"
+
+
+def test_every_symptom_of_the_synthetic_transcripts_is_a_connectivity_complaint() -> None:
+    from skylink_datagen.phrases import BROADBAND_SYMPTOMS, MOBILE_SYMPTOMS
+
+    unread = [
+        text
+        for text in (*BROADBAND_SYMPTOMS, *MOBILE_SYMPTOMS)
+        if read_with_rules(text).intent != "connectivity"
+    ]
+
+    assert unread == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "I got a call from your team about my bill, why was I charged twice?",
+        "please send the invoice for my data pack recharge",
+        "my mobile data bill is wrong",
+        "I was charged for mobile data I never used",
+        "please refund my mobile data pack",
+        "my bill pdf won't open",
+        "my invoice is not opening",
+        "bill page is not loading",
+        "the payment page is not loading",
+        "my data pack recharge is not loading",
+    ],
+)
+def test_bill_that_mentions_a_call_or_data_is_still_a_billing_question(text: str) -> None:
+    assert read_with_rules(text).intent == "billing"

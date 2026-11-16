@@ -5,7 +5,8 @@ the customer's line passed its test; routing decides that, not this agent). What
 taken verbatim from the guide for the customer's own router model, never generated, so every
 step can be traced to a guide, a version and a section. The model is a hard filter taken from
 the service record: what the customer writes can change which section is found, never which
-guide is used.
+guide is used. Which section is found rests first on the kind of fault the customer's words
+describe (``rag.symptoms``), then on the words they share with the guide.
 
 Only the sections listed in ``rag.documents.SELF_SERVICE_SECTIONS`` are ever quoted, and the
 index build refuses a guide whose quotable steps tell the customer to do something hazardous.
@@ -19,9 +20,15 @@ from skylink_care.guardrails.pii import mask_pii
 from skylink_care.observability.audit import Auditor
 from skylink_care.rag.documents import SELF_SERVICE_SECTIONS
 from skylink_care.rag.index import GuideIndex, GuideIndexUnavailableError, Passage
+from skylink_care.rag.symptoms import GENERAL_SECTION, latest_hint
 
 ACTOR = "agent:troubleshooting"
 CUSTOMER_ROLE = "customer"
+# How much the kind of fault read from the customer's words counts against shared words
+# (a section whose title the words name scores 1): decisive when a kind was recognised, a
+# nudge towards the general section when none was.
+HINT_WEIGHT = 3.0
+DEFAULT_WEIGHT = 0.5
 
 
 @dataclass(frozen=True)
@@ -46,6 +53,9 @@ class TroubleshootingAgent:
             await self._note(audit, "NO_ROUTER_MODEL", router_model, None)
             return None
         query = mask_pii(problem).text
+        # The kind of fault the customer's latest words describe decides more than shared
+        # words do; with none recognised, the section that tells line from router is preferred.
+        hint = latest_hint(query)
         try:
             passages = await self._index.search(
                 query,
@@ -53,6 +63,8 @@ class TroubleshootingAgent:
                 role=CUSTOMER_ROLE,
                 sections=SELF_SERVICE_SECTIONS,
                 limit=1,
+                prefer=hint or GENERAL_SECTION,
+                preference=HINT_WEIGHT if hint else DEFAULT_WEIGHT,
             )
             info = await self._index.info()
         except GuideIndexUnavailableError as exc:

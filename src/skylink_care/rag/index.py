@@ -132,8 +132,14 @@ class GuideIndex(Repository):
         role: str,
         sections: Sequence[str],
         limit: int = 3,
+        prefer: str | None = None,
+        preference: float = 0.0,
     ) -> list[Passage]:
-        """The best sections of this model's guide for the query, among the sections allowed."""
+        """The best sections of this model's guide for the query, among the sections allowed.
+
+        ``prefer`` names a section the caller has reason to expect (the kind of fault the
+        customer described); ``preference`` is how much that counts against the words.
+        """
         info = await self.info()
         if info is None or info.chunks == 0:
             raise GuideIndexUnavailableError("the guide index has not been built")
@@ -149,20 +155,14 @@ class GuideIndex(Repository):
             return []
         async with self._db.connection() as conn:
             cursor = await conn.execute(
-                "WITH asked AS (SELECT to_tsquery('english', NULLIF(%s, '')) AS words)"
-                " SELECT doc_id, doc_version, device_model, section_id, title, body, steps,"
-                " COALESCE((title_search @@ asked.words)::int, 0) * %s"
-                "   + COALESCE(ts_rank(search, asked.words), 0) * %s"
-                "   + (1 - (embedding <=> %s::vector)) AS score"
-                " FROM guide_chunks, asked"
-                " WHERE device_model = %s AND doc_type = %s AND %s = ANY(access_roles)"
-                "   AND section_id = ANY(%s)"
-                " ORDER BY score DESC, section_id LIMIT %s",
+                _SEARCH,
                 (
                     _any_word(query),
                     TITLE_WEIGHT,
                     LEXICAL_WEIGHT,
                     to_literal(vector),
+                    prefer,
+                    preference if prefer else 0.0,
                     device_model,
                     DEVICE_GUIDE,
                     role,
@@ -172,6 +172,22 @@ class GuideIndex(Repository):
             )
             rows = await cursor.fetchall()
         return [Passage(**{**row, "steps": tuple(row["steps"])}) for row in rows]
+
+
+# A section scores by its title and its words against the customer's, by how close its
+# embedding is, and by whether it is the section the caller expects.
+_SEARCH = (
+    "WITH asked AS (SELECT to_tsquery('english', NULLIF(%s, '')) AS words)"
+    " SELECT doc_id, doc_version, device_model, section_id, title, body, steps,"
+    " COALESCE((title_search @@ asked.words)::int, 0) * %s"
+    "   + COALESCE(ts_rank(search, asked.words), 0) * %s"
+    "   + (1 - (embedding <=> %s::vector))"
+    "   + CASE WHEN section_id = %s THEN %s ELSE 0 END AS score"
+    " FROM guide_chunks, asked"
+    " WHERE device_model = %s AND doc_type = %s AND %s = ANY(access_roles)"
+    "   AND section_id = ANY(%s)"
+    " ORDER BY score DESC, section_id LIMIT %s"
+)
 
 
 def _any_word(query: str) -> str:
