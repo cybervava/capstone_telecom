@@ -18,7 +18,7 @@ import structlog
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.types import Command
 
-from skylink_care.adapters.gateway import OssGateway
+from skylink_care.adapters.gateway import open_gateway
 from skylink_care.agents import replies
 from skylink_care.config import get_oss_keys, get_settings
 from skylink_care.db.actions import ACTION_FINISHED_EVENT, TERMINAL, Action
@@ -279,7 +279,7 @@ async def _main() -> None:
         max_size=max(settings.db_pool_max, DEFAULT_CONCURRENCY + POOL_HEADROOM),
         lock_connections=DEFAULT_CONCURRENCY,
     )
-    gateway = OssGateway(settings.oss_base_url, get_oss_keys())
+    gateway = open_gateway(settings, get_oss_keys())
     try:
         runtime = build_orchestrator_runtime(settings, database, gateway)
         checkpointer = AsyncPostgresSaver(database.pool)

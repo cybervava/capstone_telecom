@@ -14,7 +14,8 @@ from enum import StrEnum
 class ErrorKind(StrEnum):
     TIMEOUT = "TIMEOUT"  # no answer in time; for a write the outcome is unknown
     UNAVAILABLE = "UNAVAILABLE"  # connection failure or a 5xx
-    CIRCUIT_OPEN = "CIRCUIT_OPEN"  # not attempted: the dependency is being rested
+    # Not attempted: the dependency is being rested, or this process had no connection free.
+    CIRCUIT_OPEN = "CIRCUIT_OPEN"
     RATE_LIMITED = "RATE_LIMITED"
     NOT_FOUND = "NOT_FOUND"
     GONE = "GONE"  # the resource existed and was retired (a decommissioned node)

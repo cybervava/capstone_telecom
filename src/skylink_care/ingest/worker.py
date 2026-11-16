@@ -12,7 +12,7 @@ from datetime import timedelta
 
 import structlog
 
-from skylink_care.adapters.gateway import OssGateway
+from skylink_care.adapters.gateway import OssGateway, open_gateway
 from skylink_care.clock import Clock, utc_now
 from skylink_care.config import Settings, get_oss_keys, get_settings
 from skylink_care.db.actions import ActionRepository
@@ -49,7 +49,7 @@ async def _main() -> None:
     settings = get_settings()
     configure_logging()
     database = await Database.open(settings.database_conninfo(), max_size=POOL_SIZE)
-    gateway = OssGateway(settings.oss_base_url, get_oss_keys())
+    gateway = open_gateway(settings, get_oss_keys())
     try:
         consumer = build_consumer(settings, database, gateway)
         stop = asyncio.Event()

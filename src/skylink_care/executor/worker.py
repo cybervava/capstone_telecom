@@ -34,7 +34,7 @@ from typing import Any
 import structlog
 from pydantic import BaseModel
 
-from skylink_care.adapters.gateway import ExecutorClients, OssGateway
+from skylink_care.adapters.gateway import ExecutorClients, open_gateway
 from skylink_care.adapters.result import Err, ErrorKind, Ok, Result
 from skylink_care.clock import Clock, utc_now
 from skylink_care.config import get_oss_keys, get_settings
@@ -487,7 +487,7 @@ async def _main() -> None:
     settings = get_settings()
     configure_logging()
     database = await Database.open(settings.database_conninfo(), max_size=settings.db_pool_max)
-    gateway = OssGateway(settings.oss_base_url, get_oss_keys())
+    gateway = open_gateway(settings, get_oss_keys())
     try:
         clients = gateway.for_executor()
         executor = ActionExecutor(

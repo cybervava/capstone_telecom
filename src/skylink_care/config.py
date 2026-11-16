@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     api_port: int = 8080
 
     oss_base_url: str = "http://127.0.0.1:8081"
+    # A dependency that fails this many times in a row is rested for this long (seconds) before
+    # one call tries it again. A read that fails fast is tried again this many times.
+    oss_breaker_failures: int = Field(default=5, ge=1, le=100)
+    oss_breaker_rest_seconds: float = Field(default=10.0, gt=0, le=600)
+    oss_read_retries: int = Field(default=1, ge=0, le=3)
 
     credit_policy_path: Path = Path("data/policies/credit_policy.v0.yaml")
     # The knowledge pack; its router guides are indexed with `care-admin index-guides`.

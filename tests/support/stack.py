@@ -24,13 +24,19 @@ from mock_oss.config import CLIENT_ENV_VARS
 from mock_oss.config import Settings as MockSettings
 from mock_oss.main import create_app
 from mock_oss.seed import seed_database
-from skylink_care.adapters.gateway import OssGateway
+from skylink_care.adapters.breaker import BreakerPolicy
+from skylink_care.adapters.gateway import GatewayPolicy, OssGateway
 from skylink_care.config import OssKeys
 from skylink_datagen.config import DefectRates, GenerateConfig
 from skylink_datagen.pipeline import run_generate
 
 MOCK_URL = "http://mock-oss.test"
 SMALL_PACK_CUSTOMERS = 1000
+# What every process runs with, except for the waits: a test cannot sit out a ten-second rest,
+# so a rested dependency is tried again after a moment, and a read is tried again at once.
+TEST_POLICY = GatewayPolicy(
+    breaker=BreakerPolicy(failures=5, rest_seconds=0.02), read_retries=1, retry_pause_seconds=0
+)
 
 
 @pytest.fixture(scope="session")
@@ -86,7 +92,7 @@ def oss_keys(oss_key_values: dict[str, str]) -> OssKeys:
 async def gateway(
     oss_transport: httpx.ASGITransport, oss_keys: OssKeys
 ) -> AsyncIterator[OssGateway]:
-    client = OssGateway(MOCK_URL, oss_keys, transport=oss_transport)
+    client = OssGateway(MOCK_URL, oss_keys, transport=oss_transport, policy=TEST_POLICY)
     yield client
     await client.aclose()
 

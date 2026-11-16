@@ -74,6 +74,7 @@ class NetworkFeedReader(_Client):
             correlation_id=correlation_id,
             params={"after_seq": after_seq, "limit": limit, "wait_seconds": wait_seconds},
             timeout_seconds=wait_seconds + FEED_TIMEOUT_MARGIN_SECONDS,
+            retry=False,  # the consumer polls again by itself
         )
 
 

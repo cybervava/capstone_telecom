@@ -121,6 +121,9 @@ services:
     environment:
       <<: *care-db
       CARE_OSS_BASE_URL: http://mock-oss:8081
+      CARE_OSS_BREAKER_FAILURES: ${CARE_OSS_BREAKER_FAILURES:-5}
+      CARE_OSS_BREAKER_REST_SECONDS: ${CARE_OSS_BREAKER_REST_SECONDS:-10}
+      CARE_OSS_READ_RETRIES: ${CARE_OSS_READ_RETRIES:-1}
       CARE_LLM_PROVIDER: ${CARE_LLM_PROVIDER:-offline}
       CARE_LLM_MODEL: ${CARE_LLM_MODEL:-claude-opus-5-5}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -156,6 +159,9 @@ services:
     environment:
       <<: *care-db
       CARE_OSS_BASE_URL: http://mock-oss:8081
+      CARE_OSS_BREAKER_FAILURES: ${CARE_OSS_BREAKER_FAILURES:-5}
+      CARE_OSS_BREAKER_REST_SECONDS: ${CARE_OSS_BREAKER_REST_SECONDS:-10}
+      CARE_OSS_READ_RETRIES: ${CARE_OSS_READ_RETRIES:-1}
       CARE_NOTIFY_MAX_EVENT_AGE_SECONDS: ${CARE_NOTIFY_MAX_EVENT_AGE_SECONDS:-900}
       # Reads the NOC event feed and nothing else.
       OSS_KEY_INGEST: ${OSS_KEY_INGEST:?run make init}
@@ -170,6 +176,9 @@ services:
     environment:
       <<: *care-db
       CARE_OSS_BASE_URL: http://mock-oss:8081
+      CARE_OSS_BREAKER_FAILURES: ${CARE_OSS_BREAKER_FAILURES:-5}
+      CARE_OSS_BREAKER_REST_SECONDS: ${CARE_OSS_BREAKER_REST_SECONDS:-10}
+      CARE_OSS_READ_RETRIES: ${CARE_OSS_READ_RETRIES:-1}
       # It checks the credit policy again before it applies a credit, so it reads the same
       # policy file (part of the image) and the same review switch as the orchestrator.
       CARE_CREDIT_REVIEW_ALL: ${CARE_CREDIT_REVIEW_ALL:-true}
