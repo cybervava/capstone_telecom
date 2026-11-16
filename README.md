@@ -7,7 +7,7 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 ## Status
 
-Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. Everything after M2 is not built.
+Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. M3 (the curveball and resilience) is in progress: two of its six slices are built. Everything after M3 is not built.
 
 **Works today**
 
@@ -26,6 +26,7 @@ Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six ca
 - **Mobile, as a thin path.** A tower outage is told, ticketed, restored and credited (by the mobile rule of the policy) like a broadband outage, in words that never mention a router. There is no remote test of a mobile connection here and no guide for a phone: on a working tower the customer is told what the network shows and a person takes over.
 - **Degraded mode.** When nothing can be verified: reference still issued, no all-clear, no device steps; the status is re-checked on a timer and a person takes over if it stays unverified.
 - **Staff desk** (`/staff.html`). What the assistant could not or may not settle on its own: the credits that wait for a decision, each shown exactly as it was frozen, with its working, and approved or rejected there; and the queue of contacts passed to a person, each with the handover summary, the conversation and the audit trail, closed with a note once dealt with. Every decision carries the name of who took it.
+- **Dependencies that fail.** Each API of the gateway has a circuit in the one HTTP path every agent uses. After five failures in a row the API is rested for ten seconds: calls to it are not made at all, and the caller is told "not attempted", which every reader treats as "not verified" and never as "nothing found". Then one call tries again. A read that fails fast is tried once more; the HTTP layer never repeats a write, and the executor replays one under its key, knowing whether it was sent. Every call has a limit on its whole duration. Contacts on one node that are diagnosed at the same moment share one status read.
 - **Evaluations** (`make eval`). Scored replays through the real workflow on the stand-in data: outage detected for 97.47% of affected contacts (target 95%); credits match the policy in 4,050 of 4,050 cases (target 100%); none of the baseline's unnecessary technician visits is booked by the workflow, and every needed one is. What these figures do and do not show is under "Test it".
 - Per-contact audit trail, API with roles, per-caller rate limits, customer desk.
 
@@ -35,7 +36,8 @@ Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six ca
 - Changing or cancelling a booked visit (a person does that); a visit for a line that passes its test.
 - Anything for mobile beyond the outage path (no tower inference, no device guidance, no SIM or plan checks).
 - A learned embedding model for retrieval (the index uses a deterministic hashing embedder; see "Guide retrieval").
-- Surge test, circuit breaker, dashboards and alerts.
+- The rest of M3: a check of what an outgoing message claims about the network, an operations queue for failures that belong to no contact, surge mode with a load test, the curveball as a scored drill.
+- Dashboards and alerts. The state of a circuit is in the logs (`circuit_opened`, `circuit_closed`), not yet in a metric.
 - The evaluations on the container stack at 400,000 customers and on the demo's language model (they run in process, on a 1,000-customer pack, with the offline rules and with weights measured on the large pack).
 - Simulator controls in the console (outages and faults are started with the admin API or the smoke run).
 
@@ -135,6 +137,7 @@ All settings come from the environment. `.env.example` lists every variable; `ma
 | `CARE_JWT_SECRET` | API only | Signs and verifies API tokens (at least 32 characters) |
 | `CARE_API_HOST`, `CARE_API_PORT` | API | Listen address |
 | `CARE_OSS_BASE_URL` | orchestrator, executor, feed consumer | OSS/BSS gateway |
+| `CARE_OSS_BREAKER_FAILURES`, `CARE_OSS_BREAKER_REST_SECONDS`, `CARE_OSS_READ_RETRIES` | orchestrator, executor, feed consumer | A dependency that fails this many times in a row (5) is rested for this long (10 s): calls to it are not made, and the caller is told "not attempted", which every reader treats as "not verified". Then one call tries again. A read that fails fast is tried once more; a write never is |
 | `OSS_KEY_TRIAGE`, `OSS_KEY_DIAGNOSTICS`, `OSS_KEY_RESOLUTION`, `OSS_KEY_DISPATCH`, `OSS_KEY_NOTIFICATION` | orchestrator | One read-only key per agent identity |
 | `OSS_KEY_EXECUTOR` | executor only | The only key that can write to enterprise systems |
 | `OSS_KEY_INGEST` | feed consumer only | Reads the NOC event feed and nothing else |
