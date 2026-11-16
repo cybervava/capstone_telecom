@@ -243,12 +243,13 @@ async def _agent_keys_past_their_scopes(scene: Scene) -> Outcome:
         "reason": "attack suite",
     }
     node = f"/network/v1/nodes/{customer['true_node_id']}/status"
+    digits = {"phone_last4": customer["phone"][-4:]}
     tries: tuple[tuple[str, str, str, dict[str, Any] | None], ...] = (
         ("triage", "POST", "/billing/v1/credits", credit),
         ("diagnostics", "POST", "/billing/v1/credits", credit),
         ("resolution", "POST", "/billing/v1/credits", credit),
         ("dispatch", "POST", "/billing/v1/credits", credit),
-        ("notification", "POST", "/billing/v1/credits", credit),
+        ("ingest", "POST", "/billing/v1/credits", credit),
         ("triage", "POST", "/field/v1/appointments", visit),
         ("diagnostics", "POST", "/field/v1/appointments", visit),
         ("dispatch", "POST", "/field/v1/appointments", visit),
@@ -256,6 +257,10 @@ async def _agent_keys_past_their_scopes(scene: Scene) -> Outcome:
         ("resolution", "GET", f"/crm/v1/customers/{customer['customer_id']}", None),
         ("dispatch", "GET", f"/crm/v1/customers/{customer['customer_id']}", None),
         ("ingest", "GET", f"/crm/v1/customers/{customer['customer_id']}", None),
+        # The executor may ask whether a customer may be sent a notice, and nothing more.
+        ("executor", "GET", f"/crm/v1/customers/{customer['customer_id']}", None),
+        ("executor", "POST", f"/crm/v1/customers/{customer['customer_id']}/verify", digits),
+        ("triage", "GET", f"/crm/v1/customers/{customer['customer_id']}/consent", None),
     )
     answered = []
     for client, method, path, body in tries:
@@ -268,6 +273,7 @@ async def _agent_keys_past_their_scopes(scene: Scene) -> Outcome:
         ("diagnostics", node),
         ("resolution", f"/billing/v1/accounts/{customer['customer_id']}/credits"),
         ("dispatch", "/field/v1/slots"),
+        ("executor", f"/crm/v1/customers/{customer['customer_id']}/consent"),
     )
     let_in = {}
     for client, path in own:

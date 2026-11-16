@@ -70,3 +70,8 @@ class RateLimiter:
 
     def has_history(self, key: str) -> bool:
         return key in self._buckets
+
+
+def per_minute(allowed: int, *, clock: Callable[[], float] = time.monotonic) -> RateLimiter:
+    """So many at once, and so many more in every minute after."""
+    return RateLimiter(capacity=allowed, refill_per_second=allowed / 60, clock=clock)

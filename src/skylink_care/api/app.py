@@ -29,7 +29,7 @@ from skylink_care.api.approvals import register_approval_routes
 from skylink_care.api.auth import Principal, Role, check_secret, issue_token, require
 from skylink_care.api.handoffs import register_handoff_routes
 from skylink_care.api.ops import register_ops_routes
-from skylink_care.api.ratelimit import RateLimiter
+from skylink_care.api.ratelimit import RateLimiter, per_minute
 from skylink_care.api.schemas import (
     ContactAccepted,
     ContactIn,
@@ -74,6 +74,10 @@ SAFE_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 # a bound all the same.
 CHANNEL_CONTACTS_PER_SECOND = 60.0
 CHANNEL_BURST = 600
+# What one caller may do when the process is given no other numbers: further contacts after
+# the first, and messages in one contact, in a minute.
+CONTACTS_PER_MINUTE = 5
+MESSAGES_PER_MINUTE = 20
 # The digits that tell one subscriber line from another, whatever is written before them.
 LINE_DIGITS = 10
 CUSTOMER_SIDE = (Role.GUEST, Role.CUSTOMER, Role.CHANNEL)
@@ -117,8 +121,8 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
     messages = MessageRepository(deps.database)
     inbox = InboxRepository(deps.database)
     audit = AuditRepository(deps.database)
-    message_limit = deps.message_limit or RateLimiter(capacity=20, refill_per_second=20 / 60)
-    contact_limit = deps.contact_limit or RateLimiter(capacity=5, refill_per_second=5 / 60)
+    message_limit = deps.message_limit or per_minute(MESSAGES_PER_MINUTE)
+    contact_limit = deps.contact_limit or per_minute(CONTACTS_PER_MINUTE)
     channel_limit = deps.channel_limit or RateLimiter(
         capacity=CHANNEL_BURST, refill_per_second=CHANNEL_CONTACTS_PER_SECOND
     )

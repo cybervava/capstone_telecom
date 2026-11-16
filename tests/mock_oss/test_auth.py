@@ -17,10 +17,10 @@ ENDPOINTS: list[tuple[str, str, dict[str, object] | None, str, bool]] = [
     ("GET", "/network/v1/nodes/BLR-OLT-0001/status", None, "network:read", False),
     ("POST", "/network/v1/line-tests", {"service_id": "S0000001"}, "network:test", False),
     ("GET", "/network/v1/events", None, "network:feed", False),
-    ("GET", "/crm/v1/customers/lookup?customer_id=C0000001", None, "crm:read", False),
-    ("GET", "/crm/v1/customers/C0000001", None, "crm:read", False),
-    ("GET", "/crm/v1/customers/C0000001/consent", None, "crm:read", False),
-    ("POST", "/crm/v1/customers/C0000001/verify", {"phone_last4": "0001"}, "crm:read", False),
+    ("GET", "/crm/v1/customers/lookup?customer_id=C0000001", None, "crm:profile", False),
+    ("GET", "/crm/v1/customers/C0000001", None, "crm:profile", False),
+    ("GET", "/crm/v1/customers/C0000001/consent", None, "crm:consent", False),
+    ("POST", "/crm/v1/customers/C0000001/verify", {"phone_last4": "0001"}, "crm:verify", False),
     ("GET", "/billing/v1/accounts/C0000001/credits", None, "billing:read", False),
     (
         "POST",
@@ -103,7 +103,15 @@ def test_scope_matrix(
 
 
 def test_scope_table_matches_contract() -> None:
-    assert CLIENT_SCOPES["triage"] == frozenset({"crm:read"})
+    assert CLIENT_SCOPES["triage"] == frozenset({"crm:profile", "crm:verify"})
+    # The executor asks one thing of the CRM: may this customer be sent a notice.
+    assert {s for s in CLIENT_SCOPES["executor"] if s.startswith("crm:")} == {"crm:consent"}
+    # Nobody but triage reads a profile or checks what a caller knows.
+    for client, scopes in CLIENT_SCOPES.items():
+        if client not in {"triage", "admin"}:
+            assert not scopes & {"crm:profile", "crm:verify"}, client
+    # An identity nobody uses is a key somebody can lose.
+    assert "notification" not in CLIENT_SCOPES
     assert CLIENT_SCOPES["ingest"] == frozenset({"network:feed"})
     assert "network:test" not in CLIENT_SCOPES["executor"]
     every = frozenset().union(*(v for k, v in CLIENT_SCOPES.items() if k != "admin"))
@@ -126,7 +134,7 @@ def test_missing_or_unknown_key_is_401(client: TestClient, headers: dict[str, st
 def test_client_with_unset_key_cannot_authenticate(app_without_triage: TestClient) -> None:
     resp = app_without_triage.get("/crm/v1/customers/C0000001", headers=auth("triage"))
     assert resp.status_code == 401
-    ok = app_without_triage.get("/crm/v1/customers/C0000001", headers=auth("notification"))
+    ok = app_without_triage.get("/crm/v1/customers/C0000001/consent", headers=auth("executor"))
     assert ok.status_code == 200
 
 

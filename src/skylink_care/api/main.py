@@ -11,6 +11,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from skylink_care.api.app import ApiDeps, create_app
+from skylink_care.api.ratelimit import RateLimiter, per_minute
 from skylink_care.config import get_settings
 from skylink_care.db.database import Database
 from skylink_care.observability.logging import configure_logging
@@ -56,6 +57,12 @@ def build() -> FastAPI:
             dev_staff_key=settings.staff_key_for_dev(),
             status_max_age_seconds=settings.status_max_age_seconds,
             surge=surge,
+            contact_limit=per_minute(settings.api_contacts_per_minute),
+            message_limit=per_minute(settings.api_messages_per_minute),
+            channel_limit=RateLimiter(
+                capacity=settings.api_channel_burst,
+                refill_per_second=settings.api_channel_contacts_per_second,
+            ),
         ),
         lifespan=lifespan,
     )

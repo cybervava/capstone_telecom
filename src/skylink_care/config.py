@@ -14,9 +14,7 @@ from psycopg.conninfo import make_conninfo
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-AgentIdentity = Literal[
-    "triage", "diagnostics", "resolution", "dispatch", "notification", "ingest", "executor"
-]
+AgentIdentity = Literal["triage", "diagnostics", "resolution", "dispatch", "ingest", "executor"]
 
 
 class MissingSecretError(RuntimeError):
@@ -91,6 +89,14 @@ class Settings(BaseSettings):
     # A customer who is not signed in is verified by customer ID and the last four digits of
     # the registered mobile. This many wrong answers for one customer ID within the window,
     # in any conversations, and further tries for it are refused unchecked until they age out.
+    # What one caller may do at the API: further contacts after the first (a first contact
+    # is never limited, it must get its reference) and messages in one contact, in a minute;
+    # and what one channel integration may open in all. They are counted in each API process:
+    # limits at the edge belong to the deployment.
+    api_contacts_per_minute: int = Field(default=5, ge=1)
+    api_messages_per_minute: int = Field(default=20, ge=1)
+    api_channel_contacts_per_second: float = Field(default=60.0, gt=0)
+    api_channel_burst: int = Field(default=600, ge=1)
     identity_fail_limit: int = Field(default=5, ge=1)
     identity_fail_window_seconds: int = Field(default=3600, gt=0, le=86_400)
     # And this many within a day: guessing that keeps just under the first limit is stopped
@@ -194,7 +200,6 @@ class OssKeys(BaseSettings):
     diagnostics: SecretStr | None = None
     resolution: SecretStr | None = None
     dispatch: SecretStr | None = None
-    notification: SecretStr | None = None
     ingest: SecretStr | None = None
     executor: SecretStr | None = None
 

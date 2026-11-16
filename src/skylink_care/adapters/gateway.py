@@ -105,9 +105,6 @@ class OssGateway:
     def field_for_dispatch(self) -> FieldReader:
         return FieldReader(self._as("dispatch"))
 
-    def crm_for_notification(self) -> CrmReader:
-        return CrmReader(self._as("notification"))
-
     def feed_for_ingest(self) -> NetworkFeedReader:
         return NetworkFeedReader(self._as("ingest"))
 

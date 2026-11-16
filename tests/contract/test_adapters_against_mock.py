@@ -58,7 +58,7 @@ async def test_orchestrator_identities_cannot_write(gateway: OssGateway) -> None
         "outage_id": None,
         "summary": "s",
     }
-    for identity in ("triage", "diagnostics", "resolution", "dispatch", "notification"):
+    for identity in ("triage", "diagnostics", "resolution", "dispatch"):
         incident = await IncidentWriter(gateway._as(identity)).open(
             body, idempotency_key=f"neg-{identity}", correlation_id=CORR
         )
@@ -344,14 +344,37 @@ async def test_same_key_with_a_changed_body_is_a_conflict(
     assert not changed.retryable
 
 
-async def test_consent_is_readable_by_the_notification_identity(
+async def test_the_executor_reads_consent_and_nothing_else_of_the_crm(
     gateway: OssGateway, simulator: Simulator
 ) -> None:
+    """It sends the notices, so it must know whether it may. It has no use for a name, a
+    number or an address, and cannot check what a caller knows."""
     customer = await simulator.find_customer(service_type="broadband", consent="false")
+    crm = gateway.for_executor().crm
 
-    consent = await gateway.crm_for_notification().consent(
-        customer["customer_id"], correlation_id=CORR
-    )
+    consent = await crm.consent(customer["customer_id"], correlation_id=CORR)
+    profile = await crm.customer(customer["customer_id"], correlation_id=CORR)
+    found = await crm.lookup(customer_id=customer["customer_id"], correlation_id=CORR)
+    checked = await crm.verify(customer["customer_id"], phone_last4="0000", correlation_id=CORR)
 
     assert isinstance(consent, Ok)
     assert consent.value.outage_notifications is False
+    for refused in (profile, found, checked):
+        assert isinstance(refused, Err)
+        assert refused.kind is ErrorKind.FORBIDDEN
+
+
+async def test_triage_reads_a_profile_and_cannot_ask_for_consent_alone(
+    gateway: OssGateway, simulator: Simulator
+) -> None:
+    """Each scope is what one tool needs. Triage has the profile, which says what it needs
+    to know; the route the executor uses is not its tool."""
+    customer = await simulator.find_customer(service_type="broadband")
+    crm = gateway.crm_for_triage()
+
+    profile = await crm.customer(customer["customer_id"], correlation_id=CORR)
+    consent = await crm.consent(customer["customer_id"], correlation_id=CORR)
+
+    assert isinstance(profile, Ok)
+    assert isinstance(consent, Err)
+    assert consent.kind is ErrorKind.FORBIDDEN

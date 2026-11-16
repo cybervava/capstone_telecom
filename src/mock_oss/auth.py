@@ -11,11 +11,11 @@ from fastapi import Request
 from mock_oss.errors import ApiError
 
 _BASE_SCOPES: dict[str, frozenset[str]] = {
-    "triage": frozenset({"crm:read"}),
+    # Triage finds the customer and checks what they know. Nothing else may read a profile.
+    "triage": frozenset({"crm:profile", "crm:verify"}),
     "diagnostics": frozenset({"network:read", "network:test"}),
     "resolution": frozenset({"billing:read"}),
     "dispatch": frozenset({"field:read"}),
-    "notification": frozenset({"crm:read"}),
     "ingest": frozenset({"network:feed"}),
     "executor": frozenset(
         {
@@ -27,7 +27,9 @@ _BASE_SCOPES: dict[str, frozenset[str]] = {
             "incident:write",
             "notify:write",
             "network:read",
-            "crm:read",
+            # Whether the customer may be sent a notice, asked at the moment of sending.
+            # Not the profile: the executor has no use for a name or a number.
+            "crm:consent",
         }
     ),
 }

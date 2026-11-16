@@ -173,8 +173,8 @@ CHECKS = (
         (
             (
                 "src/mock_oss/auth.py",
-                '    "triage": frozenset({"crm:read"}),\n',
-                '    "triage": frozenset({"crm:read", "billing:write"}),\n',
+                '    "triage": frozenset({"crm:profile", "crm:verify"}),\n',
+                '    "triage": frozenset({"crm:profile", "crm:verify", "billing:write"}),\n',
             ),
         ),
         "I2",

@@ -14,7 +14,10 @@ Admin = Callable[..., dict[str, object]]
 
 
 def _get(client: TestClient, path: str) -> tuple[int, dict[str, object]]:
-    resp = client.get(path, headers=auth("triage"))
+    # Each thing the CRM serves has its scope: a profile for triage, the consent record for
+    # the executor, which sends the notices and may read nothing else here.
+    who = "executor" if path.endswith("/consent") else "triage"
+    resp = client.get(path, headers=auth(who))
     body: dict[str, object] = resp.json()
     return resp.status_code, body
 

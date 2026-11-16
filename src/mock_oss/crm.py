@@ -14,7 +14,12 @@ from mock_oss.context import get_db, require_customer
 from mock_oss.errors import ApiError
 from mock_oss.schemas import VerifyIn
 
-router = APIRouter(prefix="/crm/v1", dependencies=[Depends(require("crm:read"))])
+# A scope for each thing that is read: finding and reading a profile, checking what a caller
+# knows, and the one fact the executor needs before it sends a notice.
+router = APIRouter(prefix="/crm/v1")
+PROFILE = [Depends(require("crm:profile"))]
+VERIFY = [Depends(require("crm:verify"))]
+CONSENT = [Depends(require("crm:consent"))]
 _PHONE = re.compile(r"^(?:\+91)?([6-9]\d{9})$")
 
 CONSENT_SQL = (
@@ -58,7 +63,7 @@ def _lookup_rows(conn: sqlite3.Connection, field: str, value: str) -> list[sqlit
     return list(conn.execute(sql + " ORDER BY customer_id", (arg,)).fetchall())
 
 
-@router.get("/customers/lookup")
+@router.get("/customers/lookup", dependencies=PROFILE)
 def lookup(
     request: Request, phone: str = "", customer_id: str = "", email: str = ""
 ) -> dict[str, Any]:
@@ -103,7 +108,7 @@ def _service_view(row: sqlite3.Row) -> dict[str, Any]:
     }
 
 
-@router.get("/customers/{customer_id}")
+@router.get("/customers/{customer_id}", dependencies=PROFILE)
 def profile(customer_id: str, request: Request) -> dict[str, Any]:
     with get_db(request).read() as conn:
         customer = require_customer(conn, customer_id)
@@ -126,13 +131,13 @@ def profile(customer_id: str, request: Request) -> dict[str, Any]:
     }
 
 
-@router.get("/customers/{customer_id}/consent")
+@router.get("/customers/{customer_id}/consent", dependencies=CONSENT)
 def consent(customer_id: str, request: Request) -> dict[str, Any]:
     with get_db(request).read() as conn:
         return consent_of(conn, customer_id)
 
 
-@router.post("/customers/{customer_id}/verify")
+@router.post("/customers/{customer_id}/verify", dependencies=VERIFY)
 def verify(customer_id: str, body: VerifyIn, request: Request) -> dict[str, bool]:
     with get_db(request).read() as conn:
         customer = require_customer(conn, customer_id)

@@ -74,7 +74,6 @@ services:
       OSS_KEY_DIAGNOSTICS: ${OSS_KEY_DIAGNOSTICS:?run make init}
       OSS_KEY_RESOLUTION: ${OSS_KEY_RESOLUTION:?run make init}
       OSS_KEY_DISPATCH: ${OSS_KEY_DISPATCH:?run make init}
-      OSS_KEY_NOTIFICATION: ${OSS_KEY_NOTIFICATION:?run make init}
       OSS_KEY_INGEST: ${OSS_KEY_INGEST:?run make init}
       OSS_KEY_EXECUTOR: ${OSS_KEY_EXECUTOR:?run make init}
       OSS_KEY_ADMIN: ${OSS_KEY_ADMIN:?run make init}
@@ -161,7 +160,6 @@ services:
       OSS_KEY_DIAGNOSTICS: ${OSS_KEY_DIAGNOSTICS:?run make init}
       OSS_KEY_RESOLUTION: ${OSS_KEY_RESOLUTION:?run make init}
       OSS_KEY_DISPATCH: ${OSS_KEY_DISPATCH:?run make init}
-      OSS_KEY_NOTIFICATION: ${OSS_KEY_NOTIFICATION:?run make init}
 
   ingest:
     <<: *care-image

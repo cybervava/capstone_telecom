@@ -77,7 +77,7 @@ _OUT_OF_PLACE: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "sends the customer to a number or a channel",
         re.compile(
-            r"\b(?:call|dial|ring|phone|whatsapp|telegram|sms|e-?mail|text us|message us)\b"
+            r"\b(?:call|dial|whatsapp|telegram|sms|e-?mail|text us|message us|phone us)\b"
             r"|\d[\d\s()-]{6,}\d",
             re.IGNORECASE,
         ),

@@ -215,7 +215,6 @@ def test_patch_unknown_incident(client: TestClient) -> None:
         ("diagnostics", 403),
         ("resolution", 403),
         ("dispatch", 403),
-        ("notification", 403),
         ("ingest", 403),
         ("executor", 200),
         ("admin", 200),

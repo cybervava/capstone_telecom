@@ -13,7 +13,6 @@ CLIENT_ENV_VARS: Mapping[str, str] = {
     "diagnostics": "OSS_KEY_DIAGNOSTICS",
     "resolution": "OSS_KEY_RESOLUTION",
     "dispatch": "OSS_KEY_DISPATCH",
-    "notification": "OSS_KEY_NOTIFICATION",
     "ingest": "OSS_KEY_INGEST",
     "executor": "OSS_KEY_EXECUTOR",
     "admin": "OSS_KEY_ADMIN",

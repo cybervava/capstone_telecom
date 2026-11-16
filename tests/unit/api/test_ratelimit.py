@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from skylink_care.api.ratelimit import RateLimiter
+from skylink_care.api.ratelimit import RateLimiter, per_minute
 
 
 class Clock:
@@ -55,3 +55,15 @@ def test_memory_stays_bounded() -> None:
         limiter.allow(f"key-{n}")
 
     assert len(limiter._buckets) <= 100
+
+
+def test_so_many_at_once_and_so_many_more_each_minute() -> None:
+    clock = Clock()
+    limiter = per_minute(5, clock=clock)
+
+    at_once = [limiter.allow("caller") for _ in range(6)]
+    clock.now += 60
+    a_minute_later = [limiter.allow("caller") for _ in range(6)]
+
+    assert at_once == [True] * 5 + [False]
+    assert a_minute_later == [True] * 5 + [False]

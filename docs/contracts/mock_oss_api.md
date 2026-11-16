@@ -25,13 +25,12 @@ the care platform never sees that file.
 
 | Client | Env var holding its key | Scopes |
 |---|---|---|
-| `triage` | `OSS_KEY_TRIAGE` | `crm:read` |
+| `triage` | `OSS_KEY_TRIAGE` | `crm:profile`, `crm:verify` |
 | `diagnostics` | `OSS_KEY_DIAGNOSTICS` | `network:read`, `network:test` |
 | `resolution` | `OSS_KEY_RESOLUTION` | `billing:read` |
 | `dispatch` | `OSS_KEY_DISPATCH` | `field:read` |
-| `notification` | `OSS_KEY_NOTIFICATION` | `crm:read` |
 | `ingest` | `OSS_KEY_INGEST` | `network:feed` |
-| `executor` | `OSS_KEY_EXECUTOR` | `billing:read`, `billing:write`, `field:read`, `field:write`, `incident:read`, `incident:write`, `notify:write`, `network:read`, `crm:read` |
+| `executor` | `OSS_KEY_EXECUTOR` | `billing:read`, `billing:write`, `field:read`, `field:write`, `incident:read`, `incident:write`, `notify:write`, `network:read`, `crm:consent` |
 | `admin` | `OSS_KEY_ADMIN` | `admin` and every scope above |
 
 ## Network Monitoring
@@ -97,7 +96,9 @@ Returns events with `seq > after_seq`, at most `limit` (≤ 500). If there are n
 that cannot obtain a response has no evidence about the network. `last_seq` is the highest sequence in the
 store, not in the page.
 
-## CRM — scope `crm:read`
+## CRM — scopes `crm:profile`, `crm:verify`, `crm:consent`
+
+A scope for each thing that is read. `crm:profile`: the lookup and the profile. `crm:verify`: the check of what a caller knows. `crm:consent`: the one fact the executor needs before it sends a notice. Only `triage` holds the first two.
 
 | Endpoint | Returns |
 |---|---|

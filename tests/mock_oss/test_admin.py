@@ -118,7 +118,7 @@ def test_reset_clears_runtime_but_not_reference(client: TestClient, admin: Admin
     assert state["requests"] == {}
     assert client.get("/admin/v1/outages", headers=auth("admin")).json()["outages"] == []
     assert client.get("/admin/v1/chaos", headers=auth("admin")).json()["rules"] == []
-    consent = client.get("/crm/v1/customers/C0000001/consent", headers=auth("triage")).json()
+    consent = client.get("/crm/v1/customers/C0000001/consent", headers=auth("executor")).json()
     assert consent["outage_notifications"] is True
     line = client.post(
         "/network/v1/line-tests", json={"service_id": "S0000006"}, headers=auth("diagnostics")
