@@ -4,10 +4,11 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 - Plan, milestones and decisions still open: [`docs/EXECUTION_PLAN.md`](docs/EXECUTION_PLAN.md)
 - Contracts of the stand-in data pack and mock APIs: [`docs/contracts/`](docs/contracts/)
+- The brief's checklists (guardrails, security, compliance and responsible AI), line by line, with the evidence or the reason: [`docs/evidence_index.md`](docs/evidence_index.md). Beside it: the [threat model](docs/threat_model.md), the [data inventory](docs/data_inventory.md) and the [map from complaint rules to controls](docs/regulatory_controls.md)
 
 ## Status
 
-Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. M3 (the curveball and resilience) is built as well: a circuit for each dependency, shared status reads, a check on what every message claims about the network, an operations queue, surge mode with a load test of the brief's surge, and the curveball as a scored drill with its decision record ([ADR 0001](docs/adr/0001-degraded-mode-when-the-network-api-fails.md)). M4 (trust) is in progress: the first six of its seven slices are built. Everything after M4 is not built.
+Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. M3 (the curveball and resilience) is built as well: a circuit for each dependency, shared status reads, a check on what every message claims about the network, an operations queue, surge mode with a load test of the brief's surge, and the curveball as a scored drill with its decision record ([ADR 0001](docs/adr/0001-degraded-mode-when-the-network-api-fails.md)). M4 (trust) is built: personal data kept out of model payloads and logs, an identity that holds, the attack suite and what it found, least privilege at the gateway, parity across customer segments, and the documents the brief's checklists ask for. Everything after M4 is not built.
 
 **Works today**
 
