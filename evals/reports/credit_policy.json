@@ -1,0 +1,31 @@
+{
+  "name": "credit_policy",
+  "written_at": "2026-11-16T01:37:45+00:00",
+  "target": "100% of cases match (brief: credits match policy 100%).",
+  "met": true,
+  "verdict": "met",
+  "headline": "4050 of 4050 grid cases match (100.0%); 14 of 14 hand-worked amounts match.",
+  "llm_provider": "none (no language model takes part in this measurement)",
+  "numbers": {
+    "policy_version": "v0-placeholder",
+    "grid_cases": 4050,
+    "grid_matches": 4050,
+    "hand_worked": 14,
+    "hand_worked_matches": 14,
+    "by_outcome": {
+      "BELOW_MINIMUM_DURATION": 1260,
+      "PLANNED_WORK": 576,
+      "SERVICE_SUSPENDED": 288,
+      "NOT_AFFECTED": 288,
+      "ELIGIBLE": 1134,
+      "CAP_REACHED": 324,
+      "ALREADY_CREDITED": 162,
+      "OUTAGE_NOT_RESOLVED": 18
+    }
+  },
+  "assumptions": [
+    "Policy v0-placeholder is a synthetic placeholder (assumption A2), not SkyLink's real policy. The evaluation shows the engine follows the policy file it is given; it says nothing about whether that policy is the right one.",
+    "The oracle is a second implementation by the same author from the same policy document. The hand-worked amounts are the check that does not share that reading.",
+    "This covers the calculation. That the workflow proposes exactly the calculated amount, once, and applies it only after approval is covered by the end-to-end tests (tests/e2e/test_service_credits.py, test_credit_lifecycle.py)."
+  ]
+}

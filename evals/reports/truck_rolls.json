@@ -1,0 +1,40 @@
+{
+  "name": "truck_rolls",
+  "written_at": "2026-11-16T01:38:51+00:00",
+  "target": "Unnecessary visits cut by at least 50.0% (brief), judged on the visits the workflow books; needed visits still booked for at least 90.0% of cases.",
+  "met": true,
+  "verdict": "met for the visits the workflow books; end to end it depends on decisions by people that a replay cannot measure",
+  "headline": "The workflow booked a visit for 0 of 18 outage contacts and 0 of 10 contacts with a fault the customer could fix: at the baseline's volumes 0 of 3225 unnecessary visits, a cut of 100.0% in what the workflow itself books. The simulated customer went on asking, and 28 of 28 ended with a person, who decides with the evidence in front of them. If every customer went on asking like that, the target holds while those people send a technician to at most 50.0% of them. Needed visits: booked for 100.0% of cases, a median of 10.0 minutes after the contact.",
+  "llm_provider": "offline (keyword rules stand in for the language model; none was called)",
+  "numbers": {
+    "baseline_unnecessary_visits": 3225,
+    "unnecessary_visits_booked_by_the_workflow": 0.0,
+    "cut_percent_in_what_the_workflow_books": 100.0,
+    "contacts_that_ended_with_a_person": {
+      "outage": "18 of 18",
+      "home equipment (not needed)": "10 of 10"
+    },
+    "contacts_that_ended_with_neither": {
+      "outage": 0,
+      "home equipment (not needed)": 0
+    },
+    "cut_percent_if_every_such_person_sends_a_technician": 0.0,
+    "largest_share_people_may_grant_percent": 50.0,
+    "needed_visits_booked_percent": 100.0,
+    "minutes_from_contact_to_booking": {
+      "median": 10.0,
+      "max": 10.0
+    },
+    "hold_seconds": 600,
+    "cases_replayed": 38
+  },
+  "assumptions": [
+    "Baseline: the 4,450 technician visits recorded in the 20,000 labelled contacts of the synthetic pack, 3,225 of them unnecessary (2,700 sent during an outage, 525 for a fault the customer could have fixed). These are the generator's rates, not SkyLink's.",
+    "What a contact's ground truth looks like to the platform is an assumption of the simulation: a needed visit is a line that keeps failing its remote test on a healthy node; an unneeded one for a device fault is a line that passes it.",
+    "The simulated customer asks for a technician in the first message, takes the first slot whenever a visit is offered, and after every other answer asks again (here up to 2 more times) until a person takes over. That is the customer most likely to get a visit they do not need, not the usual one. A customer who does not ask again was not replayed here.",
+    "The workflow books no visit without proof of a line fault, so what is left of the baseline's unnecessary visits is decided by people: by how many customers go on asking once they have been told of the outage or that their line is fine, and by how many of those the person sends a technician to. No replay can measure either. The first table of this report shows what each combination leaves. If every customer went on asking and every person gave in, nothing would be cut.",
+    "Only broadband contacts with a sound address mapping are replayed here (the baseline has no visits for mobile). Outage contacts with a defective mapping are covered by the detection evaluation, where none was sent device steps or a visit.",
+    "38 contacts were replayed. They show what the rules do; they are not a sample to take rates from.",
+    "The price of the hold is delay: a needed visit is booked about 10 minutes later than a process that books at once would."
+  ]
+}

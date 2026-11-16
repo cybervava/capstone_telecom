@@ -1,0 +1,90 @@
+{
+  "name": "retrieval",
+  "written_at": "2026-11-16T01:38:32+00:00",
+  "target": "No brief target. Every answer from the customer's own router model. Right section for at least 70.0% of the independent descriptions (set before they were scored), and no regression on the two in-sample sets (98.0% and 80.0%).",
+  "met": true,
+  "verdict": "met",
+  "headline": "Independent descriptions, scored once on a retriever built without sight of them: right section for 468 of 576 (81.25%; always answering 'no-internet' would score 47.92%). In-sample: 99.07% of the transcript phrases and 96.67% of the author's paraphrases. Answers from another model's guide: 0.",
+  "llm_provider": "none (no language model takes part in this measurement)",
+  "numbers": {
+    "router_models": 12,
+    "answers_from_another_models_guide": 0,
+    "independent_as_first_scored": {
+      "right": 468,
+      "of": 576,
+      "right_percent": 81.25,
+      "on": {
+        "what": "Everything that decides which section a description is answered with: the retriever's code, the guides and the list of router models. One sha256 over the files' paths and contents, in path order.",
+        "files": [
+          "src/skylink_care/rag/*.py",
+          "src/skylink_care/agents/troubleshooting.py",
+          "data/knowledge/router_guides/*.md",
+          "data/knowledge/router_models.json"
+        ],
+        "sha256": "388e8210cc47291327d9074d31c914705f92f01e3680f0a74bbaef4a62b19161"
+      }
+    },
+    "retriever_unchanged_since_first_scored": true,
+    "Transcript phrases (in-sample)": {
+      "descriptions": 5184,
+      "right_section": 5136,
+      "right_percent": 99.07,
+      "wrong_section": 48,
+      "no_answer": 0,
+      "constant_answer_percent": 81.48
+    },
+    "Author's paraphrases (in-sample)": {
+      "descriptions": 360,
+      "right_section": 348,
+      "right_percent": 96.67,
+      "wrong_section": 12,
+      "no_answer": 0,
+      "constant_answer_percent": 50.0
+    },
+    "Independent descriptions (out-of-sample)": {
+      "descriptions": 576,
+      "right_section": 468,
+      "right_percent": 81.25,
+      "wrong_section": 108,
+      "no_answer": 0,
+      "constant_answer_percent": 47.92
+    },
+    "independent_wrong_by_description": {
+      "Speed is fine in the hall but wifi range is not coming in the back bedroom": {
+        "slow-speed": 12
+      },
+      "Where is the WPS button on this router? My printer needs it to connect.": {
+        "no-internet": 12
+      },
+      "router hang ho gaya lagta hai, isko sahi tarike se restart kaise karu?": {
+        "slow-speed": 12
+      },
+      "new phone says incorrect pasword even though i am typing same as on the sticker": {
+        "no-internet": 12
+      },
+      "video calls keep freezing and my voice breaks in every office meeting": {
+        "no-internet": 12
+      },
+      "wifi to full aa raha hai lekin net nahi chal raha, sabke phone me same problem": {
+        "wifi": 12
+      },
+      "connection is not down, it's just crawling, a 1 GB file shows 4 hours": {
+        "no-internet": 12
+      },
+      "wifi not working from yesterday night, red LOS light keeps blinking on the box": {
+        "wifi": 12
+      },
+      "Net was acting weird so I switched the router off. How long to wait after turning it on?": {
+        "no-internet": 12
+      }
+    }
+  },
+  "assumptions": [
+    "Only the independent set says anything about descriptions the retriever was not built on, and it is 48 descriptions by one other author: another model instance, shown one router guide and none of the retriever. Its vocabulary may still be closer to the rule author's than a customer's is. Real contacts would be the real test.",
+    "An out-of-sample figure can be had once. The file of cases records the figure as first scored and a hash of what it was scored on (the retriever's code, the guides, the router models); when any of that changes, this report says so and stops calling the set out-of-sample.",
+    "The section is chosen mainly by keyword rules for the kind of fault (`rag/symptoms.py`), which know only the words they were given; the search contributes when the rules recognise nothing. The index uses a deterministic hashing embedder, not a learned model (A5, D2).",
+    "The labels accept two sections where a careful agent could send either, and most faults are no-service faults: the constant-answer column shows how much of each figure that alone explains.",
+    "Each description is put to the agent on its own. In a conversation the agent sees everything the customer wrote and goes by the latest message that names a fault.",
+    "A wrong section is still a set of safe steps from the customer's own router's guide. If they do not help, the customer says so and a person takes over."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "what": "Credits worked out by hand from the placeholder policy v0 (fee x billable hours x multiplier / 720, at least the minimum, at most what the billing-cycle cap leaves, rounded half up to the paisa). Neither the engine nor the oracle was used to produce them.",
+  "cases": [
+    {"why": "4 h on a 999 plan: 5.55 by the formula, raised to the broadband minimum", "service_type": "broadband", "monthly_fee": "999.00", "minutes": 240, "amount": "50.00", "approval": "agent"},
+    {"why": "one minute short of the broadband minimum duration", "service_type": "broadband", "monthly_fee": "999.00", "minutes": 239, "reason": "BELOW_MINIMUM_DURATION"},
+    {"why": "10 h on a 3999 plan: 55.5416...", "service_type": "broadband", "monthly_fee": "3999.00", "minutes": 600, "amount": "55.54", "approval": "agent"},
+    {"why": "6 h on a 9999 plan: 83.325, a tie that rounds up", "service_type": "broadband", "monthly_fee": "9999.00", "minutes": 360, "amount": "83.33", "approval": "agent"},
+    {"why": "26 h on a 9999 plan at 1.5: 541.6125", "service_type": "broadband", "monthly_fee": "9999.00", "minutes": 1560, "amount": "541.61", "approval": "supervisor"},
+    {"why": "72 h on a 999 plan at 2.0: 199.80", "service_type": "broadband", "monthly_fee": "999.00", "minutes": 4320, "amount": "199.80", "approval": "agent"},
+    {"why": "one minute short of three days stays at 1.5: 72 billable hours, 149.85", "service_type": "broadband", "monthly_fee": "999.00", "minutes": 4319, "amount": "149.85", "approval": "agent"},
+    {"why": "24 h on a 399 mobile plan: 13.30, raised to the mobile minimum", "service_type": "mobile", "monthly_fee": "399.00", "minutes": 1440, "amount": "25.00", "approval": "agent"},
+    {"why": "5 h is below the mobile minimum duration of a day", "service_type": "mobile", "monthly_fee": "399.00", "minutes": 300, "reason": "BELOW_MINIMUM_DURATION"},
+    {"why": "the cap leaves exactly 500.00: an agent may approve", "service_type": "broadband", "monthly_fee": "9999.00", "minutes": 4320, "prior_credits": "9499.00", "amount": "500.00", "approval": "agent"},
+    {"why": "the cap leaves 500.01: a supervisor must", "service_type": "broadband", "monthly_fee": "9999.00", "minutes": 4320, "prior_credits": "9498.99", "amount": "500.01", "approval": "supervisor"},
+    {"why": "the cap leaves 499.99", "service_type": "broadband", "monthly_fee": "9999.00", "minutes": 4320, "prior_credits": "9499.01", "amount": "499.99", "approval": "agent"},
+    {"why": "the cap is used up", "service_type": "broadband", "monthly_fee": "999.00", "minutes": 600, "prior_credits": "999.00", "reason": "CAP_REACHED"},
+    {"why": "planned maintenance is excluded however long it ran", "service_type": "broadband", "monthly_fee": "999.00", "minutes": 6000, "planned": true, "reason": "PLANNED_WORK"}
+  ]
+}

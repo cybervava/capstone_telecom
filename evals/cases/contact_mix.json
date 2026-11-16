@@ -1,0 +1,92 @@
+{
+  "source": {
+    "what": "Composition of the labelled contacts of the synthetic data pack (stand-in data, assumption A1).",
+    "generator": "skylink_datagen",
+    "customers": 400000,
+    "seed": 42,
+    "transcripts_sha256": "a09977f3f987ceab2f8bb8b7ce6b72d994a256f15b0b6cae5d02ecfdd96ca56f",
+    "measured_on": "2026-11-15"
+  },
+  "contacts": {
+    "device": 7000,
+    "outage": 9000,
+    "billing": 4000
+  },
+  "outage_contacts": {
+    "total": 9000,
+    "by_service_timing_and_mapping": {
+      "broadband/after_detection/ambiguous": {
+        "contacts": 49
+      },
+      "broadband/after_detection/missing": {
+        "contacts": 89
+      },
+      "broadband/after_detection/none": {
+        "contacts": 5526
+      },
+      "broadband/after_detection/stale": {
+        "contacts": 47
+      },
+      "broadband/before_detection/ambiguous": {
+        "contacts": 18,
+        "with_a_critical_alarm": 9
+      },
+      "broadband/before_detection/missing": {
+        "contacts": 19,
+        "with_a_critical_alarm": 10
+      },
+      "broadband/before_detection/none": {
+        "contacts": 1411,
+        "with_a_critical_alarm": 696
+      },
+      "broadband/before_detection/stale": {
+        "contacts": 8,
+        "with_a_critical_alarm": 3
+      },
+      "mobile/after_detection/ambiguous": {
+        "contacts": 20
+      },
+      "mobile/after_detection/missing": {
+        "contacts": 29
+      },
+      "mobile/after_detection/none": {
+        "contacts": 1429
+      },
+      "mobile/after_detection/stale": {
+        "contacts": 11
+      },
+      "mobile/before_detection/ambiguous": {
+        "contacts": 7,
+        "with_a_critical_alarm": 2
+      },
+      "mobile/before_detection/missing": {
+        "contacts": 4,
+        "with_a_critical_alarm": 4
+      },
+      "mobile/before_detection/none": {
+        "contacts": 332,
+        "with_a_critical_alarm": 176
+      },
+      "mobile/before_detection/stale": {
+        "contacts": 1,
+        "with_a_critical_alarm": 0
+      }
+    }
+  },
+  "before_detection": {
+    "contacts": 1800,
+    "seconds_until_the_noc_declares_quantiles": {
+      "p10": 25,
+      "p30": 73,
+      "p50": 141,
+      "p70": 221,
+      "p90": 367,
+      "max": 577
+    }
+  },
+  "legacy_technician_visits": {
+    "device/necessary": 1225,
+    "device/unnecessary": 525,
+    "outage/unnecessary": 2700
+  }
+}

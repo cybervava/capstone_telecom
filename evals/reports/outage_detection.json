@@ -1,0 +1,43 @@
+{
+  "name": "outage_detection",
+  "written_at": "2026-11-16T01:38:07+00:00",
+  "target": "At least 95.0% of affected contacts (brief).",
+  "met": true,
+  "verdict": "met",
+  "headline": "97.47% of affected contacts, weighted by how often each kind occurs; 140 contacts replayed on 32 nodes, undeclared outages declared 25 to 577 seconds after the contact.",
+  "llm_provider": "offline (keyword rules stand in for the language model; none was called)",
+  "numbers": {
+    "detected_percent_weighted": 97.47,
+    "contacts_replayed": 140,
+    "nodes": 32,
+    "seconds_until_declared": [
+      25,
+      73,
+      141,
+      221,
+      367,
+      577
+    ],
+    "hold_seconds": 600,
+    "missed_by_kind_and_first_message": {
+      "mobile/after_detection/missing: network_unknown.v1:MAPPING_UNRESOLVED": 2,
+      "mobile/before_detection/missing (alarm on the node): network_unknown.v1:MAPPING_UNRESOLVED": 2,
+      "mobile/before_detection/missing (no alarm): network_unknown.v1:MAPPING_UNRESOLVED": 1,
+      "mobile/after_detection/ambiguous: network_unknown.v1:MAPPING_UNRESOLVED": 3,
+      "mobile/before_detection/ambiguous (alarm on the node): network_unknown.v1:MAPPING_UNRESOLVED": 4,
+      "mobile/before_detection/ambiguous (no alarm): network_unknown.v1:MAPPING_UNRESOLVED": 3,
+      "mobile/before_detection/stale (no alarm): network_unknown.v1:MAPPING_UNRESOLVED": 2,
+      "mobile/after_detection/stale: network_unknown.v1:MAPPING_UNRESOLVED": 1,
+      "mobile/before_detection/stale (alarm on the node): network_unknown.v1:MAPPING_UNRESOLVED": 1,
+      "mobile/before_detection/none (no alarm): no_outage_reported.v1": 18
+    }
+  },
+  "assumptions": [
+    "The weights are the labelled outage contacts of the 400,000-customer synthetic pack: 9,000 contacts, 20.0% of them before the NOC had declared the outage. The replay itself runs on a 1,000-customer pack from the same generator.",
+    "An outage the NOC has not declared is the stand-in gateway's own model: the node status and the feed show nothing, every line on the node fails its test, and in half the cases (as measured in the pack) a critical alarm is up on the node.",
+    "In the pack the NOC declares an outage at most 577 seconds after it starts, and the hold is 600 seconds. A NOC that takes longer than the hold would turn held contacts without an alarm into visit offers: the hold must be set from the real delay.",
+    "140 contacts were replayed, and some kinds are rare: where the pack has two or three such customers the rate of that kind rests on two or three contacts. The kinds that decide the figure are the large ones.",
+    "Customers are identified by the channel; wordings come from the phrase bank of the synthetic transcripts and are read by the offline keyword rules, not by a language model. A complaint those rules do not recognise is answered as out of scope, and counts as missed; the first run of this evaluation found five such phrases, which the rules now know.",
+    "What is missed is by design of the thin mobile path (A9): a mobile connection has no remote test, so a mobile customer is not held before the NOC declares unless an alarm is up, and a defective tower mapping cannot be repaired."
+  ]
+}

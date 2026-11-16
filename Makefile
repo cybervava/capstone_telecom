@@ -24,12 +24,12 @@ down: ## Stop containers (data volume is kept)
 	docker compose down
 
 lint: ## Ruff lint + format check
-	uv run ruff check src tests scripts
-	uv run ruff format --check src tests scripts
+	uv run ruff check src tests scripts evals
+	uv run ruff format --check src tests scripts evals
 
 fmt: ## Apply formatting and safe lint fixes
-	uv run ruff check --fix src tests scripts
-	uv run ruff format src tests scripts
+	uv run ruff check --fix src tests scripts evals
+	uv run ruff format src tests scripts evals
 
 typecheck: ## mypy (strict)
 	uv run mypy
@@ -42,6 +42,9 @@ test-int: ## Integration tests (needs `make up`)
 
 test-all: ## Everything with coverage (needs `make up`)
 	uv run pytest --cov --cov-report=term-missing
+
+eval: ## The scored evaluations; writes evals/reports (needs `make up`)
+	uv run pytest evals -p no:cacheprovider --no-cov -q
 
 data: ## Generate the synthetic data pack (CUSTOMERS=40000 for dev; 400000 for evaluation and load)
 	uv run skylink-datagen generate --out $(DATA_DIR) --customers $(CUSTOMERS) --seed $(SEED)

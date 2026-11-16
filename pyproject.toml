@@ -95,6 +95,7 @@ markers = [
     "integration: needs the PostgreSQL service from docker compose",
     "contract: needs a running mock_oss instance (started in-process by fixtures)",
     "e2e: needs the full stack",
+    "eval: a scored evaluation that writes a report (run with `make eval`, not with the suite)",
 ]
 
 [tool.coverage.run]

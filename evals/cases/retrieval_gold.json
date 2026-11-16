@@ -1,0 +1,362 @@
+{
+  "what": "For each way a customer describes a broadband fault in the synthetic transcripts, the guide sections a careful agent would send. Labelled by hand from the wording of the guides' four self-service sections (no-internet, wifi, slow-speed, power-cycle); where two sections are a sound answer both are accepted.",
+  "symptoms": {
+    "my internet is not working": [
+      "no-internet"
+    ],
+    "internet not working since morning": [
+      "no-internet"
+    ],
+    "net nahi chal raha": [
+      "no-internet"
+    ],
+    "wifi is connected but there is no internet": [
+      "no-internet"
+    ],
+    "there is a red light on the router": [
+      "no-internet"
+    ],
+    "the router is showing a red light": [
+      "no-internet"
+    ],
+    "no internet at home": [
+      "no-internet"
+    ],
+    "my broadband is down": [
+      "no-internet"
+    ],
+    "internet keeps dropping every few minutes": [
+      "no-internet",
+      "power-cycle"
+    ],
+    "the internet is very slow today": [
+      "slow-speed"
+    ],
+    "wifi is not showing up on my phone": [
+      "wifi"
+    ],
+    "can't connect to anything at home": [
+      "no-internet",
+      "wifi"
+    ],
+    "my fibre connection is dead": [
+      "no-internet"
+    ],
+    "internet band ho gaya hai": [
+      "no-internet"
+    ],
+    "router pe red light aa rahi hai": [
+      "no-internet"
+    ],
+    "the LOS light is blinking red": [
+      "no-internet"
+    ],
+    "no internet since last night": [
+      "no-internet"
+    ],
+    "wifi chal nahi raha": [
+      "wifi"
+    ],
+    "internet is not working on any device": [
+      "no-internet"
+    ],
+    "pages are not loading at all": [
+      "no-internet"
+    ],
+    "my laptop says no internet access": [
+      "no-internet",
+      "wifi"
+    ],
+    "the internet light on the router is off": [
+      "no-internet"
+    ],
+    "speed is very slow, videos keep buffering": [
+      "slow-speed"
+    ],
+    "broadband not working": [
+      "no-internet"
+    ],
+    "the router lights are blinking orange": [
+      "no-internet",
+      "power-cycle"
+    ],
+    "connection keeps going on and off": [
+      "no-internet",
+      "power-cycle"
+    ],
+    "net bahut slow hai": [
+      "slow-speed"
+    ]
+  },
+  "author_paraphrases": {
+    "what": "Paraphrases written and labelled by the author of the symptom rules, in the same sitting and just before the rules. They were not used to adjust the rules afterwards, but the rules were written with them fresh in mind (a review found rule words that occur only here), so this is a second in-sample set, not a held-out one.",
+    "symptoms": {
+      "nothing opens on my phone or laptop": [
+        "no-internet",
+        "wifi"
+      ],
+      "all the lights are on but websites won't open": [
+        "no-internet"
+      ],
+      "internet stopped suddenly an hour ago": [
+        "no-internet"
+      ],
+      "we have had no connectivity since yesterday evening": [
+        "no-internet"
+      ],
+      "router ki light laal ho gayi hai": [
+        "no-internet"
+      ],
+      "fibre box is showing a blinking red LOS": [
+        "no-internet"
+      ],
+      "connection gets cut again and again": [
+        "no-internet",
+        "power-cycle"
+      ],
+      "youtube keeps buffering and downloads take forever": [
+        "slow-speed"
+      ],
+      "getting only 2 mbps on a 100 mbps plan": [
+        "slow-speed"
+      ],
+      "speed bahut kam aa rahi hai": [
+        "slow-speed"
+      ],
+      "video calls are lagging badly since morning": [
+        "slow-speed"
+      ],
+      "my phone cannot find the wifi network": [
+        "wifi"
+      ],
+      "wifi password is not being accepted": [
+        "wifi"
+      ],
+      "wifi signal is very weak in the bedroom": [
+        "wifi"
+      ],
+      "laptop connects to wifi but phone does not": [
+        "wifi"
+      ],
+      "internet chal hi nahi raha subah se": [
+        "no-internet"
+      ],
+      "modem has no lights at all": [
+        "no-internet",
+        "power-cycle"
+      ],
+      "it disconnects whenever it rains": [
+        "no-internet",
+        "power-cycle"
+      ],
+      "unable to browse anything, please help": [
+        "no-internet"
+      ],
+      "the wifi name has disappeared from the list": [
+        "wifi"
+      ],
+      "streaming is choppy in the evenings": [
+        "slow-speed"
+      ],
+      "ethernet works but wireless devices can't join": [
+        "wifi"
+      ],
+      "network is completely gone": [
+        "no-internet"
+      ],
+      "net slow chal raha hai kal se": [
+        "slow-speed"
+      ],
+      "wifi se connect nahi ho raha": [
+        "wifi"
+      ],
+      "sab devices pe internet band hai": [
+        "no-internet"
+      ],
+      "the connection is unstable and keeps resetting": [
+        "no-internet",
+        "power-cycle"
+      ],
+      "getting very low download speed on speedtest": [
+        "slow-speed"
+      ],
+      "internet light is red and nothing loads": [
+        "no-internet"
+      ],
+      "ping is very high while gaming": [
+        "slow-speed"
+      ]
+    }
+  },
+  "independent": {
+    "what": "Written and labelled on 2026-11-15 by a separate model instance that was given one router guide (data/knowledge/router_guides/TG-FG7.md) and the four sections a customer can be sent, was told not to open src/, evals/, tests/ or scripts/, and reported that it had not. It was asked for 48 messages as customers of an Indian broadband provider type them, two thirds English and one third Hinglish, including hard ones on purpose. The symptom rules were final before it was asked; the set was scored as it came, and nothing in the retriever has been changed because of it.",
+    "first_scored": {
+      "right": 468,
+      "of": 576,
+      "right_percent": 81.25,
+      "on": {
+        "what": "Everything that decides which section a description is answered with: the retriever's code, the guides and the list of router models. One sha256 over the files' paths and contents, in path order.",
+        "files": [
+          "src/skylink_care/rag/*.py",
+          "src/skylink_care/agents/troubleshooting.py",
+          "data/knowledge/router_guides/*.md",
+          "data/knowledge/router_models.json"
+        ],
+        "sha256": "388e8210cc47291327d9074d31c914705f92f01e3680f0a74bbaef4a62b19161"
+      }
+    },
+    "symptoms": {
+      "net not working": [
+        "no-internet"
+      ],
+      "Paying for 100 Mbps but speed test shows only 12. Why?": [
+        "slow-speed"
+      ],
+      "wifi ka password bhul gaya, kahan milega": [
+        "wifi"
+      ],
+      "Restarted the router twice already, internet light is still red. What next?": [
+        "no-internet"
+      ],
+      "Connection drops every 15-20 minutes and comes back by itself, very irritating": [
+        "power-cycle",
+        "no-internet"
+      ],
+      "subah se net band pada hai, router pe laal batti jal rahi hai": [
+        "no-internet"
+      ],
+      "Speed is fine in the hall but wifi range is not coming in the back bedroom": [
+        "wifi"
+      ],
+      "youtube and hotstar keep buffering every evening after 8": [
+        "slow-speed"
+      ],
+      "wifi is connected on all phones, password is also correct, but nothing opens and internet light is red": [
+        "no-internet"
+      ],
+      "net bhut slow hai aaj": [
+        "slow-speed"
+      ],
+      "INTERNET NOT WORKING SINCE 2 DAYS. KINDLY RESOLVE.": [
+        "no-internet"
+      ],
+      "Where is the WPS button on this router? My printer needs it to connect.": [
+        "wifi"
+      ],
+      "router hang ho gaya lagta hai, isko sahi tarike se restart kaise karu?": [
+        "power-cycle"
+      ],
+      "los red no net": [
+        "no-internet"
+      ],
+      "Getting full speed near the router but upstairs in the study it drops to 2 mbps": [
+        "wifi",
+        "slow-speed"
+      ],
+      "LOS wali light red blink kar rahi hai, ab kya karna hai?": [
+        "no-internet"
+      ],
+      "new phone says incorrect pasword even though i am typing same as on the sticker": [
+        "wifi"
+      ],
+      "video calls keep freezing and my voice breaks in every office meeting": [
+        "slow-speed"
+      ],
+      "No net in our whole lane since last night, neighbours are also facing the same": [
+        "no-internet"
+      ],
+      "net sahi chal raha hai bas naya TV wifi se connect nahi ho pa raha": [
+        "wifi"
+      ],
+      "It was working perfectly till yesterday, today the lights on the router look different. What should I check?": [
+        "no-internet",
+        "power-cycle"
+      ],
+      "wifi to full aa raha hai lekin net nahi chal raha, sabke phone me same problem": [
+        "no-internet"
+      ],
+      "Already switched the router off and on, still getting 5 mbps on a 200 mbps plan": [
+        "slow-speed"
+      ],
+      "intenet dead from 3 hrs pls help urgent have office meeting": [
+        "no-internet"
+      ],
+      "wifi name not showing on laptop": [
+        "wifi"
+      ],
+      "bgmi me ping 300 ke upar ja raha hai, bahut lag ho raha hai": [
+        "slow-speed"
+      ],
+      "Total outage here. Is it a fibre cut in the area or my router gone bad?": [
+        "no-internet"
+      ],
+      "light gayi thi, wapas aane ke baad se net nahi chal raha": [
+        "no-internet",
+        "power-cycle"
+      ],
+      "No red light anywhere, internet works on the desktop by cable, only my tablet won't join the wifi": [
+        "wifi"
+      ],
+      "connection is not down, it's just crawling, a 1 GB file shows 4 hours": [
+        "slow-speed"
+      ],
+      "router band chalu karke dekh liya do baar, phir bhi net nahi aa raha": [
+        "no-internet"
+      ],
+      "wifi on my phone disconects now and then and i have to join again": [
+        "wifi",
+        "power-cycle"
+      ],
+      "The thin fibre wire got bent badly behind the cupboard while cleaning, now net is gone": [
+        "no-internet"
+      ],
+      "upar wale kamre me wifi ka signal hi nahi aata, neeche sab theek hai": [
+        "wifi"
+      ],
+      "Router has been on non stop for two months and speed has dropped a lot": [
+        "slow-speed",
+        "power-cycle"
+      ],
+      "wifi not working from yesterday night, red LOS light keeps blinking on the box": [
+        "no-internet"
+      ],
+      "net kabhi chalta hai kabhi band ho jata hai, subah se yahi chal raha hai": [
+        "power-cycle",
+        "no-internet"
+      ],
+      "Hi, just got the connection installed, what is the wifi name and password for this router?": [
+        "wifi"
+      ],
+      "Power light is green but the internet one has turned red, cant open any site": [
+        "no-internet"
+      ],
+      "wifi signal full aa raha hai lekin speed bahut kam mil rahi hai": [
+        "slow-speed"
+      ],
+      "pure mohalle ka net band hai kya? padosi ka bhi nahi chal raha": [
+        "no-internet"
+      ],
+      "Net becomes slow when everyone at home is online, kids streaming and all": [
+        "slow-speed"
+      ],
+      "mere phone me wifi ka naam hi show nhi ho rha, baaki sab me aa rha h": [
+        "wifi"
+      ],
+      "Nothing is loading at all, not slow, completely dead since afternoon": [
+        "no-internet"
+      ],
+      "Net was acting weird so I switched the router off. How long to wait after turning it on?": [
+        "power-cycle"
+      ],
+      "The 5G wifi does not reach my room but the normal one does, why?": [
+        "wifi"
+      ],
+      "bhai kal raat se net band h, jaldi thik karwao": [
+        "no-internet"
+      ],
+      "Sir net is not coming since 11 am and I am working from home, one red light is on": [
+        "no-internet"
+      ]
+    }
+  }
+}
