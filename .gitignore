@@ -36,3 +36,6 @@ var/
 # Programme documents (the brief and the team's action plan) stay out of the public repository.
 # Remove this line to track them.
 /*.pdf
+
+# A run of part of the attack suite: never the report of the whole.
+evals/reports/*_partial.*
