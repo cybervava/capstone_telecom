@@ -110,7 +110,7 @@ class TriageAgent:
     ) -> TriageOutcome:
         merged = merge_claim(claim or Claim(), text, awaiting_digits=awaiting_digits)
         identity, profile, claim_after = await self._identify(contact, merged, audit)
-        known = {"NAME": profile.full_name} if profile else {}
+        known = personal_values(profile) if profile else {}
         reading, call = await self._llm.read_contact(
             text,
             known_values=known,
@@ -218,6 +218,73 @@ class TriageAgent:
             )
             return identity, result.value
         return Identity(IdentityStatus.CRM_UNAVAILABLE, method=method), None
+
+
+def personal_values(profile: CustomerProfile) -> dict[str, str]:
+    """What the platform knows to be this customer's, to be masked by value before a model
+    reads their message (``guardrails.pii.mask_pii`` finds each in the spellings people use).
+
+    The name whole and in each of its parts. The registered mobile, and its last four to nine
+    digits: people quote the end of a number, and the last four are half of the identity
+    check. The name part of the email address, the numbers of the customer and service ids,
+    and where each service is. Whole phone numbers, email addresses and ids are also caught
+    by their shape wherever they appear; these are for the spellings a shape misses.
+    """
+    values = {"NAME": profile.full_name}
+    for number, part in enumerate(_words(profile.full_name), start=1):
+        values[f"NAME_{number}"] = part
+    phone = _digits(profile.phone)[-PHONE_DIGITS:]
+    if len(phone) == PHONE_DIGITS:
+        values["PHONE"] = phone
+        for kept in range(PHONE_DIGITS - 1, LAST_DIGITS_FROM - 1, -1):
+            values[f"PHONE_LAST_{kept}"] = phone[-kept:]
+    mail_name = profile.email.partition("@")[0]
+    if mail_name:
+        values["EMAIL_NAME"] = mail_name
+    values["CUSTOMER_NUMBER"] = _digits(profile.customer_id)
+    for number, service in enumerate(profile.services, start=1):
+        values[_numbered("SERVICE_NUMBER", number)] = _digits(service.service_id)
+    values |= _places(profile)
+    return {label: value for label, value in values.items() if value}
+
+
+PHONE_DIGITS, LAST_DIGITS_FROM = 10, 4
+# A word of an area is masked by itself when it has this many letters ("Bandra" of "Bandra
+# West", "BTM" of "BTM Layout"): people shorten a place to one of its words.
+AREA_WORD_LETTERS = 2
+
+
+def _places(profile: CustomerProfile) -> dict[str, str]:
+    """Area, city and pincode of every service address, and the longer words of each area."""
+    values: dict[str, str] = {}
+    seen: dict[str, list[str]] = {"AREA": [], "CITY": [], "PINCODE": [], "AREA_WORD": []}
+
+    def add(kind: str, value: str) -> None:
+        if value and value not in seen[kind]:
+            seen[kind].append(value)
+            values[_numbered(kind, len(seen[kind]))] = value
+
+    for service in profile.services:
+        address = service.address
+        add("AREA", address.area)
+        add("CITY", address.city)
+        add("PINCODE", address.pincode)
+        for word in _words(address.area):
+            if len(word) >= AREA_WORD_LETTERS:
+                add("AREA_WORD", word)
+    return values
+
+
+def _numbered(kind: str, number: int) -> str:
+    return kind if number == 1 else f"{kind}_{number}"
+
+
+def _words(text: str) -> list[str]:
+    return [word for word in re.split(r"[\W_]+", text) if word]
+
+
+def _digits(text: str) -> str:
+    return re.sub(r"\D", "", text)
 
 
 def merge_claim(claim: Claim, text: str, *, awaiting_digits: bool) -> Claim:

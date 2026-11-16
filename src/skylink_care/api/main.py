@@ -63,4 +63,7 @@ def run() -> None:
         host=settings.api_host,
         port=settings.api_port,
         log_level="info",
+        # The server's own lines go the way of every other library's: through the one handler
+        # that redacts (``observability.logging``), not through handlers of the server's own.
+        log_config=None,
     )
