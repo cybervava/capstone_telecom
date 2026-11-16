@@ -6,11 +6,13 @@ and a node the mapping cannot name is found by asking the line, not by guessing.
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from skylink_care.adapters.models import LineTestDto, NodeStatusDto
 from skylink_care.adapters.result import Err, ErrorKind, Ok, Result
+from skylink_care.adapters.shared import SharedNodeStatus
 from skylink_care.agents.diagnostics import DiagnosticsAgent, LineTestPolicy, Subject
 from skylink_care.db.audit import AuditRepository
 from skylink_care.db.contacts import ContactRepository, NewContact
@@ -407,3 +409,76 @@ async def test_enough_lines_failing_on_the_node_overrules_a_live_all_clear(db: D
     assert diagnosis.failing_lines_on_node == 3
     assert diagnosis.decision.state is NetworkState.UNKNOWN
     assert diagnosis.decision.reason is DecisionReason.SUSPECTED_NODE_FAULT
+
+
+# --- sharing a status read, and when not to ------------------------------------------------------
+
+
+class HeldNetwork(ScriptedNetwork):
+    """A status API whose answers wait until the test lets them go."""
+
+    def __init__(self, statuses: dict[str, Result[NodeStatusDto]]) -> None:
+        super().__init__(statuses, line_answer(NODE))
+        self.go = asyncio.Event()
+
+    async def node_status(self, node_id: str, *, correlation_id: str) -> Result[NodeStatusDto]:
+        self.status_calls.append(node_id)
+        answer = self._statuses[node_id]  # what the node was when the read was sent
+        await self.go.wait()
+        return answer
+
+
+def sharing_agent(db: Database, network: ScriptedNetwork) -> DiagnosticsAgent:
+    return DiagnosticsAgent(
+        network,  # type: ignore[arg-type]
+        ReferenceRepository(db),
+        ReadModelRepository(db),
+        LineTestRepository(db),
+        LIMITS,
+        POLICY,
+        lambda: NOW,
+        shared=SharedNodeStatus(network),  # type: ignore[arg-type]
+    )
+
+
+async def test_diagnoses_of_one_node_at_the_same_moment_share_the_status_read(
+    db: Database,
+) -> None:
+    await seed_reference(db)
+    network = HeldNetwork({NODE: in_outage(NODE)})
+    agent_ = sharing_agent(db, network)
+
+    both = [
+        asyncio.create_task(agent_.run(subject(service_id=f"S{n}"), audit=auditor(db)))
+        for n in (1, 2)
+    ]
+    await asyncio.sleep(0.05)
+    network.go.set()
+    first, second = await asyncio.gather(*both)
+
+    assert network.status_calls == [NODE]
+    assert first.decision.state is second.decision.state is NetworkState.ACTIVE
+
+
+async def test_turn_woken_by_the_feed_reads_the_status_for_itself(db: Database) -> None:
+    """Found by review: a contact woken by "outage resolved" could join a read that was sent
+    before the resolution, be told the outage was still on, and wait a quarter of an hour for
+    the next look."""
+    await seed_reference(db)
+    network = HeldNetwork({NODE: in_outage(NODE)})
+    agent_ = sharing_agent(db, network)
+
+    earlier = asyncio.create_task(agent_.run(subject(service_id="S1"), audit=auditor(db)))
+    await asyncio.sleep(0.05)  # its read is on its way, with the node still in outage
+    network._statuses[NODE] = operational(NODE)  # resolved; the feed has said so
+    woken = asyncio.create_task(
+        agent_.run(subject(service_id="S2"), audit=auditor(db), own_status_read=True)
+    )
+    await asyncio.sleep(0.05)
+    network.go.set()
+    before = await earlier
+    after = await woken
+
+    assert network.status_calls == [NODE, NODE]
+    assert before.decision.state is NetworkState.ACTIVE
+    assert after.decision.state is not NetworkState.ACTIVE

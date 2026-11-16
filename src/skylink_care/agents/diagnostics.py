@@ -21,10 +21,10 @@ from datetime import datetime, timedelta
 from typing import Protocol
 from uuid import UUID
 
-from skylink_care.adapters.clients import NetworkReader
 from skylink_care.adapters.convert import to_live_status
 from skylink_care.adapters.models import NodeStatusDto
 from skylink_care.adapters.result import Err, ErrorKind, Ok, Result
+from skylink_care.adapters.shared import NetworkSource
 from skylink_care.db.line_tests import LineTest, LineTestRepository
 from skylink_care.db.reference import ACTIVE, ReferenceRepository
 from skylink_care.domain.models import MappingStatus, NetworkState, NodeMapping, ServiceType
@@ -73,11 +73,20 @@ class Diagnosis:
 
 
 class _Probe:
-    """The line test of one diagnosis: run at most once, whoever asks first."""
+    """The line test of one diagnosis: run at most once, whoever asks first. It also carries
+    what the diagnosis was told about its reads: the audit trail, and whether a status read
+    may be shared."""
 
-    def __init__(self, test: Callable[[], Awaitable[LineTest | None]], audit: Auditor) -> None:
+    def __init__(
+        self,
+        test: Callable[[], Awaitable[LineTest | None]],
+        audit: Auditor,
+        *,
+        share_status: bool = True,
+    ) -> None:
         self._test = test
         self.audit = audit
+        self.share_status = share_status
         self.ran = False
         self.result: LineTest | None = None
 
@@ -91,15 +100,19 @@ class _Probe:
 class DiagnosticsAgent:
     def __init__(
         self,
-        network: NetworkReader,
+        network: NetworkSource,
         reference: ReferenceRepository,
         feed: FeedViewSource,
         line_tests: LineTestRepository,
         limits: DecisionLimits,
         policy: LineTestPolicy,
         now: Callable[[], datetime],
+        *,
+        shared: NetworkSource | None = None,
     ) -> None:
         self._network = network
+        # Status reads that other diagnoses of the same node may share (``adapters.shared``).
+        self._shared = shared
         self._reference = reference
         self._feed = feed
         self._line_tests = line_tests
@@ -108,14 +121,26 @@ class DiagnosticsAgent:
         self._now = now
 
     async def run(
-        self, subject: Subject, *, audit: Auditor, fresh_line_test: bool = False
+        self,
+        subject: Subject,
+        *,
+        audit: Auditor,
+        fresh_line_test: bool = False,
+        own_status_read: bool = False,
     ) -> Diagnosis:
         """Gather the evidence for one line and decide the network state of its node.
 
         ``fresh_line_test`` asks for a new test even if the line was tested moments ago: used
         when a decision is about to rest on whether a fault is still there.
+        ``own_status_read`` keeps this diagnosis from sharing a status read that is already on
+        its way: used when the turn follows news from the feed, and must see the node as it
+        is after that news.
         """
-        probe = _Probe(lambda: self._test_line(subject, audit, fresh=fresh_line_test), audit)
+        probe = _Probe(
+            lambda: self._test_line(subject, audit, fresh=fresh_line_test),
+            audit,
+            share_status=not own_status_read,
+        )
         mapping = await self._reference.resolve_mapping(subject.address_id, subject.service_type)
         if not mapping.is_resolved:
             # The mapping cannot say which node serves this address. The line itself can.
@@ -139,6 +164,10 @@ class DiagnosticsAgent:
         """The network state of one known node, on evidence read now and with no line tested.
 
         For whoever is about to act on an earlier diagnosis and must not act on a stale one.
+        A status that cannot be read, or that is not even asked for because the API is being
+        rested, makes the state unknown, and the caller declines to act. It does not wait and
+        try again: whether the customer's choice still stands is for the conversation to say,
+        which looks again and proposes the action afresh if it does.
         """
         mapping = NodeMapping(MappingStatus.RESOLVED, node_id, (node_id,), None)
         live = to_live_status(await self._status(node_id, audit))
@@ -152,7 +181,7 @@ class DiagnosticsAgent:
         """Live status and feed view of the mapped node, following the line if the node is gone."""
         if not mapping.is_resolved or mapping.node_id is None:
             return _NOT_ASKED, _NO_FEED, mapping
-        status = await self._status(mapping.node_id, probe.audit)
+        status = await self._status(mapping.node_id, probe.audit, share=probe.share_status)
         if isinstance(status, Err) and status.kind is ErrorKind.GONE:
             # The mapping points at retired equipment: a stale mapping, not a healthy node.
             stale = replace(mapping, status=MappingStatus.STALE, node_id=None)
@@ -160,7 +189,7 @@ class DiagnosticsAgent:
             if followed.node_id is None or followed.node_id == mapping.node_id:
                 return _NOT_ASKED, _NO_FEED, stale
             mapping = followed
-            status = await self._status(followed.node_id, probe.audit)
+            status = await self._status(followed.node_id, probe.audit, share=probe.share_status)
             if isinstance(status, Err) and status.kind is ErrorKind.GONE:
                 return _NOT_ASKED, _NO_FEED, stale
         node_id = mapping.node_id or ""
@@ -235,12 +264,15 @@ class DiagnosticsAgent:
             },
         )
 
-    async def _status(self, node_id: str, audit: Auditor) -> Result[NodeStatusDto]:
+    async def _status(
+        self, node_id: str, audit: Auditor, *, share: bool = False
+    ) -> Result[NodeStatusDto]:
+        source = self._shared if share and self._shared is not None else self._network
         return await audit.tool(
             actor=ACTOR,
             tool="network.node_status",
             inputs={"node_id": node_id},
-            call=self._network.node_status(node_id, correlation_id=audit.correlation_id),
+            call=source.node_status(node_id, correlation_id=audit.correlation_id),
         )
 
     async def _test_line(self, subject: Subject, audit: Auditor, *, fresh: bool) -> LineTest | None:

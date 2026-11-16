@@ -84,6 +84,9 @@ def _line_fault_state(
     return kept
 
 
+_NEWS_FROM_THE_FEED = frozenset({Trigger.DECLARED.value, Trigger.RESOLVED.value})
+
+
 class NetworkNodes(CreditNodes, VisitNodes):
     async def diagnose(self, state: ContactState) -> dict[str, Any]:
         contact = await self._contact(state)
@@ -100,6 +103,9 @@ class NetworkNodes(CreditNodes, VisitNodes):
             audit=self._rt.auditor(contact.contact_id, contact.correlation_id),
             # What happens next rests on whether the fault is still there: test, do not recall.
             fresh_line_test=hold_over,
+            # The feed has just said something about this node. The turn must see the node as
+            # it is after that, not join a status read that was sent before it.
+            own_status_read=state.get("trigger") in _NEWS_FROM_THE_FEED,
         )
         decision, line = diagnosis.decision, diagnosis.line_test
         hold = _line_fault_state(state, decision.state, line, hold_over=hold_over)

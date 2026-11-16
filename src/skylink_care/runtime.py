@@ -10,8 +10,8 @@ from dataclasses import dataclass
 from datetime import timedelta
 from uuid import UUID
 
-from skylink_care.adapters.clients import NetworkReader
 from skylink_care.adapters.gateway import OssGateway
+from skylink_care.adapters.shared import NetworkSource, SharedNodeStatus
 from skylink_care.agents.diagnostics import DiagnosticsAgent, FeedViewSource, LineTestPolicy
 from skylink_care.agents.dispatch import DispatchAgent
 from skylink_care.agents.resolution import ResolutionAgent
@@ -89,10 +89,11 @@ def visit_limits(settings: Settings, *, line_test_max_age_seconds: int) -> Visit
 def build_diagnostics(
     settings: Settings,
     database: Database,
-    network: NetworkReader,
+    network: NetworkSource,
     *,
     feed: FeedViewSource | None = None,
     now: Clock = utc_now,
+    share_status_reads: bool = False,
 ) -> DiagnosticsAgent:
     """The network decision, for the orchestrator and for a process that must look at a node
     again before it acts (the executor, before it books a visit).
@@ -111,6 +112,7 @@ def build_diagnostics(
             retest_after=timedelta(seconds=settings.line_retest_seconds),
         ),
         now,
+        shared=SharedNodeStatus(network) if share_status_reads else None,
     )
 
 
@@ -138,7 +140,14 @@ def build_orchestrator_runtime(
         read_model=ReadModelRepository(database),
         triage=TriageAgent(gateway.crm_for_triage(), llm or build_gateway(settings)),
         diagnostics=build_diagnostics(
-            settings, database, gateway.network_for_diagnostics(), feed=feed, now=now
+            settings,
+            database,
+            gateway.network_for_diagnostics(),
+            feed=feed,
+            now=now,
+            # Diagnoses of one node that run at the same moment share one status read. The
+            # executor, before it books a visit, reads for itself (build_visit_booker).
+            share_status_reads=True,
         ),
         troubleshooting=TroubleshootingAgent(GuideIndex(database, HashingEmbedder())),
         resolution=ResolutionAgent(
