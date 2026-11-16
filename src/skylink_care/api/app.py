@@ -48,6 +48,7 @@ from skylink_care.db.inbox import InboxRepository
 from skylink_care.db.messages import MessageRepository
 from skylink_care.domain.models import Channel
 from skylink_care.guardrails.claims import network_state_to_show
+from skylink_care.surge import SurgeGauge, SurgePolicy
 
 log = structlog.get_logger(__name__)
 
@@ -67,6 +68,13 @@ SECURITY_HEADERS = {
 API_PREFIX = "/v1/"
 SAFE_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
+# What one channel integration may open in all: far above what a contact centre relays in the
+# surge the platform is built for (ten contacts a second through every channel together), and
+# a bound all the same.
+CHANNEL_CONTACTS_PER_SECOND = 60.0
+CHANNEL_BURST = 600
+# The digits that tell one subscriber line from another, whatever is written before them.
+LINE_DIGITS = 10
 CUSTOMER_SIDE = (Role.GUEST, Role.CUSTOMER, Role.CHANNEL)
 STAFF_SIDE = (Role.AGENT, Role.SUPERVISOR, Role.OPS)
 # The personas the dev token endpoint hands to anyone: the two a customer can be.
@@ -81,12 +89,16 @@ class ApiDeps:
     # Follow-up messages per contact, and further contacts per caller after the first.
     message_limit: RateLimiter | None = None
     contact_limit: RateLimiter | None = None
+    # New contacts of one channel integration in all, whoever it names as the caller.
+    channel_limit: RateLimiter | None = None
     # The clock approvals are offered and decided by.
     now: Clock = utc_now
     # What a person must know to get a staff token from the dev token endpoint. None: nobody.
     dev_staff_key: str | None = None
     # How long a network status stays evidence: what a page may still show as "none reported".
     status_max_age_seconds: int = 60
+    # Whether the orchestrator is behind (surge mode). None: measured with the default policy.
+    surge: SurgeGauge | None = None
 
 
 def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> FastAPI:
@@ -106,6 +118,10 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
     audit = AuditRepository(deps.database)
     message_limit = deps.message_limit or RateLimiter(capacity=20, refill_per_second=20 / 60)
     contact_limit = deps.contact_limit or RateLimiter(capacity=5, refill_per_second=5 / 60)
+    channel_limit = deps.channel_limit or RateLimiter(
+        capacity=CHANNEL_BURST, refill_per_second=CHANNEL_CONTACTS_PER_SECOND
+    )
+    surge = deps.surge or SurgeGauge(inbox.backlog, SurgePolicy())
 
     _install_error_handling(app)
 
@@ -144,11 +160,19 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
                 status.HTTP_403_FORBIDDEN, "only a channel may state the caller line"
             )
         caller = _caller_key(principal)
+        if principal.role is Role.CHANNEL and not channel_limit.allow(caller):
+            # Each caller a channel names is counted for itself below, and a channel can name
+            # whom it likes. This bound is on the channel as such: an integration that runs
+            # away, or whose token is in the wrong hands, does not open contacts without end.
+            raise HTTPException(
+                status.HTTP_429_TOO_MANY_REQUESTS, "too many new contacts from this channel"
+            )
+        counted_as = _limit_key(caller, principal, body)
         # The first contact of a caller always gets a reference. Only repeats are limited.
-        if contact_limit.has_history(caller) and not contact_limit.allow(caller):
+        if contact_limit.has_history(counted_as) and not contact_limit.allow(counted_as):
             raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "too many new contacts")
-        if not contact_limit.has_history(caller):
-            contact_limit.allow(caller)
+        if not contact_limit.has_history(counted_as):
+            contact_limit.allow(counted_as)
         try:
             result = await contacts.accept(
                 NewContact(
@@ -172,7 +196,8 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
             return _conflict(response, exc)
         if result.replayed:
             response.status_code = status.HTTP_200_OK
-        return ok(ContactAccepted(**result.__dict__).model_dump(mode="json"))
+        accepted = ContactAccepted(**result.__dict__, reply_delayed=_reply_delayed(surge))
+        return ok(accepted.model_dump(mode="json"))
 
     @app.get("/v1/contacts/{contact_id}")
     async def read_contact(
@@ -196,6 +221,7 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
             ),
             network_checked_at=contact.network_checked_at,
             outage_id=contact.outage_id,
+            reply_delayed=_reply_delayed(surge),
             messages=[
                 MessageView(
                     message_id=m.message_id,
@@ -237,7 +263,9 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
                     dedupe_key=f"message:{body.client_message_id}",
                     conn=conn,
                 )
-        return ok({"accepted": True, "replayed": not stored})
+        return ok(
+            {"accepted": True, "replayed": not stored, "reply_delayed": _reply_delayed(surge)}
+        )
 
     @app.get("/v1/contacts/{contact_id}/audit")
     async def read_audit(
@@ -249,7 +277,7 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
         return ok(jsonable_encoder([record.__dict__ for record in trail]))
 
     register_handoff_routes(app, deps.database, deps.now)
-    register_ops_routes(app, deps.database, deps.now)
+    register_ops_routes(app, deps.database, deps.now, surge)
     register_approval_routes(app, deps.database, deps.now)
 
     if deps.env == "dev":
@@ -289,16 +317,46 @@ def _knows_the_staff_key(offered: str | None, expected: str | None) -> bool:
 
 
 def _caller_key(principal: Principal) -> str:
-    """Who is asking, for idempotency and rate limiting.
+    """Who is asking, for idempotency and as the base of rate limiting.
 
     Built only from signed token claims, so a caller cannot choose a key that collides with
-    someone else's or that resets its own limit.
+    someone else's. A customer or a guest cannot reset its own limit either. A channel's new
+    contacts are counted for the caller it names (``_limit_key``), which it chooses, and
+    therefore for the channel as a whole as well.
     """
     if principal.role is Role.CUSTOMER:
         return f"customer:{principal.customer_id}"
     if principal.role is Role.GUEST:
         return f"guest:{principal.session_id or principal.subject}"
     return f"channel:{principal.subject}"
+
+
+def _limit_key(caller: str, principal: Principal, body: ContactIn) -> str:
+    """Whose new contacts are counted together.
+
+    A customer and a guest speak for themselves. A channel integration speaks for everyone who
+    reaches it, so its contacts are counted for the caller it names: the line, or else the
+    session. Many callers through one contact centre are not one caller flooding, and each of
+    them gets a reference for a first contact like anyone else.
+    """
+    if principal.role is not Role.CHANNEL:
+        return caller
+    if body.caller_phone:
+        # One line however it is written: with the country code or without, with "+" or not.
+        return f"{caller}:line:{body.caller_phone.lstrip('+')[-LINE_DIGITS:]}"
+    if body.session_id:
+        return f"{caller}:session:{body.session_id}"
+    return caller
+
+
+def _reply_delayed(surge: SurgeGauge) -> bool:
+    """Whether to say that the reply will take longer. Never an error: a gauge that fails says
+    nothing, and the reference is issued regardless."""
+    try:
+        return surge.behind()
+    except Exception:
+        log.exception("surge_gauge_failed")
+        return False
 
 
 async def _owned_contact(

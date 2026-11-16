@@ -9,8 +9,11 @@ redelivered or batched wake-up cannot apply anything twice.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import signal
+from collections import deque
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
 
@@ -48,6 +51,25 @@ CUSTOMER_FOLLOW_UP = "CUSTOMER_FOLLOW_UP"
 DEFAULT_CONCURRENCY = 8
 # Query connections beyond one per concurrent run (checkpointer, scheduling, bursts).
 POOL_HEADROOM = 4
+# How many due contacts are asked for at a time, in slots' worth, and at the very most.
+PAGE_OF_SLOTS = 4
+MAX_PAGE = 1000
+
+
+@dataclass
+class _Slots:
+    """What the worker's loop has in hand."""
+
+    running: dict[UUID, asyncio.Task[bool]] = field(default_factory=dict)
+    # Due contacts read from the inbox and not started yet, oldest first, and when they were
+    # read (the loop's clock).
+    due: deque[UUID] = field(default_factory=deque)
+    due_read_at: float = 0.0
+    # Contacts not to ask for again before the time given.
+    resting: dict[UUID, float] = field(default_factory=dict)
+
+    def free_to_start(self, contact_id: UUID) -> bool:
+        return contact_id not in self.running and contact_id not in self.resting
 
 
 class OrchestratorWorker:
@@ -71,28 +93,104 @@ class OrchestratorWorker:
         self._retry_backoff_seconds = retry_backoff_seconds
 
     async def run_forever(self, stop: asyncio.Event) -> None:
-        while not stop.is_set():
-            try:
-                progressed = await self.run_once()
-            except Exception:
-                # Usually the database. Log, wait, try again: the loop must outlive the outage.
-                log.exception("orchestrator_loop_error")
-                progressed = 0
-            if progressed == 0:
-                try:
-                    await asyncio.wait_for(stop.wait(), timeout=self._poll_seconds)
-                except TimeoutError:
-                    continue
+        """Keep every slot busy for as long as contacts are due, until asked to stop.
 
-    async def run_once(self) -> int:
-        """Process the contacts that are due right now. Returns how many runs completed."""
-        # Timers first: a timer that has come due becomes an inbox event like any other.
+        A contact is started the moment a slot is free. A turn that takes long (a line test, a
+        language model) holds its own slot and nothing else: the contacts behind it go through
+        the other slots, where a batch would make them wait for its slowest member.
+        """
+        slots = _Slots()
+        loop = asyncio.get_running_loop()
+        timers_due = 0.0
+        try:
+            while not stop.is_set():
+                try:
+                    if loop.time() >= timers_due:
+                        timers_due = loop.time() + self._poll_seconds
+                        await self._fire_timers()
+                    await self._fill(stop, slots)
+                except Exception:
+                    # Usually the database. Log, wait, try again: the loop must outlive it.
+                    log.exception("orchestrator_loop_error")
+                await self._until_a_slot_frees(stop, slots)
+        except asyncio.CancelledError:
+            # Cancelled outright, not asked to stop: the turns go with the loop, and each runs
+            # again later from where it stood.
+            for task in slots.running.values():
+                task.cancel()
+            raise
+        finally:
+            # Asked to stop, a turn in progress is finished, not dropped. Dropped, it would run
+            # again from its checkpoint, which is safe; finished, its customer has the answer.
+            ended = await asyncio.gather(*slots.running.values(), return_exceptions=True)
+            for contact_id, outcome in zip(slots.running, ended, strict=True):
+                if isinstance(outcome, Exception):
+                    _log_failed_turn(contact_id, outcome)
+
+    async def _fill(self, stop: asyncio.Event, slots: _Slots) -> None:
+        """Start due contacts in the free slots, the longest-waiting first."""
+        loop = asyncio.get_running_loop()
+        for contact_id in [one for one, until in slots.resting.items() if until <= loop.time()]:
+            del slots.resting[contact_id]
+        if loop.time() - slots.due_read_at >= self._poll_seconds:
+            # Read while every slot was busy, a poll interval or more ago. Another worker may
+            # have run these contacts since, or put one off after a failure: read again.
+            slots.due.clear()
+        while len(slots.running) < self._concurrency and not stop.is_set():
+            if not slots.due:
+                # A contact in a worker's hands stays due until its turn ends. The page is
+                # made longer by those this worker knows to be in hand, so that it looks past
+                # them to one it can start.
+                page = self._concurrency * PAGE_OF_SLOTS + len(slots.running) + len(slots.resting)
+                found = await self._rt.inbox.pending_contacts(min(page, MAX_PAGE))
+                slots.due.extend(one for one in found if slots.free_to_start(one))
+                slots.due_read_at = loop.time()
+                if not slots.due:
+                    return
+                continue  # a stop asked for while the query was out starts nothing
+            contact_id = slots.due.popleft()
+            if slots.free_to_start(contact_id):
+                slots.running[contact_id] = loop.create_task(self.process_contact(contact_id))
+
+    async def _until_a_slot_frees(self, stop: asyncio.Event, slots: _Slots) -> None:
+        """Wait for a turn to end, or for one poll interval, and clear away what ended."""
+        if not slots.running:
+            with contextlib.suppress(TimeoutError):
+                await asyncio.wait_for(stop.wait(), timeout=self._poll_seconds)
+            return
+        done, _ = await asyncio.wait(
+            slots.running.values(),
+            timeout=self._poll_seconds,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        now = asyncio.get_running_loop().time()
+        for contact_id in [one for one, task in slots.running.items() if task in done]:
+            task = slots.running.pop(contact_id)
+            error = None if task.cancelled() else task.exception()
+            if error is not None:
+                # Not even the failure could be recorded (the contact's lock or the inbox:
+                # the database), so nothing in the inbox puts the contact off. It is put off
+                # here for as long as a recorded failure would be.
+                _log_failed_turn(contact_id, error)
+                slots.resting[contact_id] = now + self._retry_backoff_seconds
+            elif task.cancelled() or task.result() is not True:
+                # Held by another worker, or failed and put off: not asked for again at once.
+                slots.resting[contact_id] = now + self._poll_seconds
+
+    async def _fire_timers(self) -> None:
+        """A timer that has come due becomes an inbox event like any other."""
         try:
             await self._rt.timers.fire_due(self._rt.now())
         except Exception:
             # A timer problem must not hold up the contacts that are ready to run.
             log.exception("timer_pump_failed")
-        pending = await self._rt.inbox.pending_contacts(self._concurrency * 4)
+
+    async def run_once(self) -> int:
+        """Process the contacts that are due right now, as one batch. Returns how many runs
+        completed. For tests and evaluations, which drive the platform a pass at a time; the
+        process runs ``run_forever``."""
+        await self._fire_timers()
+        pending = await self._rt.inbox.pending_contacts(self._concurrency * PAGE_OF_SLOTS)
         if not pending:
             return 0
         gate = asyncio.Semaphore(self._concurrency)
@@ -106,9 +204,7 @@ class OrchestratorWorker:
         )
         for contact_id, result in zip(pending, results, strict=True):
             if isinstance(result, BaseException):
-                log.error(
-                    "contact_processing_error", contact_id=str(contact_id), error=repr(result)
-                )
+                _log_failed_turn(contact_id, result)
         return sum(1 for result in results if result is True)
 
     async def process_contact(self, contact_id: UUID) -> bool:
@@ -284,6 +380,10 @@ class OrchestratorWorker:
             await self._rt.inbox.mark_applied(contact_id, events[-1].seq)
 
 
+def _log_failed_turn(contact_id: UUID, error: BaseException) -> None:
+    log.error("contact_processing_error", contact_id=str(contact_id), error=repr(error))
+
+
 def _why_a_person(error: Exception, attempts: int) -> str:
     """What the person who takes the contact is told about why the workflow let go of it."""
     if isinstance(error, UnbackedClaimError):
@@ -306,25 +406,40 @@ def _why_a_person(error: Exception, attempts: int) -> str:
 async def _main() -> None:
     settings = get_settings()
     configure_logging()
+    concurrency = settings.worker_concurrency
     database = await Database.open(
         settings.database_conninfo(),
-        max_size=max(settings.db_pool_max, DEFAULT_CONCURRENCY + POOL_HEADROOM),
-        lock_connections=DEFAULT_CONCURRENCY,
+        max_size=max(settings.db_pool_max, concurrency + POOL_HEADROOM),
+        lock_connections=concurrency,
     )
     gateway = open_gateway(settings, get_oss_keys())
     try:
         runtime = build_orchestrator_runtime(settings, database, gateway)
-        checkpointer = AsyncPostgresSaver(database.pool)
-        worker = OrchestratorWorker(runtime, build_graph(runtime, checkpointer), checkpointer)
-        stop = asyncio.Event()
-        loop = asyncio.get_running_loop()
-        for signum in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(signum, stop.set)
-        log.info("orchestrator_started", llm_provider=settings.llm_provider)
-        await worker.run_forever(stop)
+        try:
+            await _serve(runtime, concurrency)
+        finally:
+            await runtime.surge.aclose()
     finally:
         await gateway.aclose()
         await database.close()
+
+
+async def _serve(runtime: OrchestratorRuntime, concurrency: int) -> None:
+    """Run the loop until the process is asked to stop."""
+    checkpointer = AsyncPostgresSaver(runtime.db.pool)
+    worker = OrchestratorWorker(
+        runtime, build_graph(runtime, checkpointer), checkpointer, concurrency=concurrency
+    )
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for signum in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(signum, stop.set)
+    log.info(
+        "orchestrator_started",
+        llm_provider=runtime.settings.llm_provider,
+        concurrency=concurrency,
+    )
+    await worker.run_forever(stop)
 
 
 def run() -> None:

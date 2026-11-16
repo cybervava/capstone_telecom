@@ -7,7 +7,8 @@ import asyncio
 import pytest
 
 from skylink_care.llm.base import LLMProviderError, TriageReading, Usage
-from skylink_care.llm.gateway import LLMGateway
+from skylink_care.llm.gateway import LOAD_SHED, LLMGateway
+from skylink_care.llm.offline import OfflineProvider
 from skylink_care.llm.prompts import load_prompt
 
 READING = TriageReading(
@@ -154,3 +155,25 @@ async def test_the_model_that_actually_answered_is_recorded() -> None:
     _, record = await LLMGateway(FallbackAnswered()).read_contact("internet down")
 
     assert record.model == "claude-opus-4-8"
+
+
+async def test_while_the_platform_is_behind_the_rules_read_the_message() -> None:
+    """A turn then costs what the rules cost. It is recorded as a reading made without the
+    model, so a request the rules cannot place goes to a person and is not refused."""
+    external = RecordingProvider()
+
+    reading, record = await LLMGateway(external).read_contact(
+        "my wifi is down since morning", shed_load=True
+    )
+
+    assert external.seen == []
+    assert reading.intent == "connectivity"
+    assert (record.provider, record.degraded, record.error) == ("offline", True, LOAD_SHED)
+
+
+async def test_shedding_load_loses_nothing_when_the_rules_are_the_provider_anyway() -> None:
+    _, record = await LLMGateway(OfflineProvider()).read_contact(
+        "my wifi is down since morning", shed_load=True
+    )
+
+    assert (record.provider, record.degraded, record.error) == ("offline", False, None)

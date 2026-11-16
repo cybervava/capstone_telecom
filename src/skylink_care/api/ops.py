@@ -4,6 +4,9 @@ All staff see it, so that an agent can tell a customer why they were not told of
 Closing an item is for those who run the platform, or a supervisor. Who closed it, and what
 they noted, is recorded in the audit log; the note is kept as written with the item and
 masked in the log, like every note a person writes.
+
+Beside the queue staff see the load: how many contacts wait for the assistant and for how
+long, so that "replies are delayed" is something they know before a customer tells them.
 """
 
 from __future__ import annotations
@@ -21,6 +24,7 @@ from skylink_care.db.audit import AuditEntry, AuditRepository
 from skylink_care.db.database import Database
 from skylink_care.db.ops import OpsClosure, OpsRepository
 from skylink_care.guardrails.pii import redact_for_log
+from skylink_care.surge import BacklogUnknownError, SurgeGauge
 
 STAFF = (Role.AGENT, Role.SUPERVISOR, Role.OPS)
 CLOSERS = (Role.OPS, Role.SUPERVISOR)
@@ -29,9 +33,29 @@ CLOSERS = (Role.OPS, Role.SUPERVISOR)
 LIST_LIMIT = 100
 
 
-def register_ops_routes(app: FastAPI, database: Database, now: Clock) -> None:
+def register_ops_routes(app: FastAPI, database: Database, now: Clock, surge: SurgeGauge) -> None:
     ops = OpsRepository(database)
     audit = AuditRepository(database)
+
+    @app.get("/v1/ops/load")
+    async def read_load(_: Annotated[Principal, Depends(require(*STAFF))]) -> dict[str, Any]:
+        """How far behind the assistant is: measured for this request, or a moment ago for
+        another. However many desks ask, the backlog is counted once in a refresh interval."""
+        try:
+            backlog = await surge.figures()
+        except BacklogUnknownError as exc:
+            # Said as what it is. The desk shows that the figure could not be read, and an old
+            # figure is never passed off as the present one.
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, "the backlog cannot be measured right now"
+            ) from exc
+        return ok(
+            {
+                "waiting_contacts": backlog.contacts,
+                "oldest_seconds": round(backlog.oldest_seconds),
+                "behind": surge.behind(),
+            }
+        )
 
     @app.get("/v1/ops")
     async def list_ops(_: Annotated[Principal, Depends(require(*STAFF))]) -> dict[str, Any]:

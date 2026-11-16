@@ -2,7 +2,10 @@
 // All text from the server is written with textContent, never as HTML.
 
 const el = (id) => document.getElementById(id);
-const state = { token: null, staffToken: null, contactId: null, seen: 0, timer: null };
+const state = { token: null, staffToken: null, contactId: null, seen: 0, timer: null, awaiting: false, delayed: false };
+const POLL_MS = 1200;
+// While the assistant is behind, asking it every second gains nothing and adds to its load.
+const POLL_WHEN_DELAYED_MS = 5000;
 
 const newId = () => crypto.randomUUID().replaceAll("-", "");
 
@@ -79,6 +82,21 @@ function showNetwork(contact) {
   el("docket-network").replaceChildren(...parts);
 }
 
+function showDelay(delayed) {
+  state.delayed = Boolean(delayed);
+  // Said only while a reply is awaited: once it has come there is nothing left to wait for.
+  el("docket-delay").hidden = !(state.delayed && state.awaiting);
+}
+
+function poll() {
+  clearTimeout(state.timer);
+  state.timer = setTimeout(async () => {
+    await refresh();
+    refreshTrail().catch(() => {});
+    poll();
+  }, state.delayed ? POLL_WHEN_DELAYED_MS : POLL_MS);
+}
+
 async function refresh() {
   if (!state.contactId) return;
   try {
@@ -86,9 +104,13 @@ async function refresh() {
     el("docket-status").textContent = contact.status;
     showNetwork(contact);
     for (const message of contact.messages.filter((m) => m.message_id > state.seen)) {
-      if (message.direction === "outbound") addMessage(message);
+      if (message.direction === "outbound") {
+        addMessage(message);
+        state.awaiting = false;
+      }
       state.seen = Math.max(state.seen, message.message_id);
     }
+    showDelay(contact.reply_delayed);
   } catch (error) {
     el("persona-status").textContent = `Could not refresh: ${error.message}`;
   }
@@ -119,7 +141,8 @@ el("persona-form").addEventListener("submit", async (event) => {
   const customerId = el("customer-id").value.trim().toUpperCase();
   try {
     state.token = await devToken(customerId ? "customer" : "guest", customerId || undefined);
-    Object.assign(state, { contactId: null, seen: 0 });
+    Object.assign(state, { contactId: null, seen: 0, awaiting: false });
+    showDelay(false);
     el("thread").replaceChildren();
     el("trail").replaceChildren();
     el("docket").hidden = true;
@@ -149,15 +172,18 @@ el("message-form").addEventListener("submit", async (event) => {
         body: { channel: "chat", client_request_id: newId(), text },
       });
       state.contactId = contact.contact_id;
+      state.awaiting = true;
       showDocket(contact, Math.round(performance.now() - started));
+      showDelay(contact.reply_delayed);
       el("trail-refresh").disabled = false;
-      clearInterval(state.timer);
-      state.timer = setInterval(() => { refresh(); refreshTrail().catch(() => {}); }, 1200);
+      poll();
     } else {
-      await api(`/v1/contacts/${state.contactId}/messages`, {
+      const sent = await api(`/v1/contacts/${state.contactId}/messages`, {
         method: "POST",
         body: { client_message_id: newId(), text },
       });
+      state.awaiting = true;
+      showDelay(sent.reply_delayed);
     }
   } catch (error) {
     addMessage({ direction: "outbound", author: "system", body: `Could not send: ${error.message}` });

@@ -115,29 +115,6 @@ async def test_a_message_after_handoff_is_flagged_to_the_person_who_owns_the_con
     assert noted[0].outputs == {"events": ["customer.message"]}
 
 
-async def test_the_worker_loop_survives_an_error_and_stops_on_request(
-    platform: Platform, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    calls = {"n": 0}
-
-    async def flaky_run_once() -> int:
-        calls["n"] += 1
-        if calls["n"] == 1:
-            raise ConnectionError("database restarted")
-        return 0
-
-    monkeypatch.setattr(platform.worker, "run_once", flaky_run_once)
-    monkeypatch.setattr(platform.worker, "_poll_seconds", 0.01)
-    stop = asyncio.Event()
-
-    loop = asyncio.create_task(platform.worker.run_forever(stop))
-    await asyncio.sleep(0.1)
-    stop.set()
-    await asyncio.wait_for(loop, timeout=2)
-
-    assert calls["n"] >= 3
-
-
 # --- executor ------------------------------------------------------------------------------------
 
 

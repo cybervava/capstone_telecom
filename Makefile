@@ -6,7 +6,7 @@ CUSTOMERS ?= 40000
 SEED ?= 42
 
 .PHONY: help init install up down lint fmt typecheck test test-int test-all data seed migrate \
-	profile dev stop smoke stack-up stack-down
+	profile dev demo stop smoke eval loadtest loadtest-quick stack-up stack-down
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -24,12 +24,12 @@ down: ## Stop containers (data volume is kept)
 	docker compose down
 
 lint: ## Ruff lint + format check
-	uv run ruff check src tests scripts evals
-	uv run ruff format --check src tests scripts evals
+	uv run ruff check src tests scripts evals loadtest
+	uv run ruff format --check src tests scripts evals loadtest
 
 fmt: ## Apply formatting and safe lint fixes
-	uv run ruff check --fix src tests scripts evals
-	uv run ruff format src tests scripts evals
+	uv run ruff check --fix src tests scripts evals loadtest
+	uv run ruff format src tests scripts evals loadtest
 
 typecheck: ## mypy (strict)
 	uv run mypy
@@ -72,6 +72,12 @@ stop: ## Stop the local processes
 
 smoke: ## Live journey check against the running local stack
 	uv run --env-file .env python scripts/smoke.py
+
+loadtest: ## The surge of the brief against the running stack: two runs, about two hours (needs `make dev`)
+	uv run --env-file .env python -m loadtest --profile brief
+
+loadtest-quick: ## The same surge in two minutes a run; its report goes to var/loadtest
+	uv run --env-file .env python -m loadtest --profile quick
 
 stack-up: ## Everything in containers (generates and seeds data on first run)
 	docker compose --profile stack up -d --build --wait

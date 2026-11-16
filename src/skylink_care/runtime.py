@@ -39,6 +39,7 @@ from skylink_care.llm.gateway import LLMGateway, build_gateway
 from skylink_care.observability.audit import Auditor
 from skylink_care.rag.embedding import HashingEmbedder
 from skylink_care.rag.index import GuideIndex
+from skylink_care.surge import SurgeGauge, build_gauge
 
 __all__ = ["Clock", "OrchestratorRuntime", "build_orchestrator_runtime", "utc_now"]
 
@@ -62,6 +63,8 @@ class OrchestratorRuntime:
     troubleshooting: TroubleshootingAgent
     resolution: ResolutionAgent
     dispatch: DispatchAgent
+    # Whether this process finds the orchestrator behind (surge mode).
+    surge: SurgeGauge
     now: Clock
 
     def auditor(self, contact_id: UUID, correlation_id: str) -> Auditor:
@@ -126,7 +129,9 @@ def build_orchestrator_runtime(
     llm: LLMGateway | None = None,
     feed: FeedViewSource | None = None,
     now: Clock = utc_now,
+    surge: SurgeGauge | None = None,
 ) -> OrchestratorRuntime:
+    gauge = surge or build_gauge(settings, database)
     return OrchestratorRuntime(
         settings=settings,
         db=database,
@@ -140,7 +145,10 @@ def build_orchestrator_runtime(
         audit=AuditRepository(database),
         timers=TimerRepository(database),
         read_model=ReadModelRepository(database),
-        triage=TriageAgent(gateway.crm_for_triage(), llm or build_gateway(settings)),
+        triage=TriageAgent(
+            gateway.crm_for_triage(), llm or build_gateway(settings), behind=gauge.behind
+        ),
+        surge=gauge,
         diagnostics=build_diagnostics(
             settings,
             database,

@@ -49,8 +49,10 @@ class Report:
     def table(self, title: str, columns: list[str], rows: list[list[Any]]) -> None:
         self.tables.append((title, columns, rows))
 
-    def write(self) -> Path:
-        REPORTS.mkdir(parents=True, exist_ok=True)
+    def write(self, directory: Path = REPORTS) -> Path:
+        """Write the two files. ``directory`` is for a report that is not an evaluation's (the
+        load test keeps its own beside its code)."""
+        directory.mkdir(parents=True, exist_ok=True)
         written_at = datetime.now(UTC).replace(microsecond=0).isoformat()
         payload = {
             "name": self.name,
@@ -63,7 +65,7 @@ class Report:
             "numbers": self.numbers,
             "assumptions": self.assumptions,
         }
-        (REPORTS / f"{self.name}.json").write_text(json.dumps(payload, indent=2) + "\n")
+        (directory / f"{self.name}.json").write_text(json.dumps(payload, indent=2) + "\n")
         lines = [
             f"# {self.title}",
             "",
@@ -87,7 +89,7 @@ class Report:
             lines += ["## What this rests on", ""]
             lines += [f"- {item}" for item in self.assumptions]
             lines.append("")
-        path = REPORTS / f"{self.name}.md"
+        path = directory / f"{self.name}.md"
         path.write_text("\n".join(lines))
         return path
 

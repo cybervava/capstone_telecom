@@ -18,6 +18,7 @@ is identified: before that the platform has no name to mask, so the text stays i
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from enum import StrEnum
 
@@ -90,9 +91,13 @@ class TriageOutcome:
 
 
 class TriageAgent:
-    def __init__(self, crm: CrmReader, llm: LLMGateway) -> None:
+    def __init__(
+        self, crm: CrmReader, llm: LLMGateway, *, behind: Callable[[], bool] | None = None
+    ) -> None:
         self._crm = crm
         self._llm = llm
+        # Whether the orchestrator is behind (surge mode): messages are then read by the rules.
+        self._behind = behind
 
     async def run(
         self,
@@ -110,6 +115,7 @@ class TriageAgent:
             text,
             known_values=known,
             allow_external=profile is not None,
+            shed_load=self._behind() if self._behind else False,
             correlation_id=audit.correlation_id,
         )
         masked = mask_pii(text, known_values=known)

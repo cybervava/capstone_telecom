@@ -23,6 +23,8 @@ from skylink_care.db.database import Connection
 MAX_RETRY_DELAY_SECONDS = 300.0
 # Events the feed consumer queues for conversations waiting on a node. The payload carries only
 # the outage id: the workflow re-reads the evidence itself before it says anything.
+# How long the count of the backlog may take before it is abandoned (milliseconds).
+BACKLOG_TIMEOUT_MS = 2000
 OUTAGE_DECLARED_EVENT = "outage.declared"
 OUTAGE_RESOLVED_EVENT = "outage.resolved"
 
@@ -38,6 +40,14 @@ class InboxEvent:
 class FailureOutcome:
     attempts: int
     dead_lettered: bool
+
+
+@dataclass(frozen=True)
+class Backlog:
+    """What is waiting for the orchestrator: how many contacts, and the longest wait."""
+
+    contacts: int
+    oldest_seconds: float
 
 
 async def append_event(
@@ -97,6 +107,36 @@ class InboxRepository(Repository):
                 (limit,),
             )
             return [row["contact_id"] for row in await cursor.fetchall()]
+
+    async def backlog(self) -> Backlog:
+        """The contacts that are due for a run right now, and how long the longest has been.
+
+        A contact held for a retry is not waiting until its hold ends, and then only since it
+        ended: a run that failed and is tried again later is not the orchestrator being behind.
+        A contact whose run is in progress counts for as long as the run takes; its customer is
+        waiting all the same.
+
+        The count is longest to make just when the database has least to spare, so it gives up
+        after two seconds rather than hold a connection of the caller's pool.
+        """
+        async with self._db.transaction() as conn:
+            await conn.execute(f"SET LOCAL statement_timeout = {BACKLOG_TIMEOUT_MS}")
+            cursor = await conn.execute(
+                "SELECT count(*) AS contacts,"
+                "       coalesce(extract(epoch FROM clock_timestamp() - min(due_since)), 0)"
+                "         AS oldest_seconds"
+                "  FROM (SELECT greatest(min(created_at),"
+                "                        coalesce(max(retry_after), '-infinity')) AS due_since"
+                "          FROM inbox WHERE applied_at IS NULL AND NOT dead"
+                "         GROUP BY contact_id) waiting"
+                " WHERE due_since <= clock_timestamp()"
+            )
+            row = await cursor.fetchone()
+        if row is None:  # pragma: no cover - an aggregate always returns a row
+            return Backlog(contacts=0, oldest_seconds=0.0)
+        return Backlog(
+            contacts=int(row["contacts"]), oldest_seconds=max(0.0, float(row["oldest_seconds"]))
+        )
 
     async def fetch_after(self, contact_id: UUID, after_seq: int) -> list[InboxEvent]:
         """Events newer than the workflow's cursor, in order."""

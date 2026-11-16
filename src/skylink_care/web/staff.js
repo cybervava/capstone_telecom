@@ -186,6 +186,26 @@ function showOps({ items, total }) {
   }
 }
 
+function loadUnknown() {
+  // A figure that could not be read is not left standing as if it were current.
+  el("ops-load").dataset.state = "unknown";
+  el("ops-load").textContent = "The assistant's backlog could not be read.";
+}
+
+function showLoad({ waiting_contacts: waiting, oldest_seconds: oldest, behind }) {
+  const line = el("ops-load");
+  const longest = oldest >= 90 ? `${Math.round(oldest / 60)} min` : `${oldest} s`;
+  const contacts = `${waiting} ${waiting === 1 ? "contact is" : "contacts are"}`;
+  line.dataset.state = behind ? "behind" : "keeping-up";
+  if (behind) {
+    line.textContent = `The assistant is behind: ${contacts} waiting for it, the longest for ${longest}. Customers are told that replies will take longer.`;
+  } else if (waiting) {
+    line.textContent = `The assistant is keeping up: ${contacts} in hand, the longest for ${longest}.`;
+  } else {
+    line.textContent = "The assistant is keeping up: no contact is waiting for it.";
+  }
+}
+
 // --- loading -------------------------------------------------------------------------------------
 
 function showApprovals(approvals) {
@@ -216,13 +236,18 @@ async function refresh() {
     ["credits", credits, showApprovals],
     ["queue", call("/v1/handoffs"), showQueue],
     ["operations", call("/v1/ops"), showOps],
+    ["load", call("/v1/ops/load"), showLoad, loadUnknown],
   ];
   const settled = await Promise.allSettled(lists.map(([, loading]) => loading));
   const failed = [];
   settled.forEach((result, index) => {
-    const [name, , show] = lists[index];
-    if (result.status === "fulfilled") show(result.value);
-    else failed.push(`${name} (${result.reason.message})`);
+    const [name, , show, onFailure] = lists[index];
+    if (result.status === "fulfilled") {
+      show(result.value);
+    } else {
+      failed.push(`${name} (${result.reason.message})`);
+      onFailure?.();
+    }
   });
   const updated = `Signed in as ${state.who}. Updated ${new Date().toLocaleTimeString("en-IN")}.`;
   el("sign-status").textContent = failed.length ? `${updated} Could not load: ${failed.join(", ")}.` : updated;

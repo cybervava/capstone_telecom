@@ -76,6 +76,8 @@ ignore = [
 "src/skylink_datagen/**" = ["S311"]   # seeded pseudo-randomness is the point
 "src/mock_oss/**" = ["S311"]
 "loadtest/**" = ["S311"]
+# Its queries are put together from the module's own constants; every value is a bound parameter.
+"loadtest/facts.py" = ["S311", "S608"]
 
 [tool.mypy]
 python_version = "3.12"

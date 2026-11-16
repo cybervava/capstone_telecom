@@ -55,6 +55,8 @@ class ContactAccepted(BaseModel):
     received_at: datetime
     reference_issued_at: datetime
     replayed: bool
+    # The assistant is behind: the reply will take longer than usual. The reference stands.
+    reply_delayed: bool = False
 
 
 class MessageView(BaseModel):
@@ -78,6 +80,8 @@ class ContactView(BaseModel):
     network_state: str | None
     network_checked_at: datetime | None
     outage_id: str | None
+    # The assistant is behind right now: a reply that is awaited will take longer than usual.
+    reply_delayed: bool = False
     messages: list[MessageView]
 
 

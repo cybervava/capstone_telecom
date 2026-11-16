@@ -103,9 +103,19 @@ class Settings(BaseSettings):
     # "An outage has started" is not sent for a feed event older than this (the consumer was
     # down or is catching up): the news would arrive stale, possibly after the outage ended.
     notify_max_event_age_seconds: int = Field(default=900, gt=0)
+    # Surge mode (skylink_care.surge): the orchestrator is behind when this many contacts wait
+    # for a turn, or when more wait than it runs at once and one has waited this long (seconds).
+    surge_waiting_contacts: int = Field(default=200, ge=1)
+    # How many contacts one orchestrator process runs at once. Each holds a database
+    # connection for its lock, and its calls to the enterprise systems run alongside the rest.
+    worker_concurrency: int = Field(default=8, ge=1, le=64)
+    surge_waiting_seconds: float = Field(default=15.0, gt=0)
 
-    llm_provider: Literal["offline", "anthropic"] = "offline"
+    # "simulated" is for load tests: the rules' answer after the time a model call takes
+    # (skylink_care.llm.simulated). No model is called.
+    llm_provider: Literal["offline", "anthropic", "simulated"] = "offline"
     llm_model: str = "claude-opus-5-5"
+    llm_simulated_latency_seconds: float = Field(default=1.5, ge=0, le=60)
 
     @model_validator(mode="after")
     def _windows_fit_together(self) -> Self:

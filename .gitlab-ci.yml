@@ -28,8 +28,8 @@ lint:
   extends: .python
   stage: verify
   script:
-    - uv run ruff check src tests scripts evals
-    - uv run ruff format --check src tests scripts evals
+    - uv run ruff check src tests scripts evals loadtest
+    - uv run ruff format --check src tests scripts evals loadtest
     - uv run mypy
 
 # What needs a database: the test suite and the evaluations.
