@@ -51,6 +51,7 @@ def triaged(**intent: Any) -> ContactState:
         "wants_human": False,
         "abusive_or_off_topic": False,
         "confirms_working": False,
+        "rules": {},
     }
     return state(
         Phase.TRIAGED,
@@ -121,12 +122,13 @@ def test_booking_declined_on_changed_evidence_goes_back_to_the_evidence() -> Non
     ("intent", "route", "reason"),
     [
         ({"wants_human": True}, Route.HANDOFF, "CUSTOMER_REQUESTED_HUMAN"),
-        ({"abusive_or_off_topic": True}, Route.OUT_OF_SCOPE, None),
+        ({"intent": "other", "abusive_or_off_topic": True}, Route.OUT_OF_SCOPE, None),
+        ({"rules": {"injection": True}}, Route.OUT_OF_SCOPE, None),
         ({"intent": "billing", "confidence": "high"}, Route.HANDOFF, "BILLING"),
         ({"carried_over": False}, Route.DIAGNOSE, None),
         ({"intent": "other", "degraded": True}, Route.HANDOFF, "LOW_CONFIDENCE"),
     ],
-    ids=["a person", "abuse", "a bill", "a fault report", "the model failed"],
+    ids=["a person", "abuse", "an injection", "a bill", "a fault report", "the model failed"],
 )
 def test_message_that_is_a_request_of_its_own_goes_its_usual_way(
     intent: dict[str, Any], route: Route, reason: str | None

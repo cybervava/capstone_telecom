@@ -3,7 +3,8 @@
 The approver is shown the frozen request with its working and a hash of it. The decision must
 quote that hash back: a decision taken on a stale screen is refused, not applied to something
 the approver did not see. Who may decide is settled by role, checked here and again in the
-repository: an agent decides what needs an agent, a supervisor may decide either.
+repository: an agent decides what needs an agent, a supervisor may decide either. A rejection
+must say why; the reason is kept with the approval and written to the audit trail.
 
 A decision, its effect on the action and its entry in the audit trail are one transaction: a
 decision that could not be recorded in the trail is not taken.
@@ -11,12 +12,12 @@ decision that could not be recorded in the trail is not taken.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.encoders import jsonable_encoder
-from pydantic import StringConstraints
+from pydantic import StringConstraints, model_validator
 
 from skylink_care.api.auth import Principal, Role, require
 from skylink_care.api.schemas import _In, ok
@@ -24,8 +25,12 @@ from skylink_care.clock import Clock
 from skylink_care.db.approvals import Approval, ApprovalRepository, Decision, DecisionOutcome
 from skylink_care.db.audit import AuditEntry, AuditRepository
 from skylink_care.db.database import Database
+from skylink_care.guardrails.pii import redact_for_log
 
 APPROVERS = (Role.AGENT, Role.SUPERVISOR)
+# The fewest letters a note must have to be a reason. Letters, not characters: dots, spaces
+# that are not spaces and invisible characters are not a reason.
+MIN_REASON_LETTERS = 5
 _REFUSALS = {
     DecisionOutcome.NOT_FOUND: (status.HTTP_404_NOT_FOUND, "approval not found"),
     DecisionOutcome.NOT_PENDING: (
@@ -48,6 +53,15 @@ class DecisionIn(_In):
     # The hash of the request as it was shown to the approver.
     request_hash: Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
     note: Annotated[str, StringConstraints(max_length=500, strip_whitespace=True)] | None = None
+
+    @model_validator(mode="after")
+    def _a_rejection_says_why(self) -> Self:
+        # The policy says the credit is owed and a person says no. The customer will ask
+        # why, and so will whoever reads the trail: the person who decides must say.
+        letters = sum(char.isalpha() for char in self.note or "")
+        if self.decision == "reject" and letters < MIN_REASON_LETTERS:
+            raise ValueError("a rejection needs its reason in the note")
+        return self
 
 
 def register_approval_routes(app: FastAPI, database: Database, now: Clock) -> None:
@@ -99,7 +113,11 @@ def _audit_entry(result: Decision, decided: Approval, principal: Principal) -> A
             "role": principal.role.value,
             "required_role": decided.required_role,
         },
-        outputs={"action_key": action.action_key if action else None},
+        outputs={
+            "action_key": action.action_key if action else None,
+            # A person's own words, with contact details masked as everywhere in the trail.
+            "note": str(redact_for_log(decided.decision_note)) if decided.decision_note else None,
+        },
         policy_version=action.policy_version if action else None,
     )
 

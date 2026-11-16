@@ -495,6 +495,17 @@ def handed_to_human(complaint_ref: str, why: str) -> Reply:
     )
 
 
+def taken_over(complaint_ref: str) -> Reply:
+    """A person has taken the conversation from the assistant. Said once, by the platform:
+    who the person is belongs to the staff's side of the record, not to the customer's."""
+    return Reply(
+        f"{AI_DISCLOSURE} A member of our team has taken over this conversation and will"
+        " reply to you here. They have its details, so you won't need to repeat them, and I"
+        f" won't answer further messages myself. Your complaint reference is {complaint_ref}.",
+        "taken_over.v1",
+    )
+
+
 def out_of_scope(complaint_ref: str) -> Reply:
     return Reply(
         f"{AI_DISCLOSURE} I can help with SkyLink broadband and mobile service problems,"

@@ -18,13 +18,19 @@ from skylink_care.surge import build_gauge
 
 # Intake keeps its own small pool so that worker load can never starve reference issuance.
 INTAKE_POOL_MAX = 8
+# A takeover holds a conversation's lock while it writes. Those locks have connections of
+# their own: taken from the pool that serves requests, a few takeovers at once would each
+# hold one connection and wait for a second that the others hold.
+TAKEOVER_LOCKS = 2
 
 
 def build() -> FastAPI:
     """Application factory for uvicorn. The pool is opened and closed with the server."""
     settings = get_settings()
     configure_logging()
-    database = Database.create(settings.database_conninfo(), max_size=INTAKE_POOL_MAX)
+    database = Database.create(
+        settings.database_conninfo(), max_size=INTAKE_POOL_MAX, lock_connections=TAKEOVER_LOCKS
+    )
     surge = build_gauge(settings, database)
 
     @asynccontextmanager

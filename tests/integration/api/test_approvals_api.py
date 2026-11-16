@@ -120,7 +120,9 @@ async def test_agent_is_refused_a_decision_that_needs_a_supervisor(
     (item,) = await pending(client, SUPERVISOR)
 
     refused = await decide(client, AGENT, item)
-    allowed = await decide(client, SUPERVISOR, item, decision="reject")
+    allowed = await decide(
+        client, SUPERVISOR, item, decision="reject", note="the outage was planned maintenance"
+    )
 
     assert refused.status_code == 403
     assert refused.json()["error"]["message"] == "this decision needs a supervisor"
@@ -138,7 +140,7 @@ async def test_decision_must_quote_the_hash_that_was_shown_and_can_be_taken_only
 
     stale = await decide(client, AGENT, item, request_hash="a" * 64)
     first = await decide(client, AGENT, item)
-    again = await decide(client, AGENT, item, decision="reject")
+    again = await decide(client, AGENT, item, decision="reject", note="changed my mind")
     unknown = await client.post(
         "/v1/approvals/00000000-0000-0000-0000-000000000000/decision",
         json={"decision": "approve", "request_hash": "0" * 64},
@@ -207,3 +209,48 @@ async def test_decision_that_cannot_be_recorded_in_the_trail_is_not_taken(
     stored = await ActionRepository(db).get(action.action_id)
     assert stored is not None
     assert stored.status is ActionStatus.PENDING_APPROVAL
+
+
+@pytest.mark.parametrize(
+    "note", [None, "", "   ", "no", ".....", "x x", "\u200b\u200b\u200b\u200b\u200b\u200b", "12345"]
+)
+async def test_a_rejection_without_its_reason_is_not_taken(
+    client: httpx.AsyncClient, db: Database, contacts: ContactRepository, note: str | None
+) -> None:
+    """The policy says the credit is owed and a person says no: they must say why."""
+    action = await proposed(db, await a_contact(contacts))
+    (item,) = await pending(client, AGENT)
+    body = {} if note is None else {"note": note}
+
+    refused = await decide(client, AGENT, item, decision="reject", **body)
+    approved_without_a_note = await decide(client, AGENT, item)
+
+    assert refused.status_code == 422
+    assert "a rejection needs its reason" in refused.text
+    assert approved_without_a_note.status_code == 200  # an approval follows the policy
+    stored = await ActionRepository(db).get(action.action_id)
+    assert stored is not None
+    assert stored.status is not ActionStatus.REJECTED
+
+
+async def test_the_reason_for_a_rejection_is_in_the_audit_trail_with_who_gave_it(
+    client: httpx.AsyncClient, db: Database, contacts: ContactRepository
+) -> None:
+    contact_id = await a_contact(contacts)
+    await proposed(db, contact_id)
+    (item,) = await pending(client, SUPERVISOR)
+
+    rejected = await decide(
+        client,
+        SUPERVISOR,
+        item,
+        decision="reject",
+        note="Customer was credited by hand yesterday, see call from 98450 12345.",
+    )
+
+    assert rejected.status_code == 200
+    trail = await AuditRepository(db).for_contact(contact_id)
+    (entry,) = [record for record in trail if record.step == "approval.decided"]
+    assert (entry.actor, entry.outcome) == ("staff:sup-ravi", "REJECTED")
+    assert "credited by hand yesterday" in entry.outputs["note"]
+    assert "98450" not in entry.outputs["note"]  # a person's note, masked like any other

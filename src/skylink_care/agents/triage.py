@@ -35,9 +35,11 @@ from skylink_care.db.contacts import Contact
 from skylink_care.guardrails.pii import extract_identifiers, mask_pii
 from skylink_care.llm.base import CallRecord, TriageReading
 from skylink_care.llm.gateway import LLMGateway
+from skylink_care.llm.offline import SecondLook, second_look
 from skylink_care.observability.audit import Auditor
 
 ACTOR = "agent:triage"
+GUARDRAIL = "guardrail:input"
 # How a contact is identified once it has been verified earlier in the same conversation.
 VERIFIED_EARLIER = "verified_earlier"
 _MOBILE_HINTS = re.compile(
@@ -120,6 +122,8 @@ class TriageOutcome:
     service: ServiceChoice | None
     reading: TriageReading
     call: CallRecord
+    # What the keyword rules see in the same message, whoever read it.
+    second: SecondLook
 
 
 class TriageAgent:
@@ -172,9 +176,30 @@ class TriageAgent:
             outputs={**reading.model_dump(), "identity": identity.status.value},
             call=call,
         )
+        second = second_look(text)
+        if reading.abusive_or_off_topic or second.injection or second.abuse:
+            # Declined politely or handled like any other, a message that was flagged leaves
+            # a trace of its own: how often the assistant is being worked on can be counted.
+            await audit.record(
+                actor=GUARDRAIL,
+                step="guardrail.input",
+                outcome="INJECTION_SUSPECTED" if second.injection else "ABUSIVE_OR_OFF_TOPIC",
+                # Not the text: who read it, and what each reader saw in it.
+                inputs={"text_chars": len(text), "read_by": call.provider},
+                outputs={
+                    "read_as_abusive_or_off_topic": reading.abusive_or_off_topic,
+                    "rules_see_injection": second.injection,
+                    "rules_see_abuse": second.abuse,
+                },
+            )
         service = choose_service(profile, text) if profile else None
         return TriageOutcome(
-            identity=identity, claim=claim_after, service=service, reading=reading, call=call
+            identity=identity,
+            claim=claim_after,
+            service=service,
+            reading=reading,
+            call=call,
+            second=second,
         )
 
     async def _identify(

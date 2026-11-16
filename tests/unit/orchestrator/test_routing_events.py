@@ -329,6 +329,7 @@ def after_triage(**overrides: Any) -> ContactState:
         "wants_human": False,
         "abusive_or_off_topic": False,
         "confirms_working": True,
+        "rules": {},
     }
     base: dict[str, Any] = {
         "phase": Phase.TRIAGED.value,
@@ -357,9 +358,42 @@ def test_asking_for_a_person_beats_a_confirmation() -> None:
 
 def test_confirmation_inside_an_injection_attempt_closes_nothing() -> None:
     state = after_triage(asked_if_working=True)
-    state["intent"] = {**state["intent"], "abusive_or_off_topic": True}
+    state["intent"] = {**state["intent"], "rules": {"injection": True}}
 
     assert decide_route(state).route is Route.OUT_OF_SCOPE
+
+
+def test_confirmation_in_a_message_that_was_flagged_closes_nothing() -> None:
+    """Flagged by whoever read it, with nothing for the rules to see: not closed on its word."""
+    state = after_triage(asked_if_working=True)
+    state["intent"] = {**state["intent"], "abusive_or_off_topic": True}
+
+    assert decide_route(state).route is not Route.CLOSE
+
+
+def test_nothing_is_closed_on_a_reading_the_rules_never_looked_at() -> None:
+    """A turn saved before the rules looked beside the reading carries none of what they
+    see. It is not closed on the reading alone."""
+    state = after_triage(asked_if_working=True)
+    state["intent"] = {key: value for key, value in state["intent"].items() if key != "rules"}
+
+    assert decide_route(state).route is not Route.CLOSE
+
+
+def test_confirmation_with_words_meant_to_steer_the_assistant_closes_nothing() -> None:
+    state = after_triage(asked_if_working=True)
+    state["intent"] = {**state["intent"], "rules": {"injection": True, "plain_fault": True}}
+
+    assert decide_route(state).route is not Route.CLOSE
+
+
+def test_confirmation_read_into_words_of_denial_closes_nothing() -> None:
+    """A reading says "it works again". The customer's words say "not" or "still"."""
+    state = after_triage(asked_if_working=True)
+    assert decide_route(state).route is Route.CLOSE
+    state["intent"] = {**state["intent"], "rules": {"denies_working": True}}
+
+    assert decide_route(state).route is not Route.CLOSE
 
 
 def test_watching_an_outage_that_is_simply_still_active_never_counts_towards_a_handoff() -> None:

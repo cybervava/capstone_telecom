@@ -40,6 +40,7 @@ from skylink_care.api.schemas import (
     failed,
     ok,
 )
+from skylink_care.api.takeover import register_takeover_routes
 from skylink_care.clock import Clock, utc_now
 from skylink_care.db.audit import AuditRepository
 from skylink_care.db.contacts import Contact, ContactRepository, NewContact, RequestIdReusedError
@@ -279,6 +280,7 @@ def create_app(deps: ApiDeps, *, lifespan: Lifespan[FastAPI] | None = None) -> F
     register_handoff_routes(app, deps.database, deps.now)
     register_ops_routes(app, deps.database, deps.now, surge)
     register_approval_routes(app, deps.database, deps.now)
+    register_takeover_routes(app, deps.database)
 
     if deps.env == "dev":
 

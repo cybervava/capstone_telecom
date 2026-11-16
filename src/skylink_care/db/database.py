@@ -58,7 +58,8 @@ class Database:
         """Build the pools without connecting. Call ``start`` from inside the event loop.
 
         ``lock_connections`` is how many contacts this process may hold locked at once. Leave it
-        at 0 in processes that never take contact locks (the API, the executor).
+        at 0 in a process that never takes contact locks (the executor). A process that takes
+        one and then needs a connection for its work must not take both from one pool.
         """
         locks = _pool(conninfo, min_size=0, max_size=lock_connections) if lock_connections else None
         return cls(_pool(conninfo, min_size=min_size, max_size=max_size), locks)

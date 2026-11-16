@@ -43,11 +43,16 @@ function slip(approval) {
   const request = approval.request ?? {};
   const note = node("input", { className: "slip__note" });
   note.maxLength = 500;
-  note.placeholder = "Note (optional)";
+  note.placeholder = "Note (a reason is needed to reject)";
   note.setAttribute("aria-label", `Note for the decision on ${money(request.amount_inr)}`);
   const status = node("p", { className: "status" });
   status.setAttribute("role", "status");
   const decide = async (decision) => {
+    if (decision === "reject" && (note.value.match(/\p{L}/gu) ?? []).length < 5) {
+      status.textContent = "A rejection needs its reason: write it in the note.";
+      note.focus();
+      return;
+    }
     buttons.forEach((button) => { button.disabled = true; });
     try {
       await call(`/v1/approvals/${approval.approval_id}/decision`, {

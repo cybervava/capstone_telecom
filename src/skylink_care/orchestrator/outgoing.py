@@ -9,13 +9,26 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 from skylink_care.agents.replies import Reply
 from skylink_care.db.contacts import Contact
 from skylink_care.db.database import Connection
-from skylink_care.guardrails.claims import Claim, UnbackedClaimError, Violation, check, unbacked
-from skylink_care.runtime import OrchestratorRuntime
+from skylink_care.db.messages import MessageRepository
+from skylink_care.guardrails.claims import (
+    CLAIMS,
+    Claim,
+    UnbackedClaimError,
+    Violation,
+    check,
+    unbacked,
+)
+
+if TYPE_CHECKING:
+    # Only named in signatures: the API stores a notice through this module without
+    # loading the workflow.
+    from skylink_care.runtime import OrchestratorRuntime
 
 ACTOR = "guardrail:claims"
 
@@ -71,6 +84,34 @@ async def store_reply(
         body=reply.text,
         dedupe_key=dedupe_key,
         meta={"template_id": reply.template_id, "facts": reply.facts},
+        conn=conn,
+    )
+
+
+async def store_notice(
+    messages: MessageRepository,
+    contact_id: UUID,
+    notice: Reply,
+    *,
+    author: str,
+    dedupe_key: str,
+    conn: Connection | None = None,
+) -> None:
+    """Store a message that says nothing about the network, from outside a conversation's
+    turn: what the platform tells a customer when a person takes their conversation over.
+
+    It is refused for any template that claims something: there is no evidence here to hold
+    a claim against, and this door must not become the way round the check.
+    """
+    if CLAIMS.get(notice.template_id) is not Claim.NOTHING:
+        raise ValueError(f"{notice.template_id} claims something and cannot be a notice")
+    await messages.add(
+        contact_id,
+        direction="outbound",
+        author=author,
+        body=notice.text,
+        dedupe_key=dedupe_key,
+        meta={"template_id": notice.template_id, "facts": notice.facts},
         conn=conn,
     )
 

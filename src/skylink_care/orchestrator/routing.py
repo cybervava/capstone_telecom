@@ -190,20 +190,43 @@ def _outage_ids(events: list[dict[str, Any]], event_type: str) -> list[str]:
 def _after_triage(state: ContactState) -> Decision:
     intent = state.get("intent", {})
     identity = state.get("identity", {})
+    # What the keyword rules see in the customer's own words, beside the reading. A turn
+    # saved before the rules looked (an older checkpoint) has none: nothing is then closed
+    # on a reading alone.
+    words = intent.get("rules")
+    if words is None:
+        words = {"denies_working": True}
+    nothing_of_ours = intent.get("intent") == Intent.OTHER.value
     if intent.get("wants_human"):
         return Decision(Route.HANDOFF, "CUSTOMER_REQUESTED_HUMAN")
-    if intent.get("abusive_or_off_topic"):
+    if words.get("injection") and not words.get("plain_fault"):
+        # Words meant to steer the assistant and nothing of a fault: declined, however it
+        # was read. With a fault reported in plain words the message goes its usual way.
+        # Nothing in it can unlock anything, and "the technician said to ignore the previous
+        # instructions" is an honest sentence.
+        return Decision(Route.OUT_OF_SCOPE)
+    if nothing_of_ours and words.get("plain_fault"):
+        # The reading says this is no request of ours; the customer's plain words report a
+        # fault. Neither is believed over the other: a person reads it.
+        return Decision(Route.HANDOFF, "LOW_CONFIDENCE")
+    if nothing_of_ours and intent.get("abusive_or_off_topic"):
+        # Abuse and nothing else. Abuse with a fault report is a fault report.
         return Decision(Route.OUT_OF_SCOPE)
     offered = visit_status(state) == VISIT_OFFERED
     if (
         (state.get("asked_if_working") or offered)
         and intent.get("confirms_working")
+        # No "it works" is read into words of denial or doubt, whoever read them, nor into
+        # a message that was flagged as abuse or as an attempt to steer the assistant.
+        and not words.get("denies_working")
+        and not words.get("injection")
+        and not intent.get("abusive_or_off_topic")
         and not any(intent.get(flag) for flag in _STILL_WANTS_SOMETHING)
     ):
         # We asked whether the service works (after a restoration, a clear check or steps to
         # try); the customer says it does and asks for nothing else. There is nothing to check.
         return Decision(Route.CLOSE)
-    if intent.get("intent") == Intent.OTHER.value:
+    if nothing_of_ours:
         if intent.get("degraded"):
             # The model failed and the keyword rules could not place the request. That is not
             # evidence that it is out of scope, so a person reads it instead of a refusal.

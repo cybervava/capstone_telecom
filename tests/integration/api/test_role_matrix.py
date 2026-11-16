@@ -29,6 +29,7 @@ ROUTES: tuple[tuple[str, str, frozenset[Role]], ...] = (
     ("GET", "/v1/contacts/{contact_id}", EVERYONE),
     ("POST", "/v1/contacts/{contact_id}/messages", CUSTOMER_SIDE),
     ("GET", "/v1/contacts/{contact_id}/audit", STAFF),
+    ("POST", "/v1/contacts/{contact_id}/takeover", frozenset({Role.AGENT, Role.SUPERVISOR})),
     ("GET", "/v1/handoffs", STAFF),
     ("POST", "/v1/handoffs/{handoff_id}/done", frozenset({Role.AGENT, Role.SUPERVISOR})),
     ("GET", "/v1/ops/load", STAFF),

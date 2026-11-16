@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from skylink_care.guardrails.pii import mask_pii
 from skylink_care.observability.audit import Auditor
-from skylink_care.rag.documents import SELF_SERVICE_SECTIONS
+from skylink_care.rag.documents import SELF_SERVICE_SECTIONS, not_a_step, not_a_title
 from skylink_care.rag.index import GuideIndex, GuideIndexUnavailableError, Passage
 from skylink_care.rag.symptoms import GENERAL_SECTION, latest_hint, without_what_is_ruled_out
 
@@ -35,6 +35,29 @@ DEFAULT_WEIGHT = 0.5
 class Guidance:
     passage: Passage
     index_version: str
+
+
+def _not_quotable(passage: Passage, router_model: str) -> str | None:
+    """Why this passage may not be quoted to the customer, or None.
+
+    The search already asks for the customer's own router and the sections a customer may
+    follow, and the index build already refused unsafe steps. This is the second lock, at the
+    point where the words leave: a fault in the search, or a row changed after the build,
+    must not reach a customer as the guide's own advice.
+    """
+    if passage.device_model != router_model:
+        return f"it is from the guide of {passage.device_model}, not of the customer's router"
+    if passage.section_id not in SELF_SERVICE_SECTIONS:
+        return f"section {passage.section_id!r} is not for a customer to follow alone"
+    # The answer names the guide and the section: they are sent like the steps are.
+    named = not_a_title(passage.title.replace(":", " ", 1))
+    if named is not None:
+        return f"its title {named}"
+    for number, step in enumerate(passage.steps, start=1):
+        problem = not_a_step(step)
+        if problem is not None:
+            return f"step {number} {problem}"
+    return None
 
 
 class TroubleshootingAgent:
@@ -73,6 +96,12 @@ class TroubleshootingAgent:
         usable = [passage for passage in passages if passage.steps]
         if not usable or info is None:
             await self._note(audit, "NO_GUIDE_FOR_MODEL", router_model, None)
+            return None
+        refused = _not_quotable(usable[0], router_model)
+        if refused is not None:
+            # What the index holds is not taken on trust. A person takes over, and the trail
+            # says which passage was stopped and why.
+            await self._note(audit, "PASSAGE_REFUSED", router_model, usable[0], error=refused)
             return None
         await self._note(audit, "OK", router_model, usable[0], index_version=info.index_version)
         return Guidance(usable[0], info.index_version)

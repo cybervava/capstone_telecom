@@ -232,6 +232,9 @@ class OrchestratorWorker:
             return
         if contact.status in BOT_DONE:
             await self._note_follow_up(contact)
+            # A person took the conversation while the workflow was parked in it: the state
+            # it was parked with is of no further use.
+            await self._checkpointer.adelete_thread(str(contact_id))
             return
         config: Any = {
             "configurable": {"thread_id": str(contact_id)},

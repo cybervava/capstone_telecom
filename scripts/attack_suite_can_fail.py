@@ -79,6 +79,16 @@ NO_CLAIM_IS_CHECKED: tuple[Edit, ...] = (
         "    if False and violation is not None:\n",
     ),
 )
+STEPS_UNCHECKED_AT_THE_BUILD: Edit = (
+    "src/skylink_care/rag/documents.py",
+    "            problem = not_a_step(step)\n",
+    "            problem = None\n",
+)
+PASSAGE_UNCHECKED_WHEN_SENT: Edit = (
+    "src/skylink_care/agents/troubleshooting.py",
+    "        refused = _not_quotable(usable[0], router_model)\n",
+    "        refused = None\n",
+)
 
 
 @dataclass(frozen=True)
@@ -255,6 +265,86 @@ CHECKS = (
         ),
         "J1",
         "was not recorded as unusable",
+        critical=False,
+    ),
+    Check(
+        "abuse declines a message whatever else it says",
+        (
+            (
+                "src/skylink_care/orchestrator/routing.py",
+                '    if nothing_of_ours and intent.get("abusive_or_off_topic"):\n',
+                '    if intent.get("abusive_or_off_topic"):\n',
+            ),
+        ),
+        "H3",
+        "because they were rude",
+        critical=False,
+    ),
+    Check(
+        "a reading of 'it works' closes a complaint whatever the customer's words say",
+        (
+            (
+                "src/skylink_care/orchestrator/routing.py",
+                '        and not words.get("denies_working")\n',
+                "",
+            ),
+        ),
+        "J2",
+        "was closed as confirmed",
+        critical=False,
+    ),
+    Check(
+        "a reading of 'off-topic' declines a plain fault report",
+        (
+            (
+                "src/skylink_care/orchestrator/routing.py",
+                '    if nothing_of_ours and words.get("plain_fault"):\n',
+                '    if False and nothing_of_ours and words.get("plain_fault"):\n',
+            ),
+        ),
+        "J3",
+        "was declined as off-topic",
+        critical=False,
+    ),
+    Check(
+        "a guide's steps are not checked when the index is built (they still are when sent)",
+        (STEPS_UNCHECKED_AT_THE_BUILD,),
+        "B3",
+        "the index was built with the planted step in it",
+        critical=False,
+    ),
+    Check(
+        "a guide's steps are checked neither when the index is built nor when they are sent",
+        (STEPS_UNCHECKED_AT_THE_BUILD, PASSAGE_UNCHECKED_WHEN_SENT),
+        "B3",
+        "the planted step was quoted to a customer",
+        critical=False,
+    ),
+    Check(
+        "a passage is not checked when it is about to be sent",
+        (PASSAGE_UNCHECKED_WHEN_SENT,),
+        "B4",
+        "was quoted to a customer as the guide's own",
+        critical=False,
+    ),
+    Check(
+        "the same, for the title a passage is sent under",
+        (PASSAGE_UNCHECKED_WHEN_SENT,),
+        "B8",
+        "a title changed in the stored index was sent",
+        critical=False,
+    ),
+    Check(
+        "headings are not checked when the index is built (they still are when sent)",
+        (
+            (
+                "src/skylink_care/rag/documents.py",
+                "        heading = not_a_title(section.title)\n",
+                "        heading = None\n",
+            ),
+        ),
+        "B7",
+        "the index was built with the planted heading in it",
         critical=False,
     ),
     Check(

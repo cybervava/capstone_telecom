@@ -125,6 +125,7 @@ def _other_replies() -> dict[str, Reply]:
         "verification_failed": replies.verification_failed(REF),
         "out_of_scope": replies.out_of_scope(REF),
         "handed_to_human/apology": replies.handed_to_human(REF, APOLOGY),
+        "taken_over": replies.taken_over(REF),
         "handed_to_human/any other reason": replies.handed_to_human(
             REF, handover.wording_for("A_REASON_NOBODY_WORDED")
         ),

@@ -26,6 +26,8 @@ def reading(**overrides: Any) -> dict[str, Any]:
         "requests_technician": False,
         "requests_credit": False,
         "abusive_or_off_topic": False,
+        # What the keyword rules saw beside the reading: here, nothing of note.
+        "rules": {},
     }
     return {**base, **overrides}
 
@@ -69,10 +71,39 @@ TRIAGE_CASES = [
         "CUSTOMER_REQUESTED_HUMAN",
     ),
     (
-        "abuse or injection",
-        {"intent": reading(abusive_or_off_topic=True)},
+        "words meant to steer the assistant and nothing of a fault, however it was read",
+        {"intent": {**reading(), "rules": {"injection": True}}},
         Route.OUT_OF_SCOPE,
         None,
+    ),
+    (
+        "such words in a plain fault report: the report goes its usual way",
+        {"intent": {**reading(), "rules": {"injection": True, "plain_fault": True}}},
+        Route.DIAGNOSE,
+        None,
+    ),
+    (
+        "abuse and nothing else",
+        {"intent": reading(intent="other", confidence="low", abusive_or_off_topic=True)},
+        Route.OUT_OF_SCOPE,
+        None,
+    ),
+    (
+        "abuse with a fault report is a fault report",
+        {"intent": reading(abusive_or_off_topic=True)},
+        Route.DIAGNOSE,
+        None,
+    ),
+    (
+        "off-topic says the reading, a fault say the customer's plain words",
+        {
+            "intent": {
+                **reading(intent="other", abusive_or_off_topic=True),
+                "rules": {"plain_fault": True},
+            }
+        },
+        Route.HANDOFF,
+        "LOW_CONFIDENCE",
     ),
     (
         "unrelated request",
@@ -122,7 +153,8 @@ def test_a_request_for_a_person_wins_over_everything_else() -> None:
 
 def test_off_topic_text_is_refused_before_any_identity_question() -> None:
     state = triaged(
-        identity={"status": "NEED_CUSTOMER_ID"}, intent=reading(abusive_or_off_topic=True)
+        identity={"status": "NEED_CUSTOMER_ID"},
+        intent=reading(intent="other", abusive_or_off_topic=True),
     )
 
     assert decide_route(state).route is Route.OUT_OF_SCOPE
@@ -199,7 +231,7 @@ def test_a_request_the_fallback_rules_could_not_place_goes_to_a_person() -> None
 
 
 def test_abuse_is_still_refused_when_the_model_is_degraded() -> None:
-    state = triaged(intent={**reading(abusive_or_off_topic=True), "degraded": True})
+    state = triaged(intent={**reading(intent="other", abusive_or_off_topic=True), "degraded": True})
 
     assert decide_route(state).route is Route.OUT_OF_SCOPE
 

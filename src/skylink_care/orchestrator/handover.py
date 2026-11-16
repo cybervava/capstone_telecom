@@ -89,6 +89,12 @@ def handoff_summary(state: ContactState, reason: str) -> str:
         f" via {identity.get('method') or 'n/a'},"
         f" {'verified' if identity.get('verified') else 'not verified'}.",
     ]
+    seen = intent.get("rules") or {}
+    if intent.get("intent") == "other" and seen.get("plain_fault"):
+        parts.append(
+            "The message was read as no request of ours, but its plain words report a fault:"
+            " read what the customer wrote."
+        )
     if identity.get("locked"):
         claimed = (state.get("claim") or {}).get("customer_id") or "that was claimed"
         parts.append(

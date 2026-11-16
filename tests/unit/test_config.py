@@ -70,3 +70,19 @@ def test_the_default_settings_keep_three_failing_lines_of_three_suspect() -> Non
 
     by_coincidence = settings.line_own_fault_rate**settings.line_test_cluster_threshold
     assert by_coincidence < settings.line_test_cluster_chance
+
+
+def test_a_daily_limit_on_wrong_identity_answers_below_the_hourly_one_is_refused() -> None:
+    """The second limit is for guessing that keeps under the first. Below it, the first
+    would never be reached and the settings would say something they do not do."""
+    with pytest.raises(ValidationError, match="CARE_IDENTITY_FAIL_DAILY_LIMIT"):
+        Settings(db_password="x", identity_fail_limit=5, identity_fail_daily_limit=4)
+
+    same = Settings(db_password="x", identity_fail_limit=5, identity_fail_daily_limit=5)
+    assert same.identity_fail_daily_limit == 5
+
+
+def test_the_window_for_wrong_identity_answers_is_at_most_a_day() -> None:
+    """Rows are kept for a day: a longer window would count what is no longer there."""
+    with pytest.raises(ValidationError):
+        Settings(db_password="x", identity_fail_window_seconds=86_401)

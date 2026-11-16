@@ -107,6 +107,7 @@ class Nodes(NetworkNodes):
             **outcome.reading.model_dump(),
             "summary": clean_summary(outcome.reading.summary),
             "degraded": outcome.call.degraded,
+            "rules": asdict(outcome.second),
         }
         earlier = state.get("intent")
         if earlier and intent["intent"] == "other" and not intent["abusive_or_off_topic"]:

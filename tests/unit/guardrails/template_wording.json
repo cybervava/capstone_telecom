@@ -247,6 +247,10 @@
     "template_id": "outage_restored.v1",
     "text": "I'm SkyLink's automated assistant. Our network team has resolved the outage in your area (outage OUT-1) at 10:05 IST on 15 Nov. Your service should be working again. If it isn't back within 10 minutes, restart your router once. If it still doesn't work after that, reply here and I'll have your line checked. Your complaint reference is SKL-261115-000001-9."
   },
+  "taken_over": {
+    "template_id": "taken_over.v1",
+    "text": "I'm SkyLink's automated assistant. A member of our team has taken over this conversation and will reply to you here. They have its details, so you won't need to repeat them, and I won't answer further messages myself. Your complaint reference is SKL-261115-000001-9."
+  },
   "verification_failed": {
     "template_id": "verification_failed.v1",
     "text": "I'm SkyLink's automated assistant. Those details don't match our records. Please check your customer ID and send it again together with the last four digits of the registered mobile number. Your reference is SKL-261115-000001-9."
