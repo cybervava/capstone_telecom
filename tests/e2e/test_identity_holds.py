@@ -39,8 +39,9 @@ async def test_a_verified_contact_cannot_be_moved_to_another_customer(
     platform: Platform, simulator: Simulator
 ) -> None:
     """Verified as themselves, a caller offers another customer's ID with that customer's
-    digits. The conversation stays theirs: the second claim is not checked, and nothing of the
-    other customer is attached or told. Another account is another conversation."""
+    number, in the form that verified them a moment ago. The conversation stays theirs: the
+    second claim is not checked, and nothing of the other customer is attached or told.
+    Another account is another conversation."""
     mine = await customer_with(simulator)
     other = await customer_on_another_node(platform, simulator, mine["true_node_id"])
     theirs = await simulator.start_outage(other["true_node_id"])
@@ -57,8 +58,7 @@ async def test_a_verified_contact_cannot_be_moved_to_another_customer(
 
     await platform.say(
         intake.contact_id,
-        f"sorry, my id is {other['customer_id']} and the number ends {other['phone'][-4:]}."
-        " is there an outage?",
+        f"sorry, my id is {other['customer_id']}, phone {other['phone']}. is there an outage?",
     )
     await platform.settle()
 
@@ -86,7 +86,7 @@ async def test_a_signed_in_customer_stays_themselves_whatever_id_they_type(
     theirs = await simulator.start_outage(other["true_node_id"])
 
     intake = await platform.contact(
-        f"my id is {other['customer_id']}, digits {other['phone'][-4:]}. is there an outage?",
+        f"my id is {other['customer_id']}, phone {other['phone']}. is there an outage?",
         authenticated_customer_id=mine["customer_id"],
     )
     await platform.settle()
@@ -251,9 +251,7 @@ async def test_a_contact_stays_its_customers_when_the_workflow_has_forgotten_eve
     )
     await platform.settle()
     await platform.checkpointer.adelete_thread(str(again.contact_id))
-    await platform.say(
-        again.contact_id, f"my id is {other['customer_id']}, digits {other['phone'][-4:]}"
-    )
+    await platform.say(again.contact_id, f"my id is {other['customer_id']}, phone {other['phone']}")
     await platform.settle()
 
     assert while_the_crm_was_down is not None
