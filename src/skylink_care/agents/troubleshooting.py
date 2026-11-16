@@ -20,7 +20,7 @@ from skylink_care.guardrails.pii import mask_pii
 from skylink_care.observability.audit import Auditor
 from skylink_care.rag.documents import SELF_SERVICE_SECTIONS
 from skylink_care.rag.index import GuideIndex, GuideIndexUnavailableError, Passage
-from skylink_care.rag.symptoms import GENERAL_SECTION, latest_hint
+from skylink_care.rag.symptoms import GENERAL_SECTION, latest_hint, without_what_is_ruled_out
 
 ACTOR = "agent:troubleshooting"
 CUSTOMER_ROLE = "customer"
@@ -58,7 +58,7 @@ class TroubleshootingAgent:
         hint = latest_hint(query)
         try:
             passages = await self._index.search(
-                query,
+                without_what_is_ruled_out(query),
                 device_model=router_model,
                 role=CUSTOMER_ROLE,
                 sections=SELF_SERVICE_SECTIONS,

@@ -139,6 +139,8 @@ class Measured:
     # scored on.
     first: dict[str, Any]
     unseen: bool
+    # What has been changed since the first scoring, as recorded with the cases.
+    changed_since: tuple[str, ...]
     models: int
 
     @property
@@ -194,6 +196,7 @@ def assumptions(measured: Measured) -> list[str]:
         " first scored and a hash of what it was scored on (the retriever's code, the guides,"
         " the router models); when any of that changes, this report says so and stops calling"
         " the set out-of-sample.",
+        *(() if measured.unseen else measured.changed_since),
         "The section is chosen mainly by keyword rules for the kind of fault"
         " (`rag/symptoms.py`), which know only the words they were given; the search"
         " contributes when the rules recognise nothing. The index uses a deterministic"
@@ -312,6 +315,7 @@ async def test_customers_get_the_right_section_of_their_own_routers_guide(db: Da
         ),
         first=cases["independent"]["first_scored"],
         unseen=unseen,
+        changed_since=tuple(cases["independent"].get("changed_since", ())),
         models=len(models),
     )
     report = the_report(measured)

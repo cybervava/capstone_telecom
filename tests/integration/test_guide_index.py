@@ -222,3 +222,17 @@ async def test_section_the_caller_expects_wins_over_shared_words_and_only_within
     assert preferred[0].section_id == "no-internet"
     assert preferred[0].device_model == by_words[0].device_model == "TG-FG7"
     assert "factory-reset" not in {passage.section_id for passage in not_on_offer}
+
+
+async def test_fault_the_customer_rules_out_does_not_find_its_section(db: Database) -> None:
+    """ "Not slow" names the section on slow speed by its title, and the customer said the
+    opposite. What they rule out is kept from the search as it is from the rules."""
+    agent = TroubleshootingAgent(index(db))
+    audit = Auditor(AuditRepository(db), contact_id=None, correlation_id=uuid4().hex)
+
+    answer = await agent.guide(
+        router_model="AL-AX18", problem="pages time out all the time, it is not slow", audit=audit
+    )
+
+    assert answer is not None
+    assert answer.passage.section_id != "slow-speed"

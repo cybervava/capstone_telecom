@@ -189,7 +189,7 @@
     }
   },
   "independent": {
-    "what": "Written and labelled on 2026-11-15 by a separate model instance that was given one router guide (data/knowledge/router_guides/TG-FG7.md) and the four sections a customer can be sent, was told not to open src/, evals/, tests/ or scripts/, and reported that it had not. It was asked for 48 messages as customers of an Indian broadband provider type them, two thirds English and one third Hinglish, including hard ones on purpose. The symptom rules were final before it was asked; the set was scored as it came, and nothing in the retriever has been changed because of it.",
+    "what": "Written and labelled on 2026-11-15 by a separate model instance that was given one router guide (data/knowledge/router_guides/TG-FG7.md) and the four sections a customer can be sent, was told not to open src/, evals/, tests/ or scripts/, and reported that it had not. It was asked for 48 messages as customers of an Indian broadband provider type them, two thirds English and one third Hinglish, including hard ones on purpose. The symptom rules were final before it was asked, and the set was scored as it came (first_scored).",
     "first_scored": {
       "right": 468,
       "of": 576,
@@ -205,6 +205,10 @@
         "sha256": "388e8210cc47291327d9074d31c914705f92f01e3680f0a74bbaef4a62b19161"
       }
     },
+    "changed_since": [
+      "The symptom rules were reworked after the first scoring, on what three code reviews found by reading them: a fault the customer rules out is not the fault (and is kept from the search as well), a word like 'dead' or 'gone' counts only when said of the service, and the service named as gone outranks a mention of Wi-Fi.",
+      "One change was prompted by this set itself: the Hindi 'lagta hai' (it seems) was read as 'lag'. No word was added to the rules from the descriptions this set got wrong."
+    ],
     "symptoms": {
       "net not working": [
         "no-internet"

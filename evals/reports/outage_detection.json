@@ -1,6 +1,6 @@
 {
   "name": "outage_detection",
-  "written_at": "2026-11-16T01:38:07+00:00",
+  "written_at": "2026-11-16T01:54:53+00:00",
   "target": "At least 95.0% of affected contacts (brief).",
   "met": true,
   "verdict": "met",
