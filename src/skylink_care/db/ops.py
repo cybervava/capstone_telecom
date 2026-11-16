@@ -92,6 +92,20 @@ class OpsRepository(Repository):
             row = await cursor.fetchone()
             return row is not None and row["occurrences"] == 1
 
+    async def open_subjects(
+        self, kind: str, *, seen_within_seconds: int, limit: int = 1000
+    ) -> list[str]:
+        """What the open items of one kind are about, of those seen within this long. An
+        item nobody has closed and nothing has touched since is not counted as current."""
+        async with self._db.connection() as conn:
+            cursor = await conn.execute(
+                "SELECT subject FROM ops_items WHERE kind = %s AND status = 'OPEN'"
+                " AND last_seen_at >= statement_timestamp() - make_interval(secs => %s)"
+                " ORDER BY created_at LIMIT %s",
+                (kind, seen_within_seconds, limit),
+            )
+            return [row["subject"] for row in await cursor.fetchall()]
+
     async def count_open(self) -> int:
         """How many items are open in all: a list of them is always cut somewhere."""
         async with self._db.connection() as conn:

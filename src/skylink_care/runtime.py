@@ -14,6 +14,7 @@ from skylink_care.adapters.gateway import OssGateway
 from skylink_care.adapters.shared import NetworkSource, SharedNodeStatus
 from skylink_care.agents.diagnostics import DiagnosticsAgent, FeedViewSource, LineTestPolicy
 from skylink_care.agents.dispatch import DispatchAgent
+from skylink_care.agents.identity_guard import IdentityGuard
 from skylink_care.agents.resolution import ResolutionAgent
 from skylink_care.agents.triage import TriageAgent
 from skylink_care.agents.troubleshooting import TroubleshootingAgent
@@ -26,9 +27,11 @@ from skylink_care.db.contacts import ContactRepository
 from skylink_care.db.database import Database
 from skylink_care.db.episodes import EpisodeRepository
 from skylink_care.db.handoffs import HandoffRepository
+from skylink_care.db.identity import IdentityAttemptRepository, Limits
 from skylink_care.db.inbox import InboxRepository
 from skylink_care.db.line_tests import LineTestRepository
 from skylink_care.db.messages import MessageRepository
+from skylink_care.db.ops import OpsRepository
 from skylink_care.db.read_model import ReadModelRepository
 from skylink_care.db.reference import ReferenceRepository
 from skylink_care.db.timers import TimerRepository
@@ -146,7 +149,19 @@ def build_orchestrator_runtime(
         timers=TimerRepository(database),
         read_model=ReadModelRepository(database),
         triage=TriageAgent(
-            gateway.crm_for_triage(), llm or build_gateway(settings), behind=gauge.behind
+            gateway.crm_for_triage(),
+            llm or build_gateway(settings),
+            behind=gauge.behind,
+            guard=IdentityGuard(
+                IdentityAttemptRepository(database),
+                OpsRepository(database),
+                limits=Limits(
+                    per_window=settings.identity_fail_limit,
+                    window_seconds=settings.identity_fail_window_seconds,
+                    per_day=settings.identity_fail_daily_limit,
+                ),
+                spread_alert_customers=settings.identity_spread_alert_customers,
+            ),
         ),
         surge=gauge,
         diagnostics=build_diagnostics(

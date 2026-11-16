@@ -26,6 +26,10 @@ FIRST_MESSAGE_KEY = "inbound:first"
 RECEIVED_EVENT = "contact.received"
 
 
+class ContactBoundError(Exception):
+    """A contact that belongs to one customer was to be given to another."""
+
+
 class RequestIdReusedError(Exception):
     """The channel reused a request id for a different request."""
 
@@ -168,18 +172,32 @@ class ContactRepository(Repository):
     async def update(
         self, contact_id: UUID, *, conn: Connection | None = None, **changes: Any
     ) -> None:
-        """Set workflow-owned columns. Column names are checked against a fixed allow-list."""
+        """Set workflow-owned columns. Column names are checked against a fixed allow-list.
+
+        The customer of a contact is set once. Setting the same one again changes nothing;
+        another one is refused with ``ContactBoundError`` and nothing is written; no
+        customer (``None`` or an empty ID) attaches nobody and detaches nobody.
+        """
         unknown = set(changes) - _UPDATABLE
         if unknown:
             raise ValueError(f"columns not updatable: {sorted(unknown)}")
+        customer_id = changes.get("customer_id")
+        if not customer_id:
+            changes.pop("customer_id", None)
         if not changes:
             return
         assignments = ", ".join(f"{column} = %s" for column in changes)
+        unbound_or_theirs = " AND (customer_id IS NULL OR customer_id = %s)" if customer_id else ""
+        values = (*changes.values(), contact_id, *([customer_id] if customer_id else []))
         async with self._conn(conn) as active:
-            await active.execute(
+            cursor = await active.execute(
                 f"UPDATE contacts SET {assignments}, updated_at = now()"  # noqa: S608
-                " WHERE contact_id = %s",
-                (*changes.values(), contact_id),
+                f" WHERE contact_id = %s{unbound_or_theirs}",
+                values,
+            )
+        if customer_id and cursor.rowcount == 0:
+            raise ContactBoundError(
+                f"contact {contact_id} belongs to another customer, or does not exist"
             )
 
     async def waiting_on_nodes(

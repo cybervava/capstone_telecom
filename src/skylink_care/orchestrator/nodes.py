@@ -94,6 +94,14 @@ class Nodes(NetworkNodes):
         ):
             # A follow-up message does not un-identify a customer who was already verified.
             identity, service = previous, state.get("service")
+        elif (
+            outcome.identity.status is IdentityStatus.IDENTIFIED
+            and previous.get("status") == IdentityStatus.IDENTIFIED.value
+            and previous.get("customer_id") == identity.get("customer_id")
+            and previous.get("method")
+        ):
+            # Still the same customer: how they were first verified is what stays on record.
+            identity["method"] = previous["method"]
 
         intent: dict[str, Any] = {
             **outcome.reading.model_dump(),
@@ -114,11 +122,14 @@ class Nodes(NetworkNodes):
             }
 
         identified = identity.get("status") == IdentityStatus.IDENTIFIED.value
+        # Only a verified identity is attached to the contact; a claim never is. Once attached
+        # it stays: a turn that could not identify anyone (the CRM was down) says nothing
+        # about whose contact this is.
+        whose = {"customer_id": identity["customer_id"]} if identified else {}
         await self._rt.contacts.update(
             contact.contact_id,
             status="IN_PROGRESS",
-            # Only a verified identity is attached to the contact; a claim never is.
-            customer_id=identity.get("customer_id") if identified else None,
+            **whose,
             service_id=service["service_id"] if service and identified else None,
             service_type=service["service_type"] if service and identified else None,
             intent=intent["intent"],

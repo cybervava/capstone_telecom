@@ -240,6 +240,34 @@ async def test_a_guest_sees_only_contacts_of_their_own_session(client: httpx.Asy
     assert (same.status_code, other.status_code) == (200, 404)
 
 
+async def test_a_guest_cannot_write_into_a_contact_of_another_session(
+    client: httpx.AsyncClient, db: Database
+) -> None:
+    """Reading it is refused; so is adding to it, which would put words in its owner's mouth."""
+    guest = token(Role.GUEST, session_id="session-a")
+    created = await client.post("/v1/contacts", json=contact_body(), headers=guest)
+    contact_id = created.json()["data"]["contact_id"]
+    message = {"client_message_id": uuid4().hex, "text": "my id is C0000002, digits 1234"}
+
+    other = await client.post(
+        f"/v1/contacts/{contact_id}/messages",
+        json=message,
+        headers=token(Role.GUEST, session_id="session-b"),
+    )
+    signed_in = await client.post(
+        f"/v1/contacts/{contact_id}/messages", json=message, headers=CUSTOMER
+    )
+
+    assert (other.status_code, signed_in.status_code) == (404, 404)
+    async with db.connection() as conn:
+        cursor = await conn.execute(
+            "SELECT count(*) AS n FROM contact_messages WHERE contact_id = %s", (contact_id,)
+        )
+        row = await cursor.fetchone()
+    assert row is not None
+    assert row["n"] == 1  # the one its owner wrote
+
+
 async def test_only_a_channel_may_state_the_caller_line(client: httpx.AsyncClient) -> None:
     body = contact_body(channel="call_transcript", caller_phone="+919845012345")
 

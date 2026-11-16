@@ -9,7 +9,12 @@ It may read the CRM and nothing else. Identity comes from the strongest source a
 
 A customer ID typed into a message is only a claim. Nothing is looked up, disclosed or attached
 to the contact on the strength of a claim, and the answer to a wrong claim is the same whether
-or not that ID exists, so the conversation cannot be used to discover accounts.
+or not that ID exists, so the conversation cannot be used to discover accounts. Wrong answers
+are counted for the ID that was claimed, across conversations, and too many of them stop the
+check for a while (``identity_guard``).
+
+A contact that has been verified as one customer stays theirs. The ID of another customer
+offered in it later is not looked at: another account is another conversation.
 
 The language model reads the message for intent only, on masked text, and only once the customer
 is identified: before that the platform has no name to mask, so the text stays inside.
@@ -25,6 +30,7 @@ from enum import StrEnum
 from skylink_care.adapters.clients import CrmReader
 from skylink_care.adapters.models import CustomerProfile, ServiceDto
 from skylink_care.adapters.result import ErrorKind, Ok
+from skylink_care.agents.identity_guard import IdentityGuard
 from skylink_care.db.contacts import Contact
 from skylink_care.guardrails.pii import extract_identifiers, mask_pii
 from skylink_care.llm.base import CallRecord, TriageReading
@@ -32,6 +38,8 @@ from skylink_care.llm.gateway import LLMGateway
 from skylink_care.observability.audit import Auditor
 
 ACTOR = "agent:triage"
+# How a contact is identified once it has been verified earlier in the same conversation.
+VERIFIED_EARLIER = "verified_earlier"
 _MOBILE_HINTS = re.compile(
     r"mobile|\bsim\b|signal|tower|call drop|calls?\b|\b[45]g\b|data pack", re.IGNORECASE
 )
@@ -53,12 +61,36 @@ class IdentityStatus(StrEnum):
 AWAITING_DIGITS = frozenset({IdentityStatus.NEED_VERIFICATION, IdentityStatus.VERIFICATION_FAILED})
 
 
+class _Answer(StrEnum):
+    """What became of a customer ID and four digits offered as proof of identity."""
+
+    RIGHT = "right"
+    # The CRM knows the customer, and these are not the digits.
+    WRONG = "wrong"
+    # The CRM knows no such customer. The customer hears the same as for wrong digits.
+    NOBODY = "nobody"
+    # The CRM could not say.
+    UNCHECKED = "unchecked"
+    # Not put to the CRM: the claimed ID has had too many wrong answers.
+    REFUSED = "refused"
+
+
+_NOT_VERIFIED = frozenset({_Answer.WRONG, _Answer.NOBODY, _Answer.REFUSED})
+# What the CRM answers when the ID is no customer's to verify: unknown, malformed, retired.
+_NO_SUCH_CUSTOMER = frozenset(
+    {ErrorKind.NOT_FOUND, ErrorKind.INVALID, ErrorKind.GONE, ErrorKind.CONFLICT}
+)
+
+
 @dataclass(frozen=True)
 class Identity:
     status: IdentityStatus
     customer_id: str | None = None
     verified: bool = False
     method: str | None = None
+    # The answer was not checked: the claimed ID has had too many wrong ones. The customer is
+    # told what any wrong answer is told; this is for the person who takes the contact over.
+    locked: bool = False
 
 
 @dataclass(frozen=True)
@@ -92,12 +124,19 @@ class TriageOutcome:
 
 class TriageAgent:
     def __init__(
-        self, crm: CrmReader, llm: LLMGateway, *, behind: Callable[[], bool] | None = None
+        self,
+        crm: CrmReader,
+        llm: LLMGateway,
+        *,
+        behind: Callable[[], bool] | None = None,
+        guard: IdentityGuard | None = None,
     ) -> None:
         self._crm = crm
         self._llm = llm
         # Whether the orchestrator is behind (surge mode): messages are then read by the rules.
         self._behind = behind
+        # Counts wrong answers to the identity check across conversations. None: not counted.
+        self._guard = guard
 
     async def run(
         self,
@@ -108,8 +147,9 @@ class TriageAgent:
         claim: Claim | None = None,
         awaiting_digits: bool = False,
     ) -> TriageOutcome:
-        merged = merge_claim(claim or Claim(), text, awaiting_digits=awaiting_digits)
-        identity, profile, claim_after = await self._identify(contact, merged, audit)
+        identity, profile, claim_after = await self._identify(
+            contact, text, claim or Claim(), audit, awaiting_digits=awaiting_digits
+        )
         known = personal_values(profile) if profile else {}
         reading, call = await self._llm.read_contact(
             text,
@@ -138,18 +178,46 @@ class TriageAgent:
         )
 
     async def _identify(
-        self, contact: Contact, claim: Claim, audit: Auditor
+        self,
+        contact: Contact,
+        text: str,
+        claim: Claim,
+        audit: Auditor,
+        *,
+        awaiting_digits: bool,
     ) -> tuple[Identity, CustomerProfile | None, Claim]:
-        if contact.authenticated_customer_id:
-            identity, profile = await self._load(
-                contact.authenticated_customer_id, audit, method="channel_auth"
-            )
-            return identity, profile, claim
+        known = contact.authenticated_customer_id or contact.customer_id
+        if known:
+            # Signed in, or verified earlier in this conversation: it is this customer's, and
+            # nothing typed into it can make it anyone else's. What was offered as
+            # identification is no longer kept either.
+            await self._note_other_claims(text, known, audit)
+            method = "channel_auth" if contact.authenticated_customer_id else VERIFIED_EARLIER
+            identity, profile = await self._load(known, audit, method=method)
+            return identity, profile, Claim()
         if contact.caller_phone:
             by_line = await self._by_caller_line(contact.caller_phone, audit)
             if by_line is not None:
                 return (*by_line, claim)
-        return await self._by_knowledge(claim, audit)
+        merged = merge_claim(claim, text, awaiting_digits=awaiting_digits)
+        return await self._by_knowledge(contact, merged, audit)
+
+    async def _note_other_claims(self, text: str, known: str, audit: Auditor) -> None:
+        """The ID of another customer, offered in a contact that already belongs to one. It
+        is not checked. That it was offered is recorded, for whoever looks into it later."""
+        others = [
+            offered
+            for offered in extract_identifiers(text).customer_ids
+            if offered != known.upper()
+        ]
+        if others:
+            await audit.record(
+                actor=ACTOR,
+                step="identity.claim_ignored",
+                outcome="KEPT",
+                inputs={"claimed": others[0]},
+                outputs={"kept": known},
+            )
 
     async def _by_caller_line(
         self, phone: str, audit: Auditor
@@ -170,38 +238,78 @@ class TriageAgent:
         return await self._load(found.value.matches[0].customer_id, audit, method="caller_line")
 
     async def _by_knowledge(
-        self, claim: Claim, audit: Auditor
+        self, contact: Contact, claim: Claim, audit: Auditor
     ) -> tuple[Identity, CustomerProfile | None, Claim]:
         if claim.customer_id is None:
             return Identity(IdentityStatus.NEED_CUSTOMER_ID), None, claim
         if claim.phone_last4 is None:
             return Identity(IdentityStatus.NEED_VERIFICATION), None, claim
+        answer = await self._answer(contact, claim.customer_id, claim.phone_last4, audit)
+        if answer in _NOT_VERIFIED:
+            # Forget the digits, keep the claimed ID: the customer may only have mistyped them.
+            failed = Identity(IdentityStatus.VERIFICATION_FAILED, locked=answer is _Answer.REFUSED)
+            return failed, None, replace(claim, phone_last4=None)
+        if answer is _Answer.UNCHECKED:
+            return Identity(IdentityStatus.CRM_UNAVAILABLE, method="knowledge"), None, claim
+        identity, profile = await self._load(claim.customer_id, audit, method="knowledge")
+        return identity, profile, claim
+
+    async def _answer(
+        self, contact: Contact, customer_id: str, digits: str, audit: Auditor
+    ) -> _Answer:
+        """Put the answer to the CRM, unless the claimed ID has had too many wrong ones.
+
+        A try is taken before the answer is checked and given back unless it was wrong, so
+        that conversations answering at the same moment cannot each be the last one allowed.
+        """
+        guard = self._guard
+        if guard is None:
+            return await self._ask_the_crm(customer_id, digits, audit)
+        attempt = await guard.take(customer_id, contact.contact_id)
+        if attempt is None:
+            # Too many wrong answers for this ID of late, here or elsewhere. This one is not
+            # put to the CRM, right or wrong, and the customer hears what any wrong one hears.
+            await audit.record(
+                actor=ACTOR,
+                step="identity.locked",
+                outcome="REFUSED",
+                inputs={"customer_id": customer_id},
+                outputs={
+                    "limit": guard.limits.per_window,
+                    "window_seconds": guard.limits.window_seconds,
+                    "limit_in_a_day": guard.limits.per_day,
+                },
+            )
+            await guard.refused(customer_id)
+            return _Answer.REFUSED
+        try:
+            answer = await self._ask_the_crm(customer_id, digits, audit)
+        except Exception:
+            # A failure of ours is not an answer. The turn is tried again and needs its try.
+            await guard.give_back(attempt)
+            raise
+        if answer in {_Answer.WRONG, _Answer.NOBODY}:
+            await guard.wrong(attempt, customer_id, account_known=answer is _Answer.WRONG)
+        else:
+            # Right, or the CRM could not say: neither counts against the ID.
+            await guard.give_back(attempt)
+        return answer
+
+    async def _ask_the_crm(self, customer_id: str, digits: str, audit: Auditor) -> _Answer:
         result = await audit.tool(
             actor=ACTOR,
             tool="crm.verify",
             inputs={"factor": "customer_id + phone_last4"},
             call=self._crm.verify(
-                claim.customer_id,
-                phone_last4=claim.phone_last4,
-                correlation_id=audit.correlation_id,
+                customer_id, phone_last4=digits, correlation_id=audit.correlation_id
             ),
         )
-        rejected = isinstance(result, Ok) and not result.value.verified
-        unknown_account = not isinstance(result, Ok) and result.kind in {
-            ErrorKind.NOT_FOUND,
-            ErrorKind.INVALID,
-        }
-        if rejected or unknown_account:
-            # Forget the digits, keep the claimed ID: the customer may only have mistyped them.
-            return (
-                Identity(IdentityStatus.VERIFICATION_FAILED),
-                None,
-                replace(claim, phone_last4=None),
-            )
-        if not isinstance(result, Ok):
-            return Identity(IdentityStatus.CRM_UNAVAILABLE, method="knowledge"), None, claim
-        identity, profile = await self._load(claim.customer_id, audit, method="knowledge")
-        return identity, profile, claim
+        if isinstance(result, Ok):
+            return _Answer.RIGHT if result.value.verified else _Answer.WRONG
+        # An answer about the ID, as against a call that failed. Only these are counted as
+        # wrong: counting a failure of ours would lock customers out by our fault, and not
+        # counting an answer would be a way to ask the CRM about an ID for nothing.
+        return _Answer.NOBODY if result.kind in _NO_SUCH_CUSTOMER else _Answer.UNCHECKED
 
     async def _load(
         self, customer_id: str, audit: Auditor, *, method: str

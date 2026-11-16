@@ -88,6 +88,17 @@ class Settings(BaseSettings):
     visit_line_test_max_age_seconds: int = Field(default=300, gt=0)
     visit_evidence_max_age_seconds: int = Field(default=1800, gt=0)
 
+    # A customer who is not signed in is verified by customer ID and the last four digits of
+    # the registered mobile. This many wrong answers for one customer ID within the window,
+    # in any conversations, and further tries for it are refused unchecked until they age out.
+    identity_fail_limit: int = Field(default=5, ge=1)
+    identity_fail_window_seconds: int = Field(default=3600, gt=0, le=86_400)
+    # And this many within a day: guessing that keeps just under the first limit is stopped
+    # by the second.
+    identity_fail_daily_limit: int = Field(default=10, ge=1)
+    # Wrong answers for this many different customers within the window are told to staff:
+    # the same digits tried once on each of many customer IDs stay under both limits.
+    identity_spread_alert_customers: int = Field(default=50, ge=2)
     # A contact whose network status could not be verified is looked at again this often, and
     # handed to a person after this many looks without an answer.
     network_recheck_seconds: int = Field(default=60, gt=0)
@@ -133,6 +144,10 @@ class Settings(BaseSettings):
                 "CARE_LINE_OWN_FAULT_RATE is so high, or CARE_LINE_TEST_CLUSTER_CHANCE so low,"
                 f" that {self.line_test_cluster_threshold} failing lines of"
                 f" {self.line_test_cluster_threshold} tested would not make a node suspect"
+            )
+        if self.identity_fail_daily_limit < self.identity_fail_limit:
+            raise ValueError(
+                "CARE_IDENTITY_FAIL_DAILY_LIMIT must not be lower than CARE_IDENTITY_FAIL_LIMIT"
             )
         if self.visit_evidence_max_age_seconds < self.visit_line_test_max_age_seconds:
             raise ValueError(

@@ -89,6 +89,13 @@ def handoff_summary(state: ContactState, reason: str) -> str:
         f" via {identity.get('method') or 'n/a'},"
         f" {'verified' if identity.get('verified') else 'not verified'}.",
     ]
+    if identity.get("locked"):
+        claimed = (state.get("claim") or {}).get("customer_id") or "that was claimed"
+        parts.append(
+            f"The identity check for customer ID {claimed} is locked after repeated wrong"
+            " answers, here or in other conversations, so the last answer given here was not"
+            " checked (operations queue: IDENTITY_ATTEMPTS). Verify the customer another way."
+        )
     if service:
         parts.append(
             f"Service: {service.get('service_id')} ({service.get('service_type')}),"
