@@ -163,6 +163,35 @@ async def test_three_lines_failing_on_one_node_are_treated_as_a_node_fault(
     assert (await simulator.state())["tables"]["appointments"] == 0
 
 
+async def test_a_suspicion_raised_by_failing_lines_ends_when_they_pass_again(
+    platform: Platform, simulator: Simulator
+) -> None:
+    """Nothing was declared and no alarm ever showed: the lines were the only evidence. When
+    they pass again the suspicion is over, and the ticket raised for the node is closed, so
+    that the NOC is not left with one for a node that is fine."""
+    settings = platform.runtime.settings
+    people = await healthy_node_customers(simulator, settings.line_test_cluster_threshold)
+    node_id = people[0]["true_node_id"]
+    intakes = [await contact_with_failing_line(platform, simulator, person) for person in people]
+    platform.advance(settings.network_recheck_seconds)
+    await platform.settle()
+    (ticket,) = (await simulator.get("/incident/v1/incidents", node_id=node_id))["incidents"]
+    assert (ticket["kind"], ticket["status"]) == ("SUSPECTED_NODE_FAULT", "OPEN")
+
+    for person in people:
+        await simulator.line_fault(person["service_id"], fault=False)
+    platform.advance(settings.line_retest_seconds + 1)  # the next look tests each line again
+    await platform.settle()
+
+    (ticket,) = (await simulator.get("/incident/v1/incidents", node_id=node_id))["incidents"]
+    assert ticket["status"] == "RESOLVED"
+    assert await platform.runtime.episodes.find_open(node_id, "broadband") is None
+    for intake in intakes:
+        *_, latest = await platform.replies(intake.contact_id)
+        assert "signs of a possible network problem" not in latest
+    assert (await simulator.state())["tables"]["appointments"] == 0
+
+
 async def test_one_customer_asking_repeatedly_cannot_make_a_node_look_faulty(
     platform: Platform, simulator: Simulator
 ) -> None:

@@ -73,6 +73,8 @@ def decision_limits(settings: Settings) -> DecisionLimits:
         status_max_age=timedelta(seconds=settings.status_max_age_seconds),
         feed_max_age=timedelta(seconds=settings.feed_max_age_seconds),
         line_test_cluster_threshold=settings.line_test_cluster_threshold,
+        line_own_fault_rate=settings.line_own_fault_rate,
+        line_test_cluster_chance=settings.line_test_cluster_chance,
     )
 
 

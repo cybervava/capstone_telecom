@@ -335,6 +335,122 @@ async def test_waiting_customer_is_told_when_the_outage_is_resolved_and_can_conf
     assert (await simulator.state())["tables"]["appointments"] == 0
 
 
+async def waiting_on_one_outage(
+    platform: Platform, simulator: Simulator, count: int
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[Any]]:
+    """Customers on one node who contacted us during its declared outage and wait for its end."""
+    anchor = await broadband_customer(simulator)
+    people = await simulator.find_customers(
+        count,
+        service_type="broadband",
+        mapping_defect="none",
+        status="active",
+        node_id=anchor["true_node_id"],
+    )
+    assert len(people) == count, "the data pack should give a node with enough customers"
+    for person in people:
+        await simulator.line_fault(person["service_id"], fault=False)
+    outage = await simulator.start_outage(anchor["true_node_id"])
+    await platform.feed()
+    intakes = [
+        await platform.contact("internet down", authenticated_customer_id=person["customer_id"])
+        for person in people
+    ]
+    await platform.settle()
+    return outage, people, intakes
+
+
+async def test_customers_with_faults_of_their_own_do_not_make_a_restored_node_look_faulty(
+    platform: Platform, simulator: Simulator
+) -> None:
+    """When an outage ends, every waiting line on the node is tested within minutes. Among so
+    many, a few have faults of their own. They are no reason to doubt the node again, to keep
+    the news from everyone on it, or to raise a second ticket with the NOC."""
+    outage, people, intakes = await waiting_on_one_outage(platform, simulator, 20)
+    for person in people[-3:]:
+        await simulator.line_fault(person["service_id"], fault=True)
+
+    platform.advance(1800)
+    await simulator.resolve_outage(outage["outage_id"])
+    assert (await platform.feed()).resolved == 1
+    for intake in intakes:  # in the order they called: the three with a fault come last
+        await platform.worker.process_contact(intake.contact_id)
+    await platform.settle()
+
+    for intake in intakes:
+        *_, latest = await platform.replies(intake.contact_id)
+        assert "resolved the outage in your area" in latest
+        assert "SUSPECTED_NODE_FAULT" not in await decision_reasons(platform, intake.contact_id)
+    (ticket,) = await incidents_on(simulator, people[0]["true_node_id"])
+    assert (ticket["kind"], ticket["status"]) == ("NETWORK_OUTAGE", "RESOLVED")
+    assert await handoff_reasons(platform) == []
+
+
+async def test_faults_met_first_make_a_restored_node_suspect_only_until_more_lines_are_in(
+    platform: Platform, simulator: Simulator
+) -> None:
+    """The other order: the three customers with a fault of their own happen to be tested
+    first. Three failing of three is evidence against the node and is treated as such: the
+    customers after them are told that the status cannot be verified, and a ticket is raised.
+    With eleven lines tested, three failing are no more than coincidence explains. The rest
+    hear that the outage is over, at their next look so do those who were kept waiting, and
+    the ticket is closed again."""
+    outage, people, intakes = await waiting_on_one_outage(platform, simulator, 20)
+    node_id = people[0]["true_node_id"]
+    for person in people[:3]:
+        await simulator.line_fault(person["service_id"], fault=True)
+
+    platform.advance(1800)
+    await simulator.resolve_outage(outage["outage_id"])
+    assert (await platform.feed()).resolved == 1
+    for intake in intakes:  # in the order they called: the three with a fault come first
+        await platform.worker.process_contact(intake.contact_id)
+    await platform.settle()  # ... and those kept waiting are looked at again
+
+    said = [await platform.replies(intake.contact_id) for intake in intakes]
+    kept_waiting = [
+        any("signs of a possible network problem" in reply for reply in replies) for replies in said
+    ]
+    assert kept_waiting == [False, False] + [True] * 8 + [False] * 10
+    assert all("resolved the outage in your area" in replies[-1] for replies in said)
+    assert await platform.runtime.episodes.find_open(node_id, "broadband") is None
+    tickets = await incidents_on(simulator, node_id)
+    assert sorted((ticket["kind"], ticket["status"]) for ticket in tickets) == [
+        ("NETWORK_OUTAGE", "RESOLVED"),
+        ("SUSPECTED_NODE_FAULT", "RESOLVED"),
+    ]
+    assert await handoff_reasons(platform) == []
+
+
+async def test_a_node_whose_lines_go_on_failing_after_the_noc_resolved_is_suspected_again(
+    platform: Platform, simulator: Simulator
+) -> None:
+    """The NOC reports the outage resolved and the live status is clear, but every line tested
+    on the node still fails. Two customers hear of the resolution. From the third failing line
+    on nobody is told that it is over, and the NOC gets the node back as a suspected fault."""
+    outage, people, intakes = await waiting_on_one_outage(platform, simulator, 6)
+    for person in people:
+        await simulator.line_fault(person["service_id"], fault=True)
+
+    platform.advance(1800)
+    await simulator.resolve_outage(outage["outage_id"])
+    assert (await platform.feed()).resolved == 1
+    for intake in intakes:
+        await platform.worker.process_contact(intake.contact_id)
+    await platform.settle()
+
+    latest = [(await platform.replies(intake.contact_id))[-1] for intake in intakes]
+    told_restored = [reply for reply in latest if "resolved the outage in your area" in reply]
+    told_suspected = [reply for reply in latest if "signs of a possible network problem" in reply]
+    assert (len(told_restored), len(told_suspected)) == (2, 4)
+    tickets = await incidents_on(simulator, people[0]["true_node_id"])
+    assert sorted(ticket["kind"] for ticket in tickets) == [
+        "NETWORK_OUTAGE",
+        "SUSPECTED_NODE_FAULT",
+    ]
+    assert await handoff_reasons(platform) == []
+
+
 async def test_restored_contact_nobody_answers_is_closed_after_the_quiet_period(
     platform: Platform, simulator: Simulator
 ) -> None:

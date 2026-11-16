@@ -25,7 +25,7 @@ from skylink_care.adapters.convert import to_live_status
 from skylink_care.adapters.models import NodeStatusDto
 from skylink_care.adapters.result import Err, ErrorKind, Ok, Result
 from skylink_care.adapters.shared import NetworkSource
-from skylink_care.db.line_tests import LineTest, LineTestRepository
+from skylink_care.db.line_tests import NO_LINES, LineTest, LineTestRepository, NodeLines
 from skylink_care.db.reference import ACTIVE, ReferenceRepository
 from skylink_care.domain.models import MappingStatus, NetworkState, NodeMapping, ServiceType
 from skylink_care.domain.network import (
@@ -70,6 +70,7 @@ class Diagnosis:
     decision: NetworkDecision
     line_test: LineTest | None = None
     failing_lines_on_node: int = 0
+    passing_lines_on_node: int = 0
 
 
 class _Probe:
@@ -146,7 +147,7 @@ class DiagnosticsAgent:
             # The mapping cannot say which node serves this address. The line itself can.
             mapping = await self._follow_line(mapping, await probe.line())
         live, feed, mapping = await self._observe(subject, mapping, probe)
-        decision, failing = await self._decide(mapping, live, feed)
+        decision, lines = await self._decide(mapping, live, feed)
         if not probe.ran and mapping.is_resolved and decision.state is not NetworkState.ACTIVE:
             # No outage is proven on the node, so this line's own state is worth knowing. The
             # test also checks the mapping: a line served by a different node than the mapping
@@ -154,9 +155,9 @@ class DiagnosticsAgent:
             followed = await self._follow_line(mapping, await probe.line())
             if followed.node_id != mapping.node_id:
                 live, feed, mapping = await self._observe(subject, followed, probe)
-            decision, failing = await self._decide(mapping, live, feed)
-        await self._record(subject, audit, mapping, live, feed, probe.result, failing, decision)
-        return Diagnosis(mapping, decision, probe.result, failing)
+            decision, lines = await self._decide(mapping, live, feed)
+        await self._record(subject, audit, mapping, live, feed, probe.result, lines, decision)
+        return Diagnosis(mapping, decision, probe.result, lines.failing, lines.passing)
 
     async def node_state(
         self, node_id: str, service_type: str, *, audit: Auditor
@@ -198,10 +199,10 @@ class DiagnosticsAgent:
 
     async def _decide(
         self, mapping: NodeMapping, live: LiveStatus, feed: FeedView
-    ) -> tuple[NetworkDecision, int]:
-        failing = 0
+    ) -> tuple[NetworkDecision, NodeLines]:
+        lines = NO_LINES
         if mapping.is_resolved and mapping.node_id is not None:
-            failing = await self._line_tests.failing_lines_on_node(
+            lines = await self._line_tests.lines_on_node(
                 mapping.node_id, since=self._now() - self._policy.cluster_window
             )
         decision = decide_network_state(
@@ -210,9 +211,10 @@ class DiagnosticsAgent:
             feed=feed,
             now=self._now(),
             limits=self._limits,
-            line_test_failures_on_node=failing,
+            line_test_failures_on_node=lines.failing,
+            line_tests_passing_on_node=lines.passing,
         )
-        return decision, failing
+        return decision, lines
 
     async def _follow_line(self, mapping: NodeMapping, line: LineTest | None) -> NodeMapping:
         """The mapping corrected to the node the line test named, if that node can be trusted.
@@ -235,7 +237,7 @@ class DiagnosticsAgent:
         live: LiveStatus,
         feed: FeedView,
         line: LineTest | None,
-        failing: int,
+        lines: NodeLines,
         decision: NetworkDecision,
     ) -> None:
         await audit.record(
@@ -249,10 +251,15 @@ class DiagnosticsAgent:
                 "map_version": mapping.map_version,
                 "live_available": live.available,
                 "live_error": live.error,
+                # What made a node suspect must be readable from the trail: an alarm seen on
+                # the live status or on the feed, or the lines counted below.
+                "live_alarm": live.critical_alarm,
+                "feed_alarm": feed.critical_alarm,
                 "feed_heartbeat_at": _iso(feed.heartbeat_at),
                 "line_test": line.result if line else None,
                 "line_served_by": line.node_id if line else None,
-                "failing_lines_on_node": failing,
+                "failing_lines_on_node": lines.failing,
+                "passing_lines_on_node": lines.passing,
             },
             outputs={
                 "state": decision.state.value,

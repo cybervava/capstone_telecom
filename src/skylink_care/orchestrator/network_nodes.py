@@ -11,6 +11,8 @@ import math
 from datetime import timedelta
 from typing import Any
 
+import structlog
+
 from skylink_care.agents import replies
 from skylink_care.agents.diagnostics import Subject
 from skylink_care.db.actions import (
@@ -45,6 +47,8 @@ from skylink_care.orchestrator.state import (
     visit_status,
 )
 from skylink_care.orchestrator.visit_nodes import VisitNodes
+
+log = structlog.get_logger(__name__)
 
 # How much of what the customer wrote is used to find the guide section.
 MAX_PROBLEM_CHARS = 2000
@@ -109,6 +113,8 @@ class NetworkNodes(CreditNodes, VisitNodes):
             own_status_read=state.get("trigger") in _NEWS_FROM_THE_FEED,
         )
         decision, line = diagnosis.decision, diagnosis.line_test
+        if state.get("suspected_told") and decision.state is NetworkState.CONFIRMED_CLEAR:
+            await self._suspicion_over(contact, decision.node_id, service["service_type"])
         hold = _line_fault_state(state, decision.state, line, hold_over=hold_over)
         await self._rt.contacts.update(
             contact.contact_id,
@@ -512,6 +518,44 @@ class NetworkNodes(CreditNodes, VisitNodes):
         opened = await self._open_ticket(contact, state, joined.episode)
         await self._settle_ticket(contact, joined.episode, opened)
         return joined.episode
+
+    async def _suspicion_over(
+        self, contact: Contact, node_id: str | None, service_type: str
+    ) -> None:
+        """The node this customer was told might be faulty is proven clear, and no outage was
+        declared: close the node's suspected episode and the ticket raised for it.
+
+        An alarm that clears does this from the feed. Lines that stop failing, or that turn out
+        to be a few among many that pass, have no event of their own: the conversation that
+        waited on the suspicion is where its end is seen. Under the keys the feed would use,
+        so that both doing it changes nothing.
+        """
+        if node_id is None:
+            return
+        async with self._rt.db.transaction() as conn:
+            episode = await self._rt.episodes.close_suspected(conn, node_id, service_type)
+            if episode is None:
+                return  # closed already, or it has become a declared outage's episode
+            opened_key = f"incident:{episode.episode_id}"
+            opened = (await self._rt.actions.lookup_keys(conn, [opened_key])).get(opened_key)
+            if opened is None:
+                return
+            await self._rt.actions.propose_many(
+                conn,
+                [
+                    NewAction(
+                        action_key=f"incident-resolve:{episode.episode_id}",
+                        action_type=INCIDENT_UPDATE,
+                        lane=INCIDENT_LANE,
+                        requested_by="agent:diagnostics",
+                        episode_id=episode.episode_id,
+                        depends_on=opened.action_id,
+                        correlation_id=contact.correlation_id,
+                        request_body={"status": "RESOLVED"},
+                    )
+                ],
+            )
+        log.info("suspected_fault_cleared", node_id=node_id, episode_id=str(episode.episode_id))
 
     async def _upgrade_ticket(
         self, contact: Contact, episode: Episode, opened: Proposal, outage_id: str

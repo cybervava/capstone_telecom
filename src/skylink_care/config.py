@@ -65,10 +65,17 @@ class Settings(BaseSettings):
 
     status_max_age_seconds: int = Field(default=60, gt=0)
     feed_max_age_seconds: int = Field(default=90, gt=0)
-    # This many lines failing their test on one node is treated as a node fault,
-    # counting each line's latest test within this window.
+    # Lines failing their test on one node are treated as a node fault when this many
+    # customers have one, counting each line's latest test within this window ...
     line_test_cluster_threshold: int = Field(default=3, ge=2)
     line_test_cluster_window_seconds: int = Field(default=900, gt=0)
+    # ... and that many failures among the lines tested there would be a coincidence less
+    # often than the chance given, when a line fails for reasons of its own (the customer's
+    # equipment, the drop cable) at the rate given. After an outage every waiting line on the
+    # node is tested, and a few failing among a hundred are those customers' own faults. Both
+    # values are stand-ins: the rate is in SkyLink's own line-test records.
+    line_own_fault_rate: float = Field(default=0.02, gt=0, lt=1)
+    line_test_cluster_chance: float = Field(default=0.001, gt=0, lt=1)
     # A line is not tested again sooner than this: a test exercises real equipment.
     line_retest_seconds: int = Field(default=120, ge=0)
     # Dispatch waits this long after the first failed line test: the NOC detection window.
@@ -108,6 +115,14 @@ class Settings(BaseSettings):
             raise ValueError(
                 "CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS must not be shorter than"
                 " CARE_DISPATCH_HOLD_SECONDS"
+            )
+        # Every tested line failing, at the threshold, must always count against the node.
+        alone = self.line_own_fault_rate**self.line_test_cluster_threshold
+        if alone >= self.line_test_cluster_chance:
+            raise ValueError(
+                "CARE_LINE_OWN_FAULT_RATE is so high, or CARE_LINE_TEST_CLUSTER_CHANCE so low,"
+                f" that {self.line_test_cluster_threshold} failing lines of"
+                f" {self.line_test_cluster_threshold} tested would not make a node suspect"
             )
         if self.visit_evidence_max_age_seconds < self.visit_line_test_max_age_seconds:
             raise ValueError(

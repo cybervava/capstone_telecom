@@ -24,6 +24,8 @@ LIMITS = DecisionLimits(
     status_max_age=timedelta(seconds=60),
     feed_max_age=timedelta(seconds=90),
     line_test_cluster_threshold=3,
+    line_own_fault_rate=0.02,
+    line_test_cluster_chance=0.001,
 )
 NODE = "BLR-OLT-0012"
 
@@ -52,7 +54,12 @@ FEED_NEVER = FeedView(heartbeat_at=None, active_outage=None)
 
 
 def decide(
-    mapping: NodeMapping, live: LiveStatus, feed: FeedView, *, line_test_failures: int = 0
+    mapping: NodeMapping,
+    live: LiveStatus,
+    feed: FeedView,
+    *,
+    line_test_failures: int = 0,
+    lines_passing: int = 0,
 ) -> NetworkDecision:
     return decide_network_state(
         mapping=mapping,
@@ -61,6 +68,7 @@ def decide(
         now=NOW,
         limits=LIMITS,
         line_test_failures_on_node=line_test_failures,
+        line_tests_passing_on_node=lines_passing,
     )
 
 
@@ -311,6 +319,63 @@ def test_fewer_failed_line_tests_than_the_threshold_do_not_block() -> None:
     decision = decide(MAPPED, LIVE_CLEAR, FEED_FRESH_QUIET, line_test_failures=2)
 
     assert decision.state is NetworkState.CONFIRMED_CLEAR
+
+
+def test_a_few_failing_lines_among_many_that_pass_do_not_make_the_node_suspect() -> None:
+    """After an outage every waiting line on the node is tested within minutes. Among a hundred
+    lines a few have faults of their own, and that says nothing about the node."""
+    decision = decide(MAPPED, LIVE_CLEAR, FEED_FRESH_QUIET, line_test_failures=3, lines_passing=97)
+
+    assert decision.state is NetworkState.CONFIRMED_CLEAR
+    assert decision.reason is DecisionReason.LIVE_CLEAR
+
+
+@pytest.mark.parametrize(
+    ("failing", "passing", "suspect"),
+    [
+        # With one line in fifty failing for reasons of its own, how often would this many of
+        # the lines tested fail by coincidence? Suspect below once in a thousand.
+        (3, 0, True),  # 3 of 3: eight times in a million
+        (3, 7, True),  # 3 of 10: 0.9 in a thousand
+        (3, 8, False),  # 3 of 11: 1.2 in a thousand
+        (5, 95, False),  # the wave after an outage, with the faults customers have anyway
+        (7, 93, False),  # 7 of 100: four times in a thousand
+        (8, 92, True),  # 8 of 100: 0.9 in a thousand
+        (20, 80, True),  # a node that did not come back for a fifth of its lines
+        (2, 0, False),  # too few customers to say anything, however their lines stand
+    ],
+)
+def test_failing_lines_are_judged_against_what_coincidence_explains(
+    failing: int, passing: int, suspect: bool
+) -> None:
+    decision = decide(
+        MAPPED, LIVE_CLEAR, FEED_FRESH_QUIET, line_test_failures=failing, lines_passing=passing
+    )
+
+    assert (decision.reason is DecisionReason.SUSPECTED_NODE_FAULT) is suspect
+    assert (decision.state is NetworkState.CONFIRMED_CLEAR) is not suspect
+
+
+def test_a_very_large_number_of_lines_is_judged_like_any_other() -> None:
+    """Thousands of lines on one node, a hundred of them failing: what one in fifty predicts.
+    And three hundred failing: far beyond it. Neither count may break the arithmetic."""
+    expected = decide(
+        MAPPED, LIVE_CLEAR, FEED_FRESH_QUIET, line_test_failures=100, lines_passing=4900
+    )
+    far_beyond = decide(
+        MAPPED, LIVE_CLEAR, FEED_FRESH_QUIET, line_test_failures=300, lines_passing=4700
+    )
+
+    assert expected.state is NetworkState.CONFIRMED_CLEAR
+    assert far_beyond.reason is DecisionReason.SUSPECTED_NODE_FAULT
+
+
+def test_an_alarm_makes_the_node_suspect_however_many_lines_pass() -> None:
+    alarmed = LiveStatus.operational(observed_at=FRESH, critical_alarm=True)
+
+    decision = decide(MAPPED, alarmed, FEED_FRESH_QUIET, lines_passing=100)
+
+    assert decision.reason is DecisionReason.SUSPECTED_NODE_FAULT
 
 
 def test_suspicion_is_reported_even_when_the_live_api_is_down() -> None:

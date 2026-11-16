@@ -17,7 +17,7 @@ from skylink_care.agents.diagnostics import DiagnosticsAgent, LineTestPolicy, Su
 from skylink_care.db.audit import AuditRepository
 from skylink_care.db.contacts import ContactRepository, NewContact
 from skylink_care.db.database import Database
-from skylink_care.db.line_tests import LineTest, LineTestRepository
+from skylink_care.db.line_tests import LineTest, LineTestRepository, NodeLines
 from skylink_care.db.read_model import ReadModelRepository
 from skylink_care.db.reference import ReferenceRepository
 from skylink_care.domain.models import Channel, MappingStatus, NetworkState
@@ -33,6 +33,8 @@ LIMITS = DecisionLimits(
     status_max_age=timedelta(seconds=60),
     feed_max_age=timedelta(seconds=90),
     line_test_cluster_threshold=3,
+    line_own_fault_rate=0.02,
+    line_test_cluster_chance=0.001,
 )
 POLICY = LineTestPolicy(cluster_window=timedelta(minutes=15), retest_after=timedelta(minutes=2))
 
@@ -156,7 +158,7 @@ def auditor(db: Database) -> Auditor:
 # --- records -------------------------------------------------------------------------------------
 
 
-async def test_failing_lines_are_counted_once_each_by_their_latest_result(db: Database) -> None:
+async def test_lines_are_counted_once_each_by_their_latest_result(db: Database) -> None:
     tests = LineTestRepository(db)
     since = NOW - timedelta(minutes=15)
     for record in (
@@ -171,9 +173,10 @@ async def test_failing_lines_are_counted_once_each_by_their_latest_result(db: Da
     ):
         await tests.record(record, contact_id=None)
 
-    assert await tests.failing_lines_on_node(NODE, since=since) == 2
-    assert await tests.failing_lines_on_node(OTHER, since=since) == 1
-    assert await tests.failing_lines_on_node("BLR-OLT-0099", since=since) == 0
+    # S1 and S2 fail; S3 passes now; S4 said nothing either way and counts as neither.
+    assert await tests.lines_on_node(NODE, since=since) == NodeLines(failing=2, passing=1)
+    assert await tests.lines_on_node(OTHER, since=since) == NodeLines(failing=1, passing=0)
+    assert await tests.lines_on_node("BLR-OLT-0099", since=since) == NodeLines(0, 0)
 
 
 async def test_line_found_on_another_node_since_is_not_counted_on_the_old_one(
@@ -184,8 +187,8 @@ async def test_line_found_on_another_node_since_is_not_counted_on_the_old_one(
     await tests.record(line_result("S1", "FAIL", minutes_ago=9), contact_id=None)
     await tests.record(line_result("S1", "FAIL", node_id=OTHER, minutes_ago=2), contact_id=None)
 
-    assert await tests.failing_lines_on_node(NODE, since=since) == 0
-    assert await tests.failing_lines_on_node(OTHER, since=since) == 1
+    assert await tests.lines_on_node(NODE, since=since) == NodeLines(failing=0, passing=0)
+    assert await tests.lines_on_node(OTHER, since=since) == NodeLines(failing=1, passing=0)
 
 
 async def test_customer_with_several_lines_on_a_node_counts_once(db: Database) -> None:
@@ -201,9 +204,28 @@ async def test_customer_with_several_lines_on_a_node_counts_once(db: Database) -
         await tests.record(line_result(service_id, "FAIL", minutes_ago=3), contact_id=None)
     await tests.record(line_result("S-UNLISTED", "FAIL", minutes_ago=3), contact_id=None)
 
-    failing = await tests.failing_lines_on_node(NODE, since=NOW - timedelta(minutes=15))
+    lines = await tests.lines_on_node(NODE, since=NOW - timedelta(minutes=15))
 
-    assert failing == 2  # customer C1, and the line whose owner is not on record
+    assert lines.failing == 2  # customer C1, and the line whose owner is not on record
+
+
+async def test_customer_with_one_line_failing_and_one_passing_counts_as_failing_only(
+    db: Database,
+) -> None:
+    await seed_reference(db)
+    async with db.transaction() as conn:
+        await conn.execute(
+            "INSERT INTO service_index (service_id, customer_id, service_type, address_id, status)"
+            " VALUES ('S10', 'C1', 'broadband', 'A-GOOD', 'active')"
+        )
+    tests = LineTestRepository(db)
+    await tests.record(line_result("S1", "FAIL", minutes_ago=3), contact_id=None)  # C1's
+    await tests.record(line_result("S10", "PASS", minutes_ago=3), contact_id=None)  # C1's too
+    await tests.record(line_result("S-OTHER", "PASS", minutes_ago=3), contact_id=None)
+
+    lines = await tests.lines_on_node(NODE, since=NOW - timedelta(minutes=15))
+
+    assert lines == NodeLines(failing=1, passing=1)
 
 
 async def test_contact_finds_its_own_recent_result_and_nobody_elses(
@@ -409,6 +431,35 @@ async def test_enough_lines_failing_on_the_node_overrules_a_live_all_clear(db: D
     assert diagnosis.failing_lines_on_node == 3
     assert diagnosis.decision.state is NetworkState.UNKNOWN
     assert diagnosis.decision.reason is DecisionReason.SUSPECTED_NODE_FAULT
+
+
+async def test_a_few_lines_failing_among_many_that_pass_leave_the_live_all_clear_standing(
+    db: Database, contacts: ContactRepository
+) -> None:
+    """The wave after an outage: the platform has just tested every waiting line on the node,
+    and three customers have faults of their own. That is not evidence against the node."""
+    await seed_reference(db)
+    tests = LineTestRepository(db)
+    for service_id in ("S7", "S8"):
+        await tests.record(line_result(service_id, "FAIL", minutes_ago=4), contact_id=None)
+    for number in range(20):
+        await tests.record(line_result(f"S-OK-{number}", "PASS", minutes_ago=3), contact_id=None)
+    network = ScriptedNetwork({NODE: operational(NODE)}, line_answer(NODE, "FAIL"))
+    contact_id = await a_contact(contacts)
+    audit = Auditor(AuditRepository(db), contact_id=contact_id, correlation_id=uuid4().hex)
+
+    diagnosis = await agent(db, network).run(subject(contact_id=contact_id), audit=audit)
+
+    assert (diagnosis.failing_lines_on_node, diagnosis.passing_lines_on_node) == (3, 20)
+    assert diagnosis.decision.state is NetworkState.CONFIRMED_CLEAR
+    assert diagnosis.decision.reason is DecisionReason.LIVE_CLEAR
+    trail = await AuditRepository(db).for_contact(contact_id)
+    (decided,) = [record for record in trail if record.step == "diagnostics.decide"]
+    assert (decided.inputs["failing_lines_on_node"], decided.inputs["passing_lines_on_node"]) == (
+        3,
+        20,
+    )
+    assert (decided.inputs["live_alarm"], decided.inputs["feed_alarm"]) == (False, False)
 
 
 # --- sharing a status read, and when not to ------------------------------------------------------

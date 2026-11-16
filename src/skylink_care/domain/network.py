@@ -18,6 +18,7 @@ This module is pure: callers gather the evidence and pass ``now`` in.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -93,8 +94,13 @@ class FeedView:
 class DecisionLimits:
     status_max_age: timedelta
     feed_max_age: timedelta
-    # This many distinct lines failing on one node within the window is treated as a node fault.
+    # Lines failing on one node within the window are treated as a node fault when at least
+    # this many customers have one, and that many failures among the lines tested there would
+    # be a coincidence less often than the chance given, when a line fails for reasons of its
+    # own at the rate given (``_lines_point_at_the_node``).
     line_test_cluster_threshold: int
+    line_own_fault_rate: float
+    line_test_cluster_chance: float
 
 
 @dataclass(frozen=True)
@@ -152,6 +158,7 @@ def decide_network_state(
     now: datetime,
     limits: DecisionLimits,
     line_test_failures_on_node: int = 0,
+    line_tests_passing_on_node: int = 0,
 ) -> NetworkDecision:
     """Combine mapping, live status, read model and suspicion into one evidenced decision."""
     if now.tzinfo is None:
@@ -179,9 +186,46 @@ def decide_network_state(
         feed_heartbeat_at=feed.heartbeat_at,
         feed_fresh=feed_fresh,
         feed_outage=open_feed_outage,
-        suspicious=alarm or line_test_failures_on_node >= limits.line_test_cluster_threshold,
+        suspicious=alarm
+        or _lines_point_at_the_node(line_test_failures_on_node, line_tests_passing_on_node, limits),
     )
     return _declared_outage(evidence) or _suspected(evidence) or _no_declared_outage(evidence)
+
+
+def _lines_point_at_the_node(failing: int, passing: int, limits: DecisionLimits) -> bool:
+    """Enough customers have a failing line on the node, and more than coincidence explains.
+
+    A count alone is evidence only while few lines are tested, which is how customers' own
+    reports arrive: the ones who call are the ones affected. After an outage the platform
+    tests every waiting line on the node within minutes, and among a hundred lines a few have
+    faults of their own. So the count is set against the lines tested: three failing of three
+    is the node, three of a hundred is not, and eight of a hundred is again.
+    """
+    if failing < limits.line_test_cluster_threshold:
+        return False
+    by_coincidence = _chance_of_at_least(failing, failing + passing, limits.line_own_fault_rate)
+    return by_coincidence < limits.line_test_cluster_chance
+
+
+def _chance_of_at_least(failing: int, tested: int, rate: float) -> float:
+    """How likely it is that at least ``failing`` of ``tested`` lines fail when each fails by
+    itself with probability ``rate``: the upper tail of a binomial distribution.
+
+    Summed in logarithms from the lower tail, which holds for any number of lines; the terms
+    of the upper tail would underflow long before a node runs out of lines.
+    """
+    log_fails, log_passes = math.log(rate), math.log1p(-rate)
+    fewer = math.fsum(
+        math.exp(
+            math.lgamma(tested + 1)
+            - math.lgamma(count + 1)
+            - math.lgamma(tested - count + 1)
+            + count * log_fails
+            + (tested - count) * log_passes
+        )
+        for count in range(failing)
+    )
+    return max(0.0, 1.0 - fewer)
 
 
 def _declared_outage(ev: _Evidence) -> NetworkDecision | None:

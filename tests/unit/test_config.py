@@ -55,3 +55,18 @@ def test_cluster_window_shorter_than_the_hold_is_refused() -> None:
             line_test_cluster_window_seconds=300,
             dispatch_hold_seconds=600,
         )
+
+
+def test_settings_that_would_switch_the_failing_lines_check_off_are_refused() -> None:
+    """Three customers, all with a failing line and nobody's passing, must always be evidence
+    against the node. With a fault rate set so high that this could be coincidence, the check
+    would be switched off without anyone having said so."""
+    with pytest.raises(ValidationError, match="CARE_LINE_OWN_FAULT_RATE"):
+        Settings(db_password="x", line_own_fault_rate=0.2)
+
+
+def test_the_default_settings_keep_three_failing_lines_of_three_suspect() -> None:
+    settings = Settings(db_password="x")
+
+    by_coincidence = settings.line_own_fault_rate**settings.line_test_cluster_threshold
+    assert by_coincidence < settings.line_test_cluster_chance
