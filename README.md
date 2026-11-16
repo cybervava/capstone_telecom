@@ -7,7 +7,7 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 ## Status
 
-Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. M3 (the curveball and resilience) is built as well: a circuit for each dependency, shared status reads, a check on what every message claims about the network, an operations queue, surge mode with a load test of the brief's surge, and the curveball as a scored drill with its decision record ([ADR 0001](docs/adr/0001-degraded-mode-when-the-network-api-fails.md)). Everything after M3 is not built.
+Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. M3 (the curveball and resilience) is built as well: a circuit for each dependency, shared status reads, a check on what every message claims about the network, an operations queue, surge mode with a load test of the brief's surge, and the curveball as a scored drill with its decision record ([ADR 0001](docs/adr/0001-degraded-mode-when-the-network-api-fails.md)). M4 (trust) is in progress: the first of its seven slices is built. Everything after M4 is not built.
 
 **Works today**
 
@@ -229,6 +229,10 @@ The index build refuses, as a whole, any document that is not a device guide, a 
 `CARE_LLM_PROVIDER=simulated` is for load tests only: the rules' answer after `CARE_LLM_SIMULATED_LATENCY_SECONDS` (1.5), with no model called. It puts a model's seconds on every turn, which is what surge mode sheds. `SIMULATED_MODEL_SECONDS=1.5 make dev` starts the stack with it.
 
 The model only reads the customer's message for intent, on masked text, and only once the customer is identified. It never decides identity, network status, eligibility or amounts.
+
+What is masked before a model reads a message: phone numbers, email addresses, customer and service ids and any long number, by their shape; and by value everything the platform knows to be this customer's. That is the name whole and in its parts (with the endings people add: "Ashaji"), the registered mobile however its digits are set apart, its last four to nine digits (the last four are half of the identity check), the name part of the email address, the numbers of the ids, and the area, city and pincode of each service address. A test writes the details of 300 synthetic customers into messages in those spellings and searches the request the Claude provider would send for exactly what was written (`tests/unit/llm/test_model_payloads.py`). What no masking can know stays possible, and a test pins it: digits spelled as words, a name in another script, a street or a relative the platform was never told.
+
+Logs and the audit trail are redacted separately. Contact details go, and so do secrets: a field named like one at any depth, a bearer token or a password inside a sentence, whatever a library logs. The HTTP client's line for every request is off, because the address of a request can carry a caller's number. Times and the identifiers of other systems (an outage, an incident, a request id) stay, so that an entry can be followed; customer and service ids stay on purpose, because the trail must say whose case it was.
 
 ## How it is put together
 
