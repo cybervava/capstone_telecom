@@ -14,12 +14,14 @@ the care platform never sees that file.
 - **Auth:** header `X-API-Key`. Missing or unknown key → `401 UNAUTHENTICATED`. Key lacks the scope →
   `403 FORBIDDEN`. Key values come from the environment; the client-to-scope table is fixed in code.
 - **Correlation:** `X-Request-ID` is echoed on every response (generated if absent) and stored with any write.
-- **Errors:** `{"error": {"code": "NODE_NOT_FOUND", "message": "…"}}` with a matching HTTP status.
+- **Errors:** `{"error": {"code": "NODE_NOT_FOUND", "message": "…"}}` with a matching HTTP status. An
+  invalid body or query → `422 VALIDATION_ERROR`.
 - **Time:** all timestamps are UTC ISO 8601 with `Z`. Money is a decimal string with two places (`"812.50"`).
 - **Idempotency (every `POST` that creates something):** header `Idempotency-Key` is required
   (`400 IDEMPOTENCY_KEY_REQUIRED`). Same key and same body → the original response body with the original
   status code and header `Idempotent-Replay: true`. Same key, different body → `409 IDEMPOTENCY_KEY_REUSED`.
-  Keys are scoped per endpoint. A lookup-by-key endpoint exists for every such resource.
+  Keys are scoped per endpoint; a key over 200 characters → `400 IDEMPOTENCY_KEY_INVALID`. A
+  lookup-by-key endpoint exists for every such resource.
 
 ### Clients and scopes
 
@@ -79,12 +81,15 @@ Body `{"service_id": "S0001234"}`. Takes 300–1500 ms.
 
 `result` is `PASS`, `FAIL` or `INCONCLUSIVE`. Truth model: `FAIL` when the service's **true** node has an
 outage in progress (detected or not) or the service has an individual line fault; `INCONCLUSIVE` only when
-injected; otherwise `PASS` (`link: UP`, `optical_rx_dbm` between −24 and −14, `sync: true`,
+injected, and an injected `INCONCLUSIVE` wins even during an outage; otherwise `PASS`. About 1.2% of broadband
+services (chosen by `mock-oss seed --seed`) test `FAIL` from the start, as faults of their own. A passing line: (`link: UP`, `optical_rx_dbm` between −24 and −14, `sync: true`,
 `packet_loss_pct` below 1). `node_id` is the true node. Unknown service → `404 SERVICE_NOT_FOUND`.
 
 ### `GET /network/v1/events?after_seq=0&limit=200&wait_seconds=0` — scope `network:feed`
 
 Ordered change feed of NOC events (schema of `network_events.jsonl` in the data contract, timestamps in UTC).
+The pack's history is not loaded: after a seed the feed is empty, and every event comes from the simulator
+controls (`/admin/v1`).
 
 ```json
 {"events": [ {"seq": 4813, "event_id": "evt_…", "type": "OUTAGE_UPDATED", "…": "…"} ],
@@ -143,7 +148,7 @@ Credit: `{"credit_id": "CR-…", "customer_id", "service_id", "amount_inr": "812
 | `POST /field/v1/appointments` | `field:write` | Idempotent create. Body `{"customer_id", "service_id", "slot_id", "reason", "complaint_ref"}`. `201` `{"appointment_id": "AP-…", "slot_id", "start", "end", "status": "BOOKED", …}`. `409 SLOT_FULL`, `404 SLOT_NOT_FOUND` |
 | `GET /field/v1/appointments/by-key/{idempotency_key}` | `field:read` | The appointment or `404` |
 | `GET /field/v1/appointments?service_id=&status=BOOKED` | `field:read` | `{"appointments": […]}` |
-| `POST /field/v1/appointments/{appointment_id}/cancel` | `field:write` | `{"status": "CANCELLED"}`; cancelling twice is a no-op |
+| `POST /field/v1/appointments/{appointment_id}/cancel` | `field:write` | Returns the appointment, `status: CANCELLED`; cancelling twice is a no-op; unknown → `404 APPOINTMENT_NOT_FOUND` |
 
 ## Incident Management
 
@@ -157,6 +162,8 @@ Credit: `{"credit_id": "CR-…", "customer_id", "service_id", "amount_inr": "812
 | `POST /incident/v1/incidents/{incident_id}/complaints` | `incident:write` | Idempotent link. Body `{"complaint_ref", "contact_id", "customer_id"}` (`customer_id` nullable). `201`. Linking the same reference twice with a new key → `200`, no duplicate |
 | `POST /incident/v1/complaints` | `incident:write` | Idempotent registration of a complaint reference. Body `{"complaint_ref", "received_at", "channel", "category", "customer_id"}` (`customer_id` nullable) → `201` `{"complaint_ref", "registered_at"}`. A different body for an already registered reference → `409 COMPLAINT_REF_CONFLICT` |
 | `GET /incident/v1/complaints/{complaint_ref}` | `incident:read` | The registration or `404` |
+| `GET /incident/v1/complaints/by-key/{idempotency_key}` | `incident:read` | The registration or `404` |
+| `GET /incident/v1/incidents/{incident_id}/complaints/by-key/{idempotency_key}` | `incident:read` | The link or `404` |
 
 The mock deliberately does **not** deduplicate incidents by node: two creates with different keys make two
 incidents. Preventing that is the care platform's job, and the tests count on being able to observe a failure.
@@ -167,6 +174,7 @@ incidents. Preventing that is the care platform's job, and the tests count on be
 |---|---|---|
 | `POST /notify/v1/messages` | `notify:write` | Idempotent. Body `{"customer_id", "channel", "template_id", "body", "outage_id"}`; `channel` is `sms`, `push` or `preferred` (the gateway uses the channel on the customer's consent record; `409 NO_PREFERRED_CHANNEL` when there is none); `outage_id` nullable. `202` `{"message_id": "MSG-…", "status": "ACCEPTED", "created_at"}`. Nothing is sent anywhere. The gateway does **not** check consent: that is the caller's job, at send time |
 | `GET /notify/v1/messages?customer_id=&outage_id=&limit=50` | `notify:write` | `{"messages": […]}` newest first; at least one filter required |
+| `GET /notify/v1/messages/by-key/{idempotency_key}` | `notify:write` | The message or `404`. The care platform's executor reads it to settle a send whose answer was lost |
 
 ## Simulator controls — scope `admin`
 
@@ -175,17 +183,17 @@ Not part of any client system. Used by tests, drills, evaluations and the demo c
 | Endpoint | Behaviour |
 |---|---|
 | `POST /admin/v1/outages` | Start an outage now. Body `{"node_id", "cause", "planned": false, "eta_minutes": 180, "detect_after_seconds": 0}`. An AGG node affects all its active children. Service drops immediately and, unless `planned`, a critical `ALARM_RAISED` event is emitted on the root node at once (`POWER` for `POWER_FAILURE`, otherwise `LINK_DOWN`) and shows in `active_alarms`. `OUTAGE_STARTED` is emitted and the status endpoint changes only after `detect_after_seconds`. → `201` `{"outage_id", "alarm_id", "affected_node_ids": […]}` (`alarm_id` null for planned work) |
-| `POST /admin/v1/outages/{outage_id}/update` | Body `{"eta_minutes": 60, "eta_source": "field_update"}` → emits `OUTAGE_UPDATED` with `version + 1` |
+| `POST /admin/v1/outages/{outage_id}/update` | Body `{"eta_minutes": 60, "eta_source": "field_update"}` → emits `OUTAGE_UPDATED` with `version + 1`. An outage not yet detected is detected first (emitting `OUTAGE_STARTED`); updating a resolved one → `409 OUTAGE_RESOLVED` |
 | `POST /admin/v1/outages` (backdating) | Optional `"started_minutes_ago"` (0 to 86,400) makes the outage begin in the past, so that scenarios which depend on its duration (service credits) need no waiting. Its alarm and `OUTAGE_STARTED` events carry the past time, so a feed consumer sees an event that is already old |
-| `POST /admin/v1/outages/{outage_id}/resolve` | Emits `OUTAGE_RESOLVED` and `ALARM_CLEARED` for the outage's alarm; idempotent |
+| `POST /admin/v1/outages/{outage_id}/resolve` | Emits `OUTAGE_RESOLVED` and `ALARM_CLEARED` for the outage's alarm; idempotent. An outage not yet detected is detected first (emitting `OUTAGE_STARTED`) |
 | `POST /admin/v1/alarms` | Raise an alarm that is not (yet) an outage. Body `{"node_id", "alarm_type", "severity"}` → emits `ALARM_RAISED`; `201` `{"alarm_id"}`. `POST /admin/v1/alarms/{alarm_id}/clear` emits `ALARM_CLEARED`; idempotent |
 | `GET /admin/v1/outages?active=true` | Current simulated outages, including undetected ones |
 | `POST /admin/v1/line-faults` | Body `{"service_id", "fault": true, "result": "FAIL"}`; `result` may be `FAIL` or `INCONCLUSIVE`; `fault: false` clears |
-| `POST /admin/v1/consent` | Body `{"customer_id", "outage_notifications": false}` |
+| `POST /admin/v1/consent` | Body `{"customer_id", "outage_notifications": false, "channel": "sms"}`. `channel` (`sms` or `push`) is optional, default `sms`; opting out sets it to `none`, so a `preferred` send then gets `409` |
 | `POST /admin/v1/chaos` | Body `{"target", "mode", "latency_ms", "error_rate", "hold_seconds", "ttl_seconds"}` — see below. `GET /admin/v1/chaos` lists active rules; `DELETE /admin/v1/chaos` clears all |
 | `GET /admin/v1/customers/search` | Fixture finder using ground truth. Filters: `node_id`, `service_type`, `router_model`, `segment`, `consent` (`true`/`false`), `mapping_defect`, `status`, `min_monthly_fee`, `limit` (≤ 50). Returns `{"customers": [{"customer_id", "service_id", "true_node_id", "mapped_node_ids": […], "router_model", "monthly_fee_inr", "consent", "mapping_defect", "phone"}]}` |
 | `GET /admin/v1/state` | Counters for assertions: rows per write table (`credits`, `appointments`, `incidents`, `incident_complaints`, `complaints`, `messages`) and request counts per API and outcome |
-| `POST /admin/v1/reset` | Clears runtime state (outages, alarms, faults injected at runtime, writes, chaos, request counters). Reference data stays. Declared outages and active alarms are closed on the feed first (`OUTAGE_RESOLVED`, `ALARM_CLEARED`) and the feed's history and sequence are kept, so a feed consumer stays consistent across a reset. An outage the NOC had not detected yet is forgotten without an event |
+| `POST /admin/v1/reset` | Clears runtime state (outages, alarms, faults injected at runtime, writes, chaos, request counters, consent set through `/admin/v1/consent`, and all idempotency keys). Reference data stays. Declared outages and active alarms are closed on the feed first (`OUTAGE_RESOLVED`, `ALARM_CLEARED`) and the feed's history and sequence are kept, so a feed consumer stays consistent across a reset. An outage the NOC had not detected yet is forgotten without an event |
 
 ### Fault injection
 

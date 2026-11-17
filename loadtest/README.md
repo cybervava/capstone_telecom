@@ -5,9 +5,10 @@ offers that rise to the running stack twice, once with every dependency up and o
 Network Monitoring API down (the curveball under load), and writes a report.
 
 ```bash
+make data CUSTOMERS=400000   # the brief profile needs the full pack (see below)
 make dev              # the stack, freshly seeded from data/generated
 make loadtest-quick   # the shape of the surge in two minutes a run; report in var/loadtest/
-make loadtest         # the profile of the brief, both runs: about two hours
+make loadtest         # the profile of the brief, both runs: about an hour and a half
 make stop
 ```
 
@@ -17,10 +18,17 @@ stack before running either of the others, and expect them to clear what a load 
 
 In `loadtest/reports/` today: `surge-brief-before-fix.md` is the half-hour profile as it ran on
 16 November, before the rule for failing lines was changed (the wave after its surge is what led
-to the change). `surge-quick.md` is the two-minute profile on the code as it is, and
+to the change). `surge-quick.md` is the two-minute profile as it ran at the M3 gate (not run since M4), and
 `surge-simulated-model.md` is described below. The half-hour profile needs the machine awake for
 two hours: a laptop that goes to sleep stops the run where it is, and a run that slept must be
 repeated, because every age the platform judges by jumps with the clock.
+
+The brief profile needs about 27,900 different callers with an active, correctly mapped
+broadband service. The 40,000-customer pack that `make data` makes by default has about 17,000,
+and the run stops with "the data pack is too small": generate the 400,000-customer pack first
+(`make data CUSTOMERS=400000`, then `make dev`). `--fault timeout|response_loss` makes the API
+fail that way in the second run instead of refusing every call; `--data` must name the pack the
+stack was seeded from.
 
 It runs only against a stack on this machine: it resets the simulator, makes a dependency fail
 and signs in with the local staff key.
@@ -79,7 +87,7 @@ minutes. That count is in the report beside the share.
 - **After the surge** accounts for everyone who waited on the outage: told that it is over, or
   standing where the platform left them when the time was up. It also gives how many were told
   meanwhile that the status cannot be verified, how many of their lines failed the test (faults
-  of their own, which the data pack has at a rate of about one in seventy) and whether the
+  of their own, which the simulator gives about one broadband line in 83 when it is seeded) and whether the
   platform raised a ticket for a suspected fault on a node that had just been restored. In the
   simulator nothing is wrong with those nodes, so such a ticket is the platform doubting a
   healthy node: rare by design, never impossible (see `line_own_fault_rate` in the settings).

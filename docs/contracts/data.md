@@ -95,14 +95,16 @@ Defects, applied per (address, service type) and recorded in the truth file:
 | `ambiguous` | 1.0% | Two currently valid rows with different `node_id`s (one is the true node) |
 | `stale` | 0.7% | One currently valid row pointing at a `DECOMMISSIONED` node; the true node is a different, active node |
 
-Rates are CLI options. A correct mapping may also carry closed historical rows (`valid_to` set).
+Rates are CLI options (each at most 0.25). A correct mapping may also carry closed historical rows
+(`valid_to` set). `--customers` accepts 1,000 to 5,000,000.
 
 ### `truth_service_node.csv` — simulator ground truth
 
 `service_id`, `true_node_id`, `mapping_defect` (`none`, `missing`, `ambiguous`, `stale`).
 
-Read only by `mock_oss` (to decide what a line test or an outage really affects) and by `evals/`
-(to score). **`skylink_care` must never read this file.**
+Read only by `mock_oss` (to decide what a line test or an outage really affects), by `evals/`
+(to score) and by `loadtest/` (to pick callers on the failed nodes). **`skylink_care` must never read
+this file.**
 
 ## 2. Network history
 
@@ -123,7 +125,9 @@ Read only by `mock_oss` (to decide what a line test or an outage really affects)
 | `duration_minutes` | int | `resolved_at - started_at` |
 
 About 10 outages per day at full scale. Durations are log-normal with a median near 120 minutes and a
-tail beyond 48 hours; planned work lasts 60–240 minutes and happens between 01:00 and 05:00.
+tail beyond 48 hours, clamped to between 15 minutes and 6 days; planned work lasts 60–240 minutes and
+happens between 01:00 and 05:00, rooted at an AGG node 30% of the time, an OLT 50%, a tower 20%. At
+least 40 outages are generated whatever the size.
 
 ### `network_events.jsonl`
 
@@ -137,7 +141,9 @@ Common fields: `seq`, `event_id` (`evt_` + 16 hex, unique), `type`, `emitted_at`
   `resolved_at` (null until resolved).
 - Alarms — `ALARM_RAISED`, `ALARM_CLEARED`. Extra fields: `alarm_id`, `alarm_type` (`LOS`, `LINK_DOWN`,
   `HIGH_BER`, `POWER`, `HIGH_TEMP`), `severity` (`critical`, `major`, `minor`). Every outage is preceded by at
-  least one critical alarm on its root node; about three times as many alarms never become outages.
+  least one critical alarm on its root node, and 30% of outages add a `major` alarm on an affected node;
+about three times as many alarms never become outages (these are critical, major or minor 15/40/45% of
+the time, and clear within 90 minutes).
 
 ## 3. Contact history
 
@@ -158,7 +164,7 @@ Common fields: `seq`, `event_id` (`evt_` + 16 hex, unique), `type`, `emitted_at`
 | `legacy_resolution` | enum | `reboot_script`, `technician_visit`, `resolved_on_call`, `billing_adjustment`, `escalated` |
 | `technician_visit` | bool | |
 | `visit_necessary` | bool / null | Null when no visit |
-| `repeat_within_7d` | bool | Another contact by the same customer within 7 days |
+| `repeat_within_7d` | bool | A later contact by the same customer within 7 days |
 
 Constraints the generator must satisfy and its tests must assert:
 
@@ -168,7 +174,9 @@ Constraints the generator must satisfy and its tests must assert:
   `visit_necessary = false`. This encodes the brief's "30% of these calls end in an unnecessary technician visit".
 - `label = device` ⇒ the true node has no outage at `ts`; `technician_visit` is `true` for about 25%, of
   which about 70% are necessary.
-- `label = billing` ⇒ no visit.
+- `label = billing` ⇒ no visit. Visits fall only on broadband services, and `legacy_resolution` is
+  `technician_visit` exactly when a visit happened.
+- Mobile services make up 20% of outage contacts, 15% of device and 45% of billing contacts.
 - Outage and device openings overlap heavily in wording ("internet not working", "red light on the router"):
   text alone must not separate them. Billing is distinguishable.
 - About 30% of transcripts state an identifier in the text (phone, customer id or email) so masking can be tested.

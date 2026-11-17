@@ -2,8 +2,9 @@
 
 Seven scored runs, each tied to a line of the brief or to a claim this build makes. `make eval`
 (PostgreSQL must be up: `make up`) runs them and rewrites the reports in `evals/reports/`, one
-Markdown file to read and one JSON file with the same numbers. They are not part of
-`make test-all`: a failed evaluation means a target was missed, not that the code is broken.
+Markdown file to read and one JSON file with the same numbers. Each report states when it was
+written (`written_at`); all seven were last run on the code of M4, on 16 November. They are not
+part of `make test-all`: a failed evaluation means a target was missed, not that the code is broken.
 
 | Report | Brief metric | How it is measured |
 |---|---|---|
@@ -11,8 +12,8 @@ Markdown file to read and one JSON file with the same numbers. They are not part
 | `truck_rolls` | Unnecessary truck rolls cut ≥ 50% (simulation) | The three kinds of contact that ended in a technician visit in the data pack are replayed with a customer who asks for a technician, takes one whenever offered, and goes on asking until a person takes over. Visits the workflow books are compared with the baseline's. |
 | `credit_policy` | Credits match policy 100% | The credit engine against an independent calculation in exact arithmetic over a grid on every boundary of the policy, and against amounts worked out by hand. |
 | `curveball` | The curveball: safe degraded mode, and a reference for every contact | One scene (two declared outages, a visit on offer, then the Network Monitoring API fails, customers write in, the NOC resolves one outage, the API returns) played for four ways the API can fail and for a feed that works and one that is silent. Scored against what the simulator knows to be true: nobody in an outage told the network is clear, no visit booked without a status read at that moment, no credit applied without an approval, a reference for every contact, at most one incident on a node. |
-| `retrieval` | (none in the brief) | Descriptions of a broadband fault put to the Troubleshooting Agent for every router model; the section it answers with is scored against labels made by hand. Three sets, of which one is out-of-sample (below). |
-| `attack_suite` | Guardrail test set of at least 15 attack and edge prompts, with pass rate reported (checklist 1); the M4 gate: no critical failure | 38 attacks against the whole platform, scored on what a customer, an auditor or the enterprise systems could see afterwards. Those made of words are tried twice (below). |
+| `retrieval` | (none in the brief) | Descriptions of a broadband fault put to the Troubleshooting Agent for every router model; the section it answers with is scored against labels made by hand. Three sets; the third was out-of-sample when first scored (81.25%). The retriever has changed since, so today's 89.58% on it is not (below). |
+| `attack_suite` | Guardrail test set of at least 15 attack and edge prompts, with pass rate reported (checklist 1); the M4 gate: no critical failure | 40 attacks (58 runs) against the whole platform, scored on what a customer, an auditor or the enterprise systems could see afterwards. Those made of words are tried twice (below). |
 | `segment_parity` | Bias check: decisions tested across customer segments (checklist 3) | Consumer and SME customers, each on a node of their own, are put through the same eight situations (an outage, an outage that has ended after five hours and after three days, a clear node with a passing line, a failing line through the hold, the Network Monitoring API down, a billing question, a request for a person). What they are told, who takes over and how urgently, and the rule a credit follows are compared. What does differ, the amount of a credit and with it who approves, is tabled by monthly fee. |
 
 ## What they run on
@@ -68,7 +69,9 @@ the count of wrong identity answers, the binding of a contact, who may decide an
 at which level, the hash an approval must quote, approval of small credits, a gateway scope,
 the staff routes, the ownership of a contact, the routing of a status that could not be read
 and of an outage, masking by value, the rule that an unidentified visitor's text stays inside,
-the shape of a model's answer, the cleaning of its one sentence. Nineteen checks. Each control
+the shape of a model's answer, the cleaning of its one sentence; and, since slice D, the checks on
+rudeness, on "it works" and "off-topic" readings, and on a guide's steps, headings, passages
+and titles at the index build and where they are sent. Twenty-seven checks. Each control
 that is taken out is reported by its attack with the failure it leads to, as critical where it
 is. Where two locks stand behind one another (the agent and the database bind a contact; the
 API and the repository ask who decides; the routing and the claim check keep an unread status

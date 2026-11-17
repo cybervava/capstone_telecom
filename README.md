@@ -2,6 +2,7 @@
 
 Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE programme). It makes customer care "know what the network knows": every contact gets a complaint reference at once, customers on a failed network node are told about the outage instead of being walked through a reboot script, and no enterprise write happens twice.
 
+- How the whole system works, in plain language, for readers who do not write software: [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md)
 - Plan, milestones and decisions still open: [`docs/EXECUTION_PLAN.md`](docs/EXECUTION_PLAN.md)
 - Contracts of the stand-in data pack and mock APIs: [`docs/contracts/`](docs/contracts/)
 - The brief's checklists (guardrails, security, compliance and responsible AI), line by line, with the evidence or the reason: [`docs/evidence_index.md`](docs/evidence_index.md). Beside it: the [threat model](docs/threat_model.md), the [data inventory](docs/data_inventory.md) and the [map from complaint rules to controls](docs/regulatory_controls.md)
@@ -29,13 +30,13 @@ Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six ca
 - **Staff desk** (`/staff.html`). What the assistant could not or may not settle on its own, and (for operations staff) what went wrong with nobody waiting on it: the credits that wait for a decision, each shown exactly as it was frozen, with its working, and approved or rejected there; and the queue of contacts passed to a person, each with the handover summary, the conversation and the audit trail, closed with a note once dealt with. Every decision carries the name of who took it.
 - **Dependencies that fail.** Each API of the gateway has a circuit in the one HTTP path every agent uses. After five failures in a row the API is rested for ten seconds: calls to it are not made at all, and the caller is told "not attempted", which every reader treats as "not verified" and never as "nothing found". Then one call tries again. A read that fails fast is tried once more; the HTTP layer never repeats a write, and the executor replays one under its key, knowing whether it was sent. Every call has a limit on its whole duration. Contacts on one node that are diagnosed at the same moment share one status read.
 - **No claim about the network without proof.** Every message a conversation sends is built from a template, and the routing reaches a template only with the evidence it needs. A second lock stands where messages are stored: each template declares what it claims (no outage reported, an outage, service restored, a visit being arranged, nothing), and the message is stored only if the network decision of its turn, made on a status read within the last minute, backs that claim. A step that acts on what it is about to say (proposes a credit, raises a ticket, proposes a booking) asks first. A message that is stopped is recorded, and the contact goes to a person at once. The customer's page follows the same rule: "none reported" is shown only while the check is recent, and reads "not verified" after that.
-- **Words meant to steer the assistant, and abuse.** Whoever reads a message (a model, or the keyword rules), the rules look at it as well. Known injection phrasing is declined whatever the reading. Abuse and nothing else is declined politely, with the complaint reference; a fault reported rudely is handled as the fault it is. A reading that calls a plain fault report off-topic goes to a person, and no "it works again" is read into words that say it does not. A flagged message leaves an audit entry of its own.
-- **Guides are checked where they come in and where their steps go out.** Steps are quoted word for word, so a guide that has been tampered with would speak to the customer directly. The index build refuses a quotable step that speaks to an assistant, speaks of money, asks the customer to hand something over, or sends them to a number, a channel or an address outside their home network; the passage about to be quoted is checked again, and must be from the customer's own router's guide.
+- **Words meant to steer the assistant, and abuse.** Whoever reads a message (a model, or the keyword rules), the rules look at it as well. Known injection phrasing in a message that reports no fault is declined whatever the reading; with a fault reported in plain words the message goes its usual way, and nothing in it can unlock anything. Abuse and nothing else is declined politely, with the complaint reference; a fault reported rudely is handled as the fault it is. A reading that calls a plain fault report off-topic goes to a person, and no "it works again" is read into words that say it does not. A flagged message leaves an audit entry of its own.
+- **Guides are checked where they come in and where their steps go out.** Steps are quoted word for word, so a guide that has been tampered with would speak to the customer directly. The index build refuses a quotable step that speaks to an assistant, speaks of money, asks the customer to hand something over, or sends them to a number, a channel or an address outside their home network; headings and guide titles are checked the same way, since the answer names them; the passage about to be quoted is checked again, and must be from the customer's own router's guide.
 - **A person can take over.** An agent or a supervisor takes any conversation from the assistant with `POST /v1/contacts/{id}/takeover` and a reason. The assistant does nothing more in it; the customer is told; what they write next reaches the staff queue; who took it and why is in the audit trail.
 - **Operations queue.** A write that fails with no conversation waiting for it (a notification, a ticket update) and a feed that cannot go on by itself (a gap, an event that cannot be applied, a refused or unreadable page, a key that is rejected, ten minutes out of reach) are queued for staff: one item for one kind of trouble, counted when it is seen again, shown on the staff desk and closed there by operations staff or a supervisor.
 - **Surge mode.** When contacts queue for the orchestrator (200 waiting, or more waiting than it handles at once with one of them for 15 seconds), a caller is told at once, with the reference, that the reply will take longer and need not be sent again; the page asks less often; and customers' messages are read by the rules instead of the language model, so that a turn costs what the rules cost. Nothing else changes: what may be said about the network, and done on the strength of it, needs the same proof. Staff see on the desk how many contacts wait and for how long. The orchestrator refills each of its slots as it frees, so a turn that takes long does not hold up the contacts behind it. With a stand-in for a model that takes 1.5 s over every message, the same surge in two minutes is twice what the orchestrator can read with the model. The queue then hovered at the threshold, the longest wait for a turn 16 s, with surge mode switching on and off: 382 of 893 messages were read by the rules instead, 448 callers saw the notice of a delay while they waited, and every contact was accepted and answered (`loadtest/reports/surge-simulated-model.md`).
-- **Load test** (`make loadtest`). The surge of the brief offered to the running stack: one contact a second rising to ten within 15 minutes and held for 15, each from a different synthetic customer, once with every dependency up and once with the Network Monitoring API down. On one machine: 100.00% of 13,941 and 100.00% of 14,041 offered contacts accepted (target 99.5%), the slowest complaint reference in a caller's hands after 0.253 s and 0.11 s (target 120 s), no first contact turned away by a rate limit, every contact answered, and with the API down no message saying that the network is clear. The first reply came after 0.177 s at the median and 1.63 s at the 99th percentile (0.14 s and 0.326 s with the API down). When the outages ended, that run showed restored nodes being suspected again; the rule behind it is fixed (see the plan). The half-hour profile has not been repeated on the code after that fix: two attempts were cut short when the laptop running them went to sleep on battery, so that run's report is kept as `loadtest/reports/surge-brief-before-fix.md`. On the code as it is now, the same surge in two minutes a run (`loadtest/reports/surge-quick.md`) meets every target: 1,891 of 1,891 contacts accepted and answered, the slowest reference after 0.06 s, and when the outages ended all 1,324 customers who waited were told within 88 s, with no restored node suspected. The figures say that the design holds at this rate, not what a deployment can carry.
-- **Evaluations** (`make eval`). Scored replays through the real workflow on the stand-in data: outage detected for 97.47% of affected contacts (target 95%); credits match the policy in 4,050 of 4,050 cases (target 100%); none of the baseline's unnecessary technician visits is booked by the workflow, and every needed one is. The curveball of the brief, played for four ways the Network Monitoring API can fail with the event feed working and silent, breaks none of its rules in 8 of 8 playings. The attack suite (40 attacks; the 18 that lie in how a message is read are tried twice: read by the configured provider, and by a scripted model that obeys the attacker) has no critical failure: no credit nobody approved, no visit on a status nobody could read, nothing of another customer read or told, no all-clear without proof. All 58 runs pass (`evals/reports/attack_suite.md`). As first measured 50 of 56 did: the five gaps the suite found are closed, and two attacks were added for what a review found beside them. What these figures do and do not show is under "Test it".
+- **Load test** (`make loadtest`). The surge of the brief offered to the running stack: one contact a second rising to ten within 15 minutes and held for 15, each from a different synthetic customer, once with every dependency up and once with the Network Monitoring API down. On one machine: 100.00% of 13,941 and 100.00% of 14,041 offered contacts accepted (target 99.5%), the slowest complaint reference in a caller's hands after 0.253 s and 0.11 s (target 120 s), no first contact turned away by a rate limit, every contact answered, and with the API down no message saying that the network is clear. The first reply came after 0.177 s at the median and 1.63 s at the 99th percentile (0.14 s and 0.326 s with the API down). When the outages ended, that run showed restored nodes being suspected again; the rule behind it is fixed (see the plan). The half-hour profile has not been repeated on the code after that fix: two attempts were cut short when the laptop running them went to sleep on battery, so that run's report is kept as `loadtest/reports/surge-brief-before-fix.md`. On the code of M3 after that fix (not run again since M4), the same surge in two minutes a run (`loadtest/reports/surge-quick.md`) met every target: 1,891 of 1,891 contacts accepted and answered, the slowest reference after 0.06 s, and when the outages ended all 1,324 customers who waited were told within 88 s, with no restored node suspected. The figures say that the design holds at this rate, not what a deployment can carry.
+- **Evaluations** (`make eval`). Scored replays through the real workflow on the stand-in data: outage detected for 97.47% of affected contacts (target 95%); credits match the policy in 4,050 of 4,050 cases (target 100%); none of the baseline's unnecessary technician visits is booked by the workflow, and every needed one is. The curveball of the brief, played for four ways the Network Monitoring API can fail with the event feed working and silent, breaks none of its rules in 8 of 8 playings. The attack suite (40 attacks; the 18 that lie in how a message is read are tried twice: read by the configured provider, and by a scripted model that obeys the attacker) has no critical failure: no credit nobody approved, no visit on a status nobody could read, nothing of another customer read or told, no all-clear without proof. All 58 runs pass (`evals/reports/attack_suite.md`). As first measured 50 of 56 did: the five gaps the suite found are closed, and two attacks were added for what a review found beside them. Consumer and SME customers put through the same eight situations end the same way (`evals/reports/segment_parity.md`); only the credit amount differs, with the fee, and with it the approval level above INR 500. What these figures do and do not show is under "Test it".
 - Per-contact audit trail, API with roles, per-caller rate limits, customer desk.
 
 **Not built yet**
@@ -47,12 +48,15 @@ Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six ca
 - Dashboards and alerts. The state of a circuit is in the logs (`circuit_opened`, `circuit_closed`), not yet in a metric.
 - The evaluations on the container stack at 400,000 customers and on the demo's language model (they run in process, on a 1,000-customer pack, with the offline rules and with weights measured on the large pack).
 - Simulator controls in the console (outages and faults are started with the admin API or the smoke run).
+- A button on the staff desk to take a conversation over (the API route exists: `POST /v1/contacts/{id}/takeover`).
+- For a deployment: a database role for each process; a managed secret store, TLS and encryption at rest; a job that enforces retention; export or erasure of a customer's data on request; limits at the edge; a second identity factor for customers who are not signed in (decision D9).
+- A run against a live language model (decision D2). `.gitlab-ci.yml` has never run (decision D6); its image scan was run by hand (`docs/evidence/image_scan.md`).
 
 ## Two things that are stand-ins
 
 The brief says SkyLink supplies the datasets, the credit policy, the router guides and mock REST APIs. None of them had been received when this was built, so the repository contains replacements that sit behind narrow boundaries:
 
-- **`skylink_datagen`** generates a seeded synthetic data pack at the scale the brief states (400,000 customers, 6 months of events, 20,000 transcripts) with deliberate mapping defects. **`mock_oss`** is a stateful mock of the Network Monitoring, CRM, Billing, Field Service and Incident Management APIs with fault injection. The agent system reaches them only through `skylink_care/adapters` and `skylink_care/pipelines`, so the real ones replace them there.
+- **`skylink_datagen`** generates a seeded synthetic data pack at the scale the brief states (400,000 customers, 6 months of events, 20,000 transcripts) with deliberate mapping defects. **`mock_oss`** is a stateful mock of the Network Monitoring, CRM, Billing, Field Service, Incident Management and Notification APIs with fault injection. `skylink-datagen knowledge` writes the twelve router guides, which are synthetic too. The agent system reaches them only through `skylink_care/adapters` and `skylink_care/pipelines`, so the real ones replace them there.
 - **`data/policies/credit_policy.v0.yaml`** is a synthetic placeholder policy. Every number in it is an assumption. It is labelled `v0-placeholder` wherever it is used.
 
 ## Run it
@@ -110,17 +114,20 @@ make stack-down
 ## Test it
 
 ```bash
-make lint typecheck     # ruff and mypy --strict
+make lint typecheck     # ruff and mypy --strict (make fmt applies formatting)
 make test               # unit tests, no services needed
-make test-all           # everything with coverage (needs `make up`)
+make test-int           # integration tests (needs `make up`)
+make test-all           # everything with coverage (needs `make up`), about nine minutes
 ```
 
-`make test-all` runs unit, integration (real PostgreSQL), contract (adapters against the mock gateway, in process) and end-to-end journey tests. The language model is replaced by the offline rules provider in tests; nothing else is stubbed.
+Other targets: `make help` lists them all; `make down` stops the containers and keeps the data; `make migrate` applies the database migrations; `make profile` writes the mapping-quality profile to `reports/data_profile.md`; `./scripts/dev_stack.sh status` shows which local processes run.
+
+`make test-all` runs unit, integration (real PostgreSQL), contract (adapters against the mock gateway, in process) and end-to-end journey tests. The language model is replaced by the offline rules provider in tests; nothing else is stubbed. At the last full run 2,585 tests passed, with 96% branch coverage of `skylink_care`.
 
 ### Evaluations
 
 ```bash
-make eval               # seven scored runs, about six minutes (needs `make up`)
+make eval               # seven scored runs, about five minutes (needs `make up`)
 ```
 
 `make eval` replays contacts through the real workflow and rewrites `evals/reports/`. Everything is measured on the synthetic stand-in data; none of it is a measurement of SkyLink's network, policy or customers. How each figure is measured is in [`evals/README.md`](evals/README.md); what it rests on is at the end of each report.
@@ -131,14 +138,16 @@ make eval               # seven scored runs, about six minutes (needs `make up`)
 | Unnecessary truck rolls cut ≥ 50% (simulation) | The workflow books **none** of the baseline's 3,225 unnecessary visits, and every needed one after the 10-minute hold. A customer who goes on asking for a technician always ends with a person, so the cut end to end depends on what that person decides, which no replay can measure. If every customer insisted, the target would hold only while staff turn down at least half of them | `truck_rolls` |
 | Credits match policy 100% | **4,050 of 4,050** grid cases agree with an independent calculation in exact arithmetic, 14 of 14 with amounts worked out by hand | `credit_policy` |
 | The curveball: safe degraded mode, a reference within 2 minutes | **8 of 8** playings of one scene hold every rule, for 72 contacts in all: a reference for each, nobody in an outage told that the network is clear (and nobody at all while the status cannot be read), no visit booked without a status read at that moment, no credit without an approval, one incident a node. The API refuses, answers too late, fails every call or fails half of them; the event feed works or has been silent since before the outage. Under load the same rules are measured by the load test | `curveball` |
-| (no brief metric: guide retrieval) | Right section for **81.25%** of 48 descriptions written without sight of the retriever (always answering "No internet" would score 47.92%); 99% on the phrases its rules were written from. Never a step from another router model's guide | `retrieval` |
+| (no brief metric: guide retrieval) | Right section for **81.25%** of 48 descriptions written without sight of the retriever, as first scored (always answering "No internet" would score 47.92%). The rules have changed since, and the same set now scores 89.58%, no longer out of sample; 99% on the phrases the rules were written from. Never a step from another router model's guide | `retrieval` |
+| Guardrail test set of at least 15 attack and edge prompts, with pass rate (checklist 1) | **58 of 58** runs of 40 attacks pass, no critical failure. The 18 attacks that lie in how a message is read are played by the keyword rules and by a scripted model that obeys the attacker. `scripts/attack_suite_can_fail.py` removes 27 controls one at a time and checks that the matching attack reports each | `attack_suite` |
+| Bias check across customer segments (checklist 3) | **8 of 8** situations end the same way for consumer and SME customers (80 customers): the same messages, handoffs, visit decisions and credit rule. What differs, the amount of a credit and with it who approves, follows from the monthly fee | `segment_parity` |
 
 ### Load test
 
 ```bash
 make dev                # the stack, freshly seeded
 make loadtest-quick     # the surge in two minutes a run; report in var/loadtest/
-make loadtest           # the profile of the brief, both runs: about two hours
+make loadtest           # the profile of the brief, both runs: about an hour and a half (needs the 400,000-customer pack)
 make stop
 ```
 
@@ -150,9 +159,10 @@ All settings come from the environment. `.env.example` lists every variable; `ma
 
 | Variable | Used by | Meaning |
 |---|---|---|
-| `CARE_DEV_STAFF_KEY` | API | Local demos only. What a person types into the staff desk to sign in as an agent or a supervisor; `make init` generates it. Unset or shorter than 16 characters: no staff token can be had from the dev token endpoint |
-| `CARE_ENV` | all | `dev` enables the local token endpoint used by the console. Anything else leaves it off; unset means `prod`. In `dev` that endpoint gives a customer or guest token to whoever asks, and a staff token only to someone who knows `CARE_DEV_STAFF_KEY`. It is a stand-in for sign-in on a machine nobody else can reach, not sign-in |
+| `CARE_DEV_STAFF_KEY` | API | Local demos only. What a person types to sign in as staff (agent, supervisor or operations), on the staff desk or with "Open as staff" on the customer desk; a channel token needs it too. `make init` generates it. Unset or shorter than 16 characters: no staff token can be had from the dev token endpoint |
+| `CARE_ENV` | all | `dev` enables the local token endpoint used by the console; `test` or `prod` leave it off, and any other value is refused. Unset means `prod` on the host and `dev` under Compose (`make stack-up`). In `dev` that endpoint gives a customer or guest token to whoever asks, and a staff token only to someone who knows `CARE_DEV_STAFF_KEY`. It is a stand-in for sign-in on a machine nobody else can reach, not sign-in |
 | `CARE_DB_HOST`, `CARE_DB_PORT`, `CARE_DB_NAME`, `CARE_DB_USER`, `CARE_DB_PASSWORD` | all | PostgreSQL connection |
+| `CARE_DB_POOL_MAX` | orchestrator, executor | Largest connection pool (10, from 1 to 50); the orchestrator takes at least `CARE_WORKER_CONCURRENCY` + 4 |
 | `CARE_JWT_SECRET` | API only | Signs and verifies API tokens (at least 32 characters) |
 | `CARE_API_HOST`, `CARE_API_PORT` | API | Listen address |
 | `CARE_OSS_BASE_URL` | orchestrator, executor, feed consumer | OSS/BSS gateway |
@@ -164,20 +174,20 @@ All settings come from the environment. `.env.example` lists every variable; `ma
 | `CARE_STATUS_MAX_AGE_SECONDS`, `CARE_FEED_MAX_AGE_SECONDS` | orchestrator, executor; the first also API | How old network evidence may be. The first is also how long a message, or the customer's page, may go on saying "none reported" after the status was read |
 | `CARE_SURGE_WAITING_CONTACTS`, `CARE_SURGE_WAITING_SECONDS` | API, orchestrator | When the assistant counts as behind (surge mode): 200 contacts waiting for a turn, or more waiting than it handles at once and one of them for 15 s |
 | `CARE_WORKER_CONCURRENCY` | orchestrator; API, to judge the backlog | How many contacts one orchestrator process handles at once (8). Each may be calling the enterprise systems at that moment |
-| `CARE_LINE_TEST_CLUSTER_THRESHOLD`, `CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS`, `CARE_LINE_RETEST_SECONDS` | orchestrator | How many customers' lines failing on one node, within what time, can count as a node fault; how soon a line may be tested again |
+| `CARE_LINE_TEST_CLUSTER_THRESHOLD`, `CARE_LINE_TEST_CLUSTER_WINDOW_SECONDS`, `CARE_LINE_RETEST_SECONDS` | orchestrator, executor | How many customers' lines failing on one node, within what time, can count as a node fault; how soon a line may be tested again |
 | `CARE_LINE_OWN_FAULT_RATE`, `CARE_LINE_TEST_CLUSTER_CHANCE` | orchestrator, executor | Failing lines count against a node only when that many failures among the lines tested there would be a coincidence less often than the chance (0.001), with a line failing for reasons of its own at the rate (0.02). Stand-ins: the rate is in SkyLink's line-test records |
 | `CARE_DISPATCH_HOLD_SECONDS` | orchestrator, executor | How long a failed line on a healthy-looking node is watched before a visit is offered. Both judge it: the executor checks the visit again before booking |
 | `CARE_VISIT_SLOTS_OFFERED`, `CARE_VISIT_LINE_TEST_MAX_AGE_SECONDS`, `CARE_VISIT_EVIDENCE_MAX_AGE_SECONDS` | orchestrator, executor | How many slots are offered; how old the failing line test may be when a visit is proposed, and when it is booked |
 | `CARE_NETWORK_RECHECK_SECONDS`, `CARE_NETWORK_RECHECK_LIMIT`, `CARE_SUSPECTED_WAIT_SECONDS` | orchestrator | How often an unverified network status is looked at again, and how long before a person takes over |
 | `CARE_IDENTITY_FAIL_LIMIT`, `CARE_IDENTITY_FAIL_WINDOW_SECONDS`, `CARE_IDENTITY_FAIL_DAILY_LIMIT`, `CARE_IDENTITY_SPREAD_ALERT_CUSTOMERS` | orchestrator | How many wrong answers to the identity check one customer ID may have within the window (5 in 3600 s) and within a day (10), in any conversations, before further answers for it are refused unchecked; and wrong answers for how many different customers within the window are told to staff (50) |
-| `CARE_API_CONTACTS_PER_MINUTE`, `CARE_API_MESSAGES_PER_MINUTE`, `CARE_API_CHANNEL_CONTACTS_PER_SECOND`, `CARE_API_CHANNEL_BURST` | API | What one caller may do in a minute: further contacts after the first (5; a first contact is never limited, it must get its reference) and messages in one contact (20); and what one channel integration may open in all (60 a second, 600 at once). Counted in each API process: limits at the edge belong to the deployment |
+| `CARE_API_CONTACTS_PER_MINUTE`, `CARE_API_MESSAGES_PER_MINUTE`, `CARE_API_CHANNEL_CONTACTS_PER_SECOND`, `CARE_API_CHANNEL_BURST` | API | What one caller may do in a minute: further contacts after the first (5; a caller's first contact is never limited, it must get its reference) and messages in one contact (20); and what one channel integration may open in all (60 a second, 600 at once), first contacts included. Counted in each API process: limits at the edge belong to the deployment |
 | `CARE_OUTAGE_RECHECK_SECONDS` | orchestrator | How often the live status is looked at for a customer waiting on a declared outage, behind the event feed |
 | `CARE_CLOSE_QUIET_SECONDS` | orchestrator | How long a contact waits for the customer before it is closed (assumption; default 24 h) |
 | `CARE_NOTIFY_MAX_EVENT_AGE_SECONDS` | feed consumer | An outage learnt later than this is recorded but not announced |
 | `CARE_CREDIT_POLICY_PATH`, `CARE_CREDIT_REVIEW_ALL` | orchestrator, executor | Policy file; whether every credit waits for a person. Both processes read them: one proposes a credit, the other checks again before applying it |
 | `CARE_APPROVAL_TTL_SECONDS` | orchestrator | How long an approval may wait |
 | `CARE_KNOWLEDGE_DIR` | `care-admin index-guides` | The knowledge pack whose router guides are indexed |
-| `CARE_LLM_PROVIDER`, `CARE_LLM_MODEL`, `ANTHROPIC_API_KEY` | orchestrator | See below |
+| `CARE_LLM_PROVIDER`, `CARE_LLM_MODEL`, `CARE_LLM_SIMULATED_LATENCY_SECONDS`, `ANTHROPIC_API_KEY` | orchestrator | See below |
 | `MOCK_OSS_HOST`, `MOCK_OSS_PORT`, `MOCK_OSS_DB`, `MOCK_OSS_LINE_TEST_DELAY_MS` | mock gateway | Listen address, store, simulated line-test delay |
 
 ### Service credits and approvals
@@ -222,9 +232,9 @@ curl -s -X POST -H "X-API-Key: $OSS_KEY_ADMIN" -H "Content-Type: application/jso
 
 `care-admin index-guides` (part of `make seed`) reads the twelve router guides, splits them into their sections and stores them in PostgreSQL with a text-search column and a pgvector column. A search is filtered before it is ranked: the customer's router model (from the service record), the role, and the list of sections an automated answer may quote are conditions of the query itself. Ranking then adds four signals: the kind of fault the customer's latest message names (keyword rules in `rag/symptoms.py`: no service, Wi-Fi, slow) points to a section; the customer's words name the section's topic; they occur in its text; and the texts are close in vector space.
 
-The vectors come from a **deterministic hashing embedder**: no model, no download, no network, and the same index on every machine. It is a lexical signal in vector form, not a language model, and the index records it as such. A learned embedding model can replace it behind the same interface; an index built by one embedder refuses queries from another. Retrieval is checked in the tests with ten customer phrasings against each of the twelve guides, and scored by `make eval`: the right section for 81.25% of descriptions written without sight of the retriever, against 99% for the phrases its rules were written from. The gap is what keyword rules cost; they stand in for a model that reads the fault (decision D2).
+The vectors come from a **deterministic hashing embedder**: no model, no download, no network, and the same index on every machine. It is a lexical signal in vector form, not a language model, and the index records it as such. A learned embedding model can replace it behind the same interface; an index built by one embedder refuses queries from another. Retrieval is checked in the tests with ten customer phrasings against each of the twelve guides, and scored by `make eval`: the right section for 81.25% of descriptions written without sight of the retriever as first scored (89.58% on today's rules, no longer out of sample), against 99% for the phrases its rules were written from. The gap is what keyword rules cost; they stand in for a model that reads the fault (decision D2).
 
-The index build refuses, as a whole, any document that is not a device guide, a second guide for the same model, and any guide whose quotable steps tell the customer to do something hazardous (reset, open the unit, unplug the fibre).
+The index build fails as a whole, keeping the previous index, on a document that is not a device guide, a second guide for one model, a file over 256 KB, or a guide title, quotable heading or step that tells the customer to do something hazardous (reset, open the unit, unplug the fibre) or fails the other checks above (it speaks to an assistant, of money, asks for a code, or sends the customer to a number, a channel or an address outside their home network).
 
 ### Language model
 
@@ -247,7 +257,8 @@ src/skylink_care/     the agent system
   domain/             pure logic: complaint references, credit engine, network decision
   db/                 pool, SQL migrations, repositories (ledger, inbox, action ledger, audit)
   adapters/           typed clients for the OSS/BSS gateway; every failure is a typed result
-  agents/             triage, diagnostics, customer reply and notification templates
+  agents/             triage and its identity guard, diagnostics, troubleshooting, resolution (credits),
+                      dispatch (visits), reply and notification templates
   orchestrator/       LangGraph workflow, deterministic routing, worker
   ingest/             NOC event feed consumer: read model, notifications, wake-ups
   executor/           the only process that writes to enterprise systems
@@ -259,10 +270,29 @@ src/skylink_datagen/  seeded synthetic data and knowledge pack
 tests/                unit/ integration/ contract/ e2e/ plus the two stand-ins' own suites
 ```
 
+The API's routes and who may call them (each is tried against every role in `tests/integration/api/test_role_matrix.py`):
+
+| Route | Who may call it |
+|---|---|
+| `POST /v1/contacts` | guest, customer, channel |
+| `GET /v1/contacts/{id}` | its owner (guest session, signed-in customer, the channel that opened it); staff |
+| `POST /v1/contacts/{id}/messages` | its owner |
+| `GET /v1/contacts/{id}/audit` | agent, supervisor, ops |
+| `POST /v1/contacts/{id}/takeover` | agent, supervisor |
+| `GET /v1/handoffs` | agent, supervisor, ops |
+| `POST /v1/handoffs/{id}/done` | agent, supervisor |
+| `GET /v1/approvals`, `POST /v1/approvals/{id}/decision` | agent, supervisor |
+| `GET /v1/ops`, `GET /v1/ops/load` | agent, supervisor, ops |
+| `POST /v1/ops/{id}/done` | supervisor, ops |
+| `GET /health` | anyone, no token |
+| `POST /v1/dev/token` | in `dev` only; a staff or channel token needs `CARE_DEV_STAFF_KEY` |
+
+There is no OpenAPI page: the schema is not published.
+
 The eight design rules the code is held to are in section 3 of the plan. The short version: reference first; evidence decides and language explains; a failed or stale network check is never an all-clear; agents propose and only the executor writes, replaying the identical frozen request when an outcome is unknown; identities are enforced by database constraints; every event is applied exactly once.
 
 Five processes run from one image, each with only its own credentials: the API (no gateway key), the orchestrator (read-only agent keys), the feed consumer (one key that can read the event feed), the executor (the only write key) and, for local use, the mock gateway.
 
 ## AI assistance
 
-This repository was written with **Claude Code** (Anthropic), model Claude Fable 5.2. Claude Code produced the execution plan, the code and the tests in this repository. Within that session, sub-agents wrote the synthetic data generator and the mock gateway from written contracts, and other sub-agents reviewed the plan, the architecture and the code (Python, security and silent-failure reviews); their findings were fixed and are covered by tests. For the retrieval evaluation a sub-agent that was shown one router guide and none of the retriever wrote and labelled the independent descriptions, and other sub-agents reviewed the evaluations for whether each report claims only what was measured. The two supplied documents (the brief and the team's action plan) were written by people and are not modified here.
+This repository was written with **Claude Code** (Anthropic), model Claude Fable 5.2; the documentation pass of 16 November (`docs/HOW_IT_WORKS.md` and the audits of the documents against the code) used Claude Opus 5.5. Claude Code produced the execution plan, the code and the tests in this repository. Within that session, sub-agents wrote the synthetic data generator and the mock gateway from written contracts, and other sub-agents reviewed the plan, the architecture and the code (Python, security and silent-failure reviews); their findings were fixed and are covered by tests. For the retrieval evaluation a sub-agent that was shown one router guide and none of the retriever wrote and labelled the independent descriptions, and other sub-agents reviewed the evaluations for whether each report claims only what was measured. The two supplied documents (the brief and the team's action plan) were written by people and are kept out of the repository.

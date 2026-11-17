@@ -9,12 +9,12 @@ version the CI file names.
 |---|---|
 | Image | `skylink-care`, built from this repository's `Dockerfile` at M4 slice E (`docker build -t skylink-care:m4 .`), image id `sha256:687ccb9c3ce6`, 251 MB, base `python:3.12-slim-bookworm` (Debian 12.15) |
 | Scanner | Trivy 0.57.1 (`aquasec/trivy:0.57.1`), on the image saved to a file: the scanner was given no access to the Docker daemon |
-| Dependencies | Installed from `uv.lock` with `uv sync --locked --no-dev`; the lock file pins 78 packages, with hashes |
+| Dependencies | Installed from `uv.lock` with `uv sync --locked --no-dev`; the lock file pins 77 packages with hashes, and the project itself |
 
 ## What the CI job asks: HIGH and CRITICAL vulnerabilities that have a fix
 
 ```
-trivy image --input image.tar --severity HIGH,CRITICAL --ignore-unfixed
+trivy image --input image.tar --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed
 ```
 
 **None.** Operating-system packages: 0 HIGH, 0 CRITICAL. Python packages: none reported.
@@ -41,5 +41,5 @@ show the shape of a credential as an example
 (`anthropic/resources/beta/agents/agents.py`, `anthropic/types/beta/…`). They are not
 secrets. With `--exit-code 1` they would have failed the build on its first run for a reason
 that has nothing to do with this code. The job now scans for vulnerabilities only
-(`--scanners vuln`). Secrets in this repository's own files are looked for where they can
-be judged: before every commit, in the diff.
+(`--scanners vuln`). Secrets in this repository's own files are looked for by hand, in the diff, before each commit;
+there is no pre-commit hook, and the CI secret scan (gitleaks) has never run.

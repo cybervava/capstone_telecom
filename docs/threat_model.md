@@ -17,7 +17,7 @@ shows it. Attack keys (A1, C3, …) are those of `evals/reports/attack_suite.md`
 | Money: service credits | A credit is SkyLink's money, owed by a policy and approved by a person |
 | A technician's time | A visit that the network explains is the waste the brief wants cut |
 | What customers are told about the network | A false all-clear during an outage is the failure the curveball names |
-| The complaint record | The regulator's rule: a reference for every contact, a trail that cannot be rewritten |
+| The complaint record | The regulator's rule: a reference for every contact, and a trail nobody can quietly rewrite |
 | Staff attention | A queue that can be flooded hides the case that matters |
 | Keys and secrets | One key for each agent identity; a signing secret for the API |
 
@@ -36,19 +36,20 @@ shows it. Attack keys (A1, C3, …) are those of `evals/reports/attack_suite.md`
 
 Out of scope, and said so: SkyLink's systems behind the gateway (stand-ins here); the channel
 that signs customers in and issues tokens; the network, hosts and cloud account of the target
-deployment; someone with write access to the platform's database (the audit log refuses
-rewriting, but such a person can do everything else).
+deployment; someone with write access to the platform's database. Every process connects as the
+one role that owns the schema, so such a person can do everything, including switching off the
+trigger that keeps the audit log from being rewritten.
 
 ## The design that most of this rests on
 
-1. **The model describes; code decides.** The model is shown one masked message and returns
+1. **The model describes; code decides.** The model is shown the customer's new messages, masked, and returns
    nine fields. It is given no tool. Identity, network status, eligibility, amounts and
    bookings are decided by code from evidence and a policy file.
 2. **Customers are sent templates.** No sentence a model wrote is ever sent to a customer.
    The one model-written sentence is a summary for staff, cleaned and cut.
 3. **Every side effect is a proposal first.** Reading agents hold read-only keys. One
    executor writes, with an idempotency key, after re-checking the evidence at that moment,
-   and for a credit only after a person approved the very request that was shown.
+   and for a credit (as configured by default) only after a person approved the very request that was shown.
 4. **A second lock where the first could fail.** A message is checked for what it claims
    when it is stored, whatever the routing decided. Quoted steps are checked when the guide
    is indexed and again when they are sent. A contact is bound to its customer by the agent
@@ -82,7 +83,7 @@ obedient model is the harder test, but it does not show how often a real model i
 
 | Control | Where | Shown by |
 |---|---|---|
-| Before a model call: contact details masked by shape, and everything the CRM holds of this customer masked by value | `guardrails/pii.py`, `agents/triage.py` `personal_values` | G1; `tests/unit/llm/test_model_payloads.py` (300 customers, 15 messages) |
+| Before a model call: contact details masked by shape, and by value the personal details the CRM holds of this customer (the name and its parts, the registered mobile and its last digits, the name part of the email address, the numbers of the ids, the area, city and pincode of each service address) | `guardrails/pii.py`, `agents/triage.py` `personal_values` | G1; `tests/unit/llm/test_model_payloads.py` (300 customers, 15 messages) |
 | An unidentified visitor's text is never sent to a model: there is no record to mask it by | `llm/gateway.py` (`allow_external`) | G2 |
 | Logs and the audit trail redact contact details and secrets; the HTTP client's request lines are off | `observability/logging.py`, `guardrails/pii.py` `redact_for_log` | `tests/unit/test_logging_redaction.py` |
 | A contact is read and written only by its owner or staff; someone else's looks like none | `api/app.py` `_owned_contact` | E5; `tests/integration/api/test_api.py` |
@@ -92,15 +93,15 @@ obedient model is the harder test, but it does not show how often a real model i
 *What is left.* Masking cannot know digits spelled as words, a name in another script, or a
 street the platform was never told. The identity check of a customer who is not signed in is
 two things other people can know; guessing spread thinly over many customers succeeds about
-once in ten thousand tries and is told to staff only above fifty customers an hour (decision
+once in ten thousand tries and is told to staff only from fifty customers an hour (decision
 D9).
 
 ### LLM03 Supply chain
 
 | Control | Where | Shown by |
 |---|---|---|
-| Dependencies pinned with hashes | `uv.lock` (78 packages) | The file |
-| The model is reached through the vendor's own SDK, behind one gateway that records provider, model and prompt version for every call | `llm/gateway.py` | `audit_log.model`, `prompt_version` |
+| Dependencies pinned with hashes | `uv.lock` (77 packages with hashes, and the project itself) | The file |
+| The model is reached through the vendor's own SDK, behind one gateway; the audit trail records the model and the prompt version of every reading | `llm/gateway.py` | `audit_log.model`, `prompt_version` |
 | The guide index is built by a local hashing embedder: no model download, no embedding service | `rag/embedding.py` | `evals/reports/retrieval.md` |
 | Guides are typed documents with access roles; untrusted material is kept in a folder the index build never opens, and the parser refuses it if it is copied in | `pipelines/guide_index.py`, `rag/documents.py` | B1, B2 |
 
@@ -129,7 +130,7 @@ trusted for its wording. The stored index carries no signature.
 | Control | Where | Shown by |
 |---|---|---|
 | The model's answer is parsed against a strict schema or thrown away; the keyword rules then read the message and the trail says so | `llm/claude.py`, `llm/gateway.py` | J1 |
-| The one free-text field is cleaned before it is stored: contact details masked, markup and control characters removed, cut to 240 characters | `orchestrator/handover.py` `clean_summary` | A7 |
+| The one free-text field is cleaned before it is kept in the conversation's state and shown to staff: contact details masked, markup and control characters removed, cut to 240 characters. Its copy in the audit entry has contact details masked and is otherwise as the model wrote it | `orchestrator/handover.py` `clean_summary` | A7 |
 | The staff page writes all text from the server as text, never as markup | `web/staff.js` (`textContent`) | The file |
 | No model output is used in a query, a path, a URL or a command | By design | Reading `agents/`, `orchestrator/` |
 
@@ -139,9 +140,9 @@ trusted for its wording. The stored index carries no signature.
 |---|---|---|
 | A key for each agent identity, with the scopes of its own tools; reading agents cannot write; the executor reads a customer's consent and nothing else of the CRM | `mock_oss/auth.py`, `adapters/gateway.py` | I2; `tests/contract/` |
 | Every write is typed, keyed and limited in code: one credit per service per outage, of the policy's amount; one open visit per service; a notice only with consent | `executor/`, `domain/credit.py`, migration `0007_one_open_visit.sql` | `evals/reports/credit_policy.md`; `tests/e2e/test_credit_lifecycle.py`, `test_visits.py` |
-| A credit needs a person's approval of the request that was shown, by its hash; above INR 500 a supervisor's | `db/approvals.py`, `api/approvals.py` | C1 to C4 |
+| A credit needs a person's approval of the request that was shown, by its hash; above INR 500 a supervisor's. Below that, an agent's by default (`CARE_CREDIT_REVIEW_ALL=true`; with it off, small credits need nobody: decision D3) | `db/approvals.py`, `api/approvals.py` | C1 to C4 |
 | The executor looks at the network again before it books a visit | `executor/visits.py` | D2 |
-| Loops are bounded: steps for each run of the workflow, asks for identity, re-checks of the network, retries of a turn and of a write, seconds for a model call | `orchestrator/graph.py` (`RECURSION_LIMIT`), `routing.py`, `worker.py`, `llm/gateway.py` | `tests/e2e/test_worker_loop.py`, `test_reliability.py` |
+| Loops are bounded: steps for each run of the workflow, asks for identity, re-checks of the network, retries of a turn and of a write, seconds for a model call | `orchestrator/routing.py` (`MAX_STEPS_PER_RUN`, 12 decisions a run, then a person; LangGraph's ceiling of 60 behind it in `graph.py`), `worker.py`, `llm/gateway.py` | `tests/unit/orchestrator/test_routing.py`, `test_routing_events.py`, `tests/unit/llm/test_gateway.py`, `tests/e2e/test_reliability.py` |
 | A person can take any conversation from the assistant, with a reason, on record | `api/takeover.py` | `tests/e2e/test_staff_takeover.py` |
 
 ### LLM07 System prompt leakage
@@ -165,7 +166,7 @@ templates (A3). Its text is versioned by hash and the version is written with ev
 
 | Control | Where | Shown by |
 |---|---|---|
-| Each template declares what it claims about the network, and is stored only when the evidence of that turn backs the claim; a message that claims more is stopped and a person takes over | `guardrails/claims.py`, `orchestrator/outgoing.py` | A4, F1; `tests/e2e/test_message_claims.py`; `evals/reports/curveball.md` |
+| Each conversation template declares what it claims about the network, and is stored only when the evidence of that turn backs the claim; a message that claims more is stopped and a person takes over. (The proactive outage notices are built from a recent NOC event and are not checked again when sent.) | `guardrails/claims.py`, `orchestrator/outgoing.py` | A4, F1; `tests/e2e/test_message_claims.py`; `evals/reports/curveball.md` |
 | Amounts come from the policy engine and show their working; steps come from the guide with its source; a restoration time is the NOC's or absent | `domain/credit.py`, `agents/replies.py` | `evals/reports/credit_policy.md` |
 | A complaint is not closed on a reading of "it works" when the customer's words say otherwise | `orchestrator/routing.py` | J2 |
 
@@ -176,10 +177,10 @@ outage, a status read can still show the alarm (noted in the plan's known gaps).
 
 | Control | Where | Shown by |
 |---|---|---|
-| One model call for each customer message, with a timeout, a token limit and a fallback to the keyword rules | `llm/gateway.py`, `llm/claude.py` | `tests/unit/llm/test_gateway.py` |
+| At most one model reading for each turn of a conversation (it reads all the customer's messages since the last), with a timeout, a token limit and a fallback to the keyword rules; a failed turn is tried again, and the SDK may retry a call once | `llm/gateway.py`, `llm/claude.py` | `tests/unit/llm/test_gateway.py` |
 | When the platform is behind, the model is not called at all | `surge.py` | `tests/e2e/test_surge_mode.py`; `loadtest/reports/` |
-| Limits on new contacts for each caller and on messages for each contact; a first contact is never limited, because it must get its reference | `api/ratelimit.py`, `api/app.py` | `tests/integration/api/test_api.py` |
-| The staff queues cannot be written full by one caller: one item for each kind of trouble and subject, a cap on items about locked customers | `db/ops.py`, `agents/identity_guard.py` | `tests/integration/test_identity_attempts.py` |
+| Limits on new contacts for each caller and on messages for each contact; a caller's first contact is never limited, because it must get its reference. A channel integration as a whole is capped (600 at once, then 60 a second), first contacts included | `api/ratelimit.py`, `api/app.py` | `tests/integration/api/test_api.py` |
+| The operations queue cannot be written full by one caller: one item for each kind of trouble and subject, a cap on items about locked customers. (The staff queue takes one item per contact and reason; a caller can open five new contacts a minute.) | `db/ops.py`, `agents/identity_guard.py` | `tests/integration/test_identity_attempts.py` |
 
 *What is left.* The limits live in one API process and count sessions; limits at the edge
 and a budget alarm for model spend belong to the deployment and to M5.
@@ -188,12 +189,12 @@ and a budget alarm for model spend belong to the deployment and to M5.
 
 | Risk | Control | Shown by | What is left |
 |---|---|---|---|
-| Broken access control | A token on every route but the health check; roles enforced in code; every route against every role as one table; object-level ownership | `tests/integration/api/test_role_matrix.py`; I1, I3, E5 | Staff sign-in is a stand-in (a shared key and a typed name) |
+| Broken access control | A token on every route but the health check, the static pages and, in `dev` only, the token endpoint (which there signs anyone in as any customer); roles enforced in code; every route against every role as one table; object-level ownership | `tests/integration/api/test_role_matrix.py`; I1, I3, E5 | Staff sign-in is a stand-in (a shared key and a typed name) |
 | Forged or altered tokens | One algorithm, issuer, audience and expiry required; a short signing secret refused at start-up | I1 | Tokens are issued by SkyLink's identity provider in the target deployment |
 | Guessing | The identity lock; equal answers | E3, E4 | Decision D9 |
 | Replay and double writes | Idempotency keys on intake and on every write; an approval decided once | C4; `tests/e2e/test_reliability.py` | |
 | Secrets | From the environment only; generated by `make init`; redacted from logs and trail by name and by shape | `tests/unit/test_logging_redaction.py` | No managed secret store; no rotation |
-| Tampering with the record | The audit log refuses update, delete and truncate | `tests/integration/test_audit_and_reference.py` | One database role for every process: a process that is taken over can write anywhere else |
+| Tampering with the record | The audit log refuses update, delete and truncate, by trigger | `tests/integration/test_audit_and_reference.py` | One database role for every process, the one that owns the schema: a process that is taken over can write to any table and can switch the trigger off. Separate roles, with only the migrations allowed to alter the audit log, are not built. Other records (contacts, messages, actions) are updated in place |
 | Transport and storage | Not in this build | | TLS, encryption at rest and network policy are the deployment's |
 | Denial of the unsigned-in path to one customer | Whoever knows a customer ID can keep its identity check locked | Stated in `docs/EXECUTION_PLAN.md` | The customer keeps the signed-in path, the caller's line and a person |
 
