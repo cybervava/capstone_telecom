@@ -1,6 +1,6 @@
 {
   "name": "curveball",
-  "written_at": "2026-11-16T14:20:37+00:00",
+  "written_at": "2026-11-17T01:26:17+00:00",
   "target": "In every playing of the scene: zero contacts without a reference within two minutes, zero messages saying the network is clear to a customer in an outage (and none at all while the status cannot be read), zero visits booked without a status read at that moment, zero credits applied without an approval, at most one incident on a node.",
   "met": true,
   "verdict": "met",
@@ -181,14 +181,13 @@
         "feed": "working",
         "contacts": 9,
         "references_late_or_missing": 0,
-        "said_clear": 4,
+        "said_clear": 3,
         "said_clear_to_customers_in_an_outage": 0,
-        "visits_booked": 1,
+        "visits_booked": 0,
         "visits_booked_without_a_status_read": 0,
         "visit_customer_told_meanwhile": [
-          "visit_being_booked.v1",
-          "visit_being_booked.v1",
-          "visit_booked.v1"
+          "network_unknown.v1",
+          "visit_offer.v1"
         ],
         "credits_applied": 0,
         "most_incidents_on_one_node": 1,
@@ -197,33 +196,34 @@
         "outage_customers_told_it_cannot_be_verified": 0,
         "healthy_node_customers_told_it_cannot_be_verified": 0,
         "violations": [],
-        "visit_customer_told_last": "visit_booked.v1",
-        "visit_booked_in_the_end": 1,
+        "visit_customer_told_last": "visit_offer.v1",
+        "visit_booked_in_the_end": 0,
         "told_of_the_lasting_outage_in_the_end": 2,
         "of_customers_on_the_lasting_outage": 2,
         "told_the_resolved_outage_is_over": 1,
         "of_customers_waiting_on_the_resolved_outage": 1,
         "left_without_any_answer": 0,
-        "with_a_person": 1
+        "with_a_person": 2
       },
       {
         "fault": "fails half of its calls, at random (500)",
         "feed": "silent since before the outage",
         "contacts": 9,
         "references_late_or_missing": 0,
-        "said_clear": 2,
+        "said_clear": 4,
         "said_clear_to_customers_in_an_outage": 0,
         "visits_booked": 0,
         "visits_booked_without_a_status_read": 0,
         "visit_customer_told_meanwhile": [
-          "network_unknown.v1"
+          "line_fault_hold.v1",
+          "visit_offer.v1"
         ],
         "credits_applied": 0,
         "most_incidents_on_one_node": 1,
         "outage_customers": 4,
         "outage_customers_told_of_the_outage": 4,
         "outage_customers_told_it_cannot_be_verified": 0,
-        "healthy_node_customers_told_it_cannot_be_verified": 0,
+        "healthy_node_customers_told_it_cannot_be_verified": 1,
         "violations": [],
         "visit_customer_told_last": "visit_offer.v1",
         "visit_booked_in_the_end": 0,

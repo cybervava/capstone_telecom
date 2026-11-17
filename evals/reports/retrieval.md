@@ -6,7 +6,7 @@
 
 **Result (met).** Independent descriptions, scored once on a retriever built without sight of them: right section for 468 of 576 (81.25%; always answering 'no-internet' would score 47.92%). The retriever has been changed since; today the same descriptions score 89.58%, which is no longer an out-of-sample figure. In-sample: 99.07% of the transcript phrases and 96.67% of the author's paraphrases. Answers from another model's guide: 0.
 
-Written by the run of 2026-11-16T01:55:17+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: none (no language model takes part in this measurement).
+Written by the run of 2026-11-17T01:27:09+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: none (no language model takes part in this measurement).
 
 ## By set
 

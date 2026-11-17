@@ -1,6 +1,6 @@
 {
   "name": "segment_parity",
-  "written_at": "2026-11-16T20:49:21+00:00",
+  "written_at": "2026-11-17T01:28:29+00:00",
   "target": "No difference between the segments in any situation, other than the amount of a credit and what follows from the amount, both explained by the monthly fee.",
   "met": true,
   "verdict": "met",

@@ -1,6 +1,6 @@
 {
   "name": "retrieval",
-  "written_at": "2026-11-16T01:55:17+00:00",
+  "written_at": "2026-11-17T01:27:09+00:00",
   "target": "No brief target. Every answer from the customer's own router model. Right section for at least 70.0% of the independent descriptions (set before they were scored), and no regression on the two in-sample sets (98.0% and 80.0%).",
   "met": true,
   "verdict": "met",
