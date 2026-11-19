@@ -1,0 +1,10 @@
+# Findings of the secret scan (gitleaks, over the whole history) that are not secrets. Each line
+# is one finding's fingerprint: the commit, file, rule and line it was found at, so the same
+# value anywhere else, or a new one here, is still reported.
+
+# A made-up JWT ({"alg":"HS256"} . {"sub":"test"} . "signature-value") that the log redaction
+# test feeds in to check that it is taken out.
+dfd8ec281a2173163c88d4d6874750f54f838fe6:tests/unit/guardrails/test_pii.py:jwt:479
+
+# The signing key the API tests issue their own tokens with; it signs nothing outside the tests.
+f46e9c64a8fa41f5658f169eb6188b147acf2dd9:tests/integration/api/test_api.py:generic-api-key:22

@@ -1,23 +1,26 @@
 # Container image scan
 
-Checklist 2: "Container image scanned; dependencies pinned." The scan job is in
-`.gitlab-ci.yml` and has never run, because where the repository lives and which CI runs it
-is open (decision D6). This is the same scan run by hand on 16 November 2026, with the scanner
-version the CI file names.
+Checklist 2: "Container image scanned; dependencies pinned." The scan runs in CI on every push
+(job `image` of `.github/workflows/ci.yml`, GitHub Actions): the image is built, saved to a
+file and scanned without access to the Docker daemon, and the job fails on a HIGH or CRITICAL
+vulnerability that has a fix. Only an image that passes is published, as a release candidate.
+The scan was first run by hand on 16 November 2026, before the CI ran anywhere, and again by
+hand on 19 November with the OpenAI SDK in the image. This is the second run.
 
 | | |
 |---|---|
-| Image | `skylink-care`, built from this repository's `Dockerfile` at M4 slice E (`docker build -t skylink-care:m4 .`), image id `sha256:687ccb9c3ce6`, 251 MB, base `python:3.12-slim-bookworm` (Debian 12.15) |
-| Scanner | Trivy 0.57.1 (`aquasec/trivy:0.57.1`), on the image saved to a file: the scanner was given no access to the Docker daemon |
-| Dependencies | Installed from `uv.lock` with `uv sync --locked --no-dev`; the lock file then pinned 77 packages with hashes, and the project itself. The OpenAI SDK (`openai` 3.52.0) has been added since, making 78; the image has not been scanned again |
+| Image | `skylink-care`, built from this repository's `Dockerfile` (`docker build --pull -t skylink-care:ci .`, as CI builds it), image id `sha256:2eee081d6571`, 268 MB, base `python:3.12-slim-bookworm` (Debian 12.15) |
+| Scanner | Trivy 0.57.1 (`aquasec/trivy:0.57.1`), on the image saved to a file |
+| Dependencies | Installed from `uv.lock` with `uv sync --locked --no-dev`; the lock file pins 78 packages with hashes, the OpenAI SDK (`openai` 3.52.0) among them, and the project itself |
 
-## What the CI job asks: HIGH and CRITICAL vulnerabilities that have a fix
+## What CI asks: HIGH and CRITICAL vulnerabilities that have a fix
 
 ```
-trivy image --input image.tar --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed
+trivy image --input image.tar --exit-code 1 --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed
 ```
 
-**None.** Operating-system packages: 0 HIGH, 0 CRITICAL. Python packages: none reported.
+**None.** Operating-system packages: 0 HIGH, 0 CRITICAL. Python packages: none reported. The
+same as on 16 November, before the OpenAI SDK was added.
 
 ## What that leaves out: vulnerabilities with no fix yet
 
@@ -33,13 +36,13 @@ against SkyLink's systems. They are what a general-purpose base image carries. A
 smaller base for the production image (distroless, or a slim image rebuilt on each release)
 would remove most of them; that belongs to the deployment work.
 
-## A fault in the CI job, found by running it
+## A fault in the first CI job, found by running it by hand
 
 Trivy also looks for secrets by default. It reports 11 "CRITICAL" findings of the kind
 "Google service-account", all in the Anthropic SDK: docstrings and type definitions that
 show the shape of a credential as an example
 (`anthropic/resources/beta/agents/agents.py`, `anthropic/types/beta/…`). They are not
 secrets. With `--exit-code 1` they would have failed the build on its first run for a reason
-that has nothing to do with this code. The job now scans for vulnerabilities only
-(`--scanners vuln`). Secrets in this repository's own files are looked for by hand, in the diff, before each commit;
-there is no pre-commit hook, and the CI secret scan (gitleaks) has never run.
+that has nothing to do with this code. The job scans for vulnerabilities only
+(`--scanners vuln`). Secrets in this repository's own files are looked for by gitleaks, over the
+whole history, in the job `secret-scan` of the same pipeline.

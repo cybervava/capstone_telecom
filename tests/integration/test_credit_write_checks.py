@@ -57,13 +57,17 @@ async def test_approval_given_long_after_the_proposal_still_gets_its_retry_windo
 ) -> None:
     """The clock for giving up starts at the approval. Started at the proposal, the first
     hiccup of Billing would end a credit that a supervisor had just approved."""
-    action = await proposed(db, await a_contact(contacts))
-    async with db.connection() as conn:  # proposed thirty hours ago
+    now = datetime.now(UTC)
+    # Proposed thirty hours ago, its approval asked for then. The approval is decided on the
+    # real clock, so it must have been asked on the real clock too: asked on the helpers' fixed
+    # date, it expired three days after that date and this test began to fail.
+    action = await proposed(db, await a_contact(contacts), asked_at=now - timedelta(hours=30))
+    async with db.connection() as conn:
         await conn.execute(
             "UPDATE actions SET created_at = created_at - interval '30 hours' WHERE action_id = %s",
             (action.action_id,),
         )
-    await decide(db, action, now=datetime.now(UTC))
+    await decide(db, action, now=now)
     billing = ScriptedBilling(existing=BILLING_DOWN)
 
     await executor(db, billing, give_up_after=timedelta(hours=24)).run_once()

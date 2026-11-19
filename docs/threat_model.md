@@ -110,10 +110,10 @@ D9).
 | The guide index is built by a local hashing embedder: no model download, no embedding service | `rag/embedding.py` | `evals/reports/retrieval.md` |
 | Guides are typed documents with access roles; untrusted material is kept in a folder the index build never opens, and the parser refuses it if it is copied in | `pipelines/guide_index.py`, `rag/documents.py` | B1, B2 |
 
-*What is left.* The CI pipeline has never run (decision D6: where the repository lives). Its
-image scan was run by hand: nothing HIGH or CRITICAL that has a fix, 101 findings in the base
-image that have none (`docs/evidence/image_scan.md`). No software bill of materials; no
-signature on the knowledge pack.
+*What is left.* CI (GitHub Actions, D6) scans the image on every push and fails on anything
+HIGH or CRITICAL that has a fix; there is none, and 101 findings in the base image have no fix
+(`docs/evidence/image_scan.md`). The published image is not signed; no software bill of
+materials; no signature on the knowledge pack.
 
 ### LLM04 Data and model poisoning
 

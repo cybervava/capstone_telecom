@@ -2,10 +2,21 @@
 
 from __future__ import annotations
 
+import os
+
 import pytest
 from pydantic import ValidationError
 
 from skylink_care.config import MissingSecretError, OssKeys, Settings
+
+
+@pytest.fixture(autouse=True)
+def defaults_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests are about the defaults: what this machine or the CI exports (the CI sets
+    CARE_ENV=test and the database settings) must not decide them."""
+    for name in list(os.environ):
+        if name.startswith("CARE_"):
+            monkeypatch.delenv(name)
 
 
 def test_environment_defaults_to_production_so_dev_conveniences_are_off() -> None:

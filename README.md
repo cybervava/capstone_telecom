@@ -50,7 +50,8 @@ Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six ca
 - Simulator controls in the console: outages, line faults and failing APIs are `mock-oss` commands (see "Run it"), not buttons.
 - A button on the staff desk to take a conversation over (the API route exists: `POST /v1/contacts/{id}/takeover`).
 - For a deployment: a database role for each process; a managed secret store, TLS and encryption at rest; a job that enforces retention; export or erasure of a customer's data on request; limits at the edge; a second identity factor for customers who are not signed in (decision D9).
-- A run against Claude: no Anthropic key was available. The demo uses OpenAI's model instead (decision D2). `.gitlab-ci.yml` has never run (decision D6); its image scan was run by hand, before the OpenAI SDK was added (`docs/evidence/image_scan.md`).
+- A run against Claude: no Anthropic key was available. The demo uses OpenAI's model instead (decision D2).
+- A deployment: CI builds, tests, scans and publishes the image, and deploys it nowhere (the target is decision D4).
 
 ## Two things that are stand-ins
 
@@ -156,6 +157,16 @@ make test-all           # everything with coverage (needs `make up`), about nine
 Other targets: `make help` lists them all; `make down` stops the containers and keeps the data; `make migrate` applies the database migrations; `make profile` writes the mapping-quality profile to `reports/data_profile.md`; `./scripts/dev_stack.sh status` shows which local processes run.
 
 `make test-all` runs unit, integration (real PostgreSQL), contract (adapters against the mock gateway, in process) and end-to-end journey tests. The language model is replaced by the offline rules provider in tests; nothing else is stubbed. At the last full run 2,643 tests passed, with 96% branch coverage of `skylink_care`.
+
+**CI** (`.github/workflows/ci.yml`, GitHub Actions; decision D6) runs on every push to `dev` and every pull request:
+
+- ruff and `mypy --strict`;
+- the whole suite on PostgreSQL with pgvector, which fails under 80% coverage;
+- the seven evaluations, with their reports kept as an artifact;
+- gitleaks over the whole history (`.gitleaksignore` lists, by fingerprint, the two findings that are test fixtures);
+- the container image, built and scanned by Trivy for HIGH and CRITICAL vulnerabilities that have a fix. On `dev` it is published as a release candidate to `ghcr.io/cybervava/capstone_telecom`.
+
+Actions are pinned to a commit, and the tools run at the versions the Dockerfile and the evidence name.
 
 ### Evaluations
 
