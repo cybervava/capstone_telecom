@@ -558,7 +558,7 @@ If the radio's stream misses an announcement, the radio's record stops counting 
 
 ### 9.1 Automated tests
 
-There are **2,643 automated tests**. At the last full run all of them passed, and together they exercised 96% of the platform's code. They come in kinds:
+There are **2,658 automated tests**. At the last full run, on GitHub's automated pipeline on 19 November, all of them passed, and together they exercised 96% of the platform's code. They come in kinds:
 
 | Kind | Proves |
 |---|---|

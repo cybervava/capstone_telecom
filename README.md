@@ -156,7 +156,7 @@ make test-all           # everything with coverage (needs `make up`), about nine
 
 Other targets: `make help` lists them all; `make down` stops the containers and keeps the data; `make migrate` applies the database migrations; `make profile` writes the mapping-quality profile to `reports/data_profile.md`; `./scripts/dev_stack.sh status` shows which local processes run.
 
-`make test-all` runs unit, integration (real PostgreSQL), contract (adapters against the mock gateway, in process) and end-to-end journey tests. The language model is replaced by the offline rules provider in tests; nothing else is stubbed. At the last full run 2,643 tests passed, with 96% branch coverage of `skylink_care`.
+`make test-all` runs unit, integration (real PostgreSQL), contract (adapters against the mock gateway, in process) and end-to-end journey tests. The language model is replaced by the offline rules provider in tests; nothing else is stubbed. At the last full run (in CI, 19 Nov) all 2,658 tests passed, with 96% branch coverage of `skylink_care`.
 
 **CI** (`.github/workflows/ci.yml`, GitHub Actions; decision D6) runs on every push to `dev` and every pull request:
 
@@ -166,7 +166,7 @@ Other targets: `make help` lists them all; `make down` stops the containers and 
 - gitleaks over the whole history (`.gitleaksignore` lists, by fingerprint, the two findings that are test fixtures);
 - the container image, built and scanned by Trivy for HIGH and CRITICAL vulnerabilities that have a fix. On `dev` it is published as a release candidate to `ghcr.io/cybervava/capstone_telecom`.
 
-Actions are pinned to a commit, and the tools run at the versions the Dockerfile and the evidence name.
+Actions are pinned to a commit, and the tools run at the versions the Dockerfile and the evidence name. Its first run, on 19 Nov, passed all five jobs in 9.4 minutes ([run 44446727763](https://github.com/cybervava/capstone_telecom/actions/runs/44446727763)). The published image is built for linux/amd64 only; on Apple Silicon the Compose file builds a native one, as in "Run it".
 
 ### Evaluations
 
