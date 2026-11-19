@@ -1,0 +1,15 @@
+# Every text file is checked out with Unix line endings, on Windows too. Git for Windows would
+# otherwise turn them into CRLF, and the script that seeds the container stack
+# (scripts/container_setup.sh, run by sh in the container) then stops at its first command.
+* text=auto eol=lf
+
+# Binary files that may be added (figures, recordings, exports) are never converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.mp4 binary
+*.xlsx binary
+*.zip binary
+*.sqlite binary

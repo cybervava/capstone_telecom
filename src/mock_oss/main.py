@@ -1,4 +1,5 @@
-"""App factory and the ``mock-oss`` command line (``serve`` | ``seed``)."""
+"""App factory and the ``mock-oss`` command line: ``serve``, ``seed``, and the simulator
+controls of ``mock_oss.admin_cli`` (``outage-start``, ``line-fault``, ``chaos`` and the rest)."""
 
 from __future__ import annotations
 
@@ -12,7 +13,7 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI, Request
 
-from mock_oss import admin, admin_search, billing, crm, field, incident, network, notify
+from mock_oss import admin, admin_cli, admin_search, billing, crm, field, incident, network, notify
 from mock_oss.auth import KeyRing
 from mock_oss.chaos import ChaosRules
 from mock_oss.clock import Clock, SystemClock, iso
@@ -79,6 +80,7 @@ def _parser() -> argparse.ArgumentParser:
     seed.add_argument("--data", type=Path, required=True, help="directory with the CSV files")
     seed.add_argument("--db", type=Path, default=None, help="SQLite path (default $MOCK_OSS_DB)")
     seed.add_argument("--seed", type=int, default=42, help="seed for line-fault selection")
+    admin_cli.add_commands(sub)
     return parser
 
 
@@ -110,4 +112,6 @@ def run(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.command == "seed":
         return _seed(args.data, args.db, args.seed)
+    if args.command in admin_cli.COMMANDS:
+        return admin_cli.execute(args)
     return _serve()

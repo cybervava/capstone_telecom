@@ -1,8 +1,13 @@
 """Create .env from .env.example, replacing every `change-me` with a fresh random value.
 
-Run through `make init`. An existing .env is never rewritten: no value in it is changed or
-removed. If .env.example has since gained a secret that the .env does not have, that one line
-is added with a freshly generated value, and its name is printed.
+Run through `make init`, or where there is no `make` (Windows) with
+`uv run --no-project scripts/init_env.py`; it needs Python 3.9 or later and nothing else.
+An existing .env is never rewritten: no value in it is changed or removed. If .env.example
+has since gained a secret that the .env does not have, that one line is added with a freshly
+generated value, and its name is printed.
+
+The file is written with Unix line endings on every system, since Docker Compose and the
+containers read it.
 """
 
 from __future__ import annotations
@@ -56,7 +61,7 @@ def main() -> int:
         if not missing:
             sys.stderr.write(".env already exists; leaving it untouched.\n")
             return 0
-        with target.open("a", encoding="utf-8") as handle:
+        with target.open("a", encoding="utf-8", newline="\n") as handle:
             handle.write(
                 "\n# Added by `make init`: new in .env.example since this file was made.\n"
             )
@@ -66,7 +71,7 @@ def main() -> int:
         return 0
     # Created owner-only in one step: the secrets are never on disk with wider permissions.
     descriptor = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+    with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
         handle.write(render(template))
     sys.stdout.write("Wrote .env with generated local secrets.\n")
     return 0

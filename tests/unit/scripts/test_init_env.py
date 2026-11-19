@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import _pyio
 import importlib.util
+import os
 from pathlib import Path
 from types import ModuleType
 
@@ -45,6 +47,21 @@ def test_fresh_file_gets_a_different_generated_value_for_each_secret(
     assert made["CARE_JWT_SECRET"] != made["CARE_DEV_STAFF_KEY"]
     assert len(made["CARE_DEV_STAFF_KEY"]) >= 24
     assert (tmp_path / ".env").stat().st_mode & 0o077 == 0  # owner only
+
+
+def test_the_file_has_unix_line_endings_where_the_system_would_write_crlf(
+    init_env: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # On Windows a text file is written with CRLF unless asked otherwise, and Compose and the
+    # containers read .env. The pure-Python io translates by os.linesep, so this writes as
+    # Windows would.
+    monkeypatch.setattr(os, "linesep", "\r\n")
+    monkeypatch.setattr(os, "fdopen", _pyio.open)
+
+    assert init_env.main() == 0
+
+    assert b"\r" not in (tmp_path / ".env").read_bytes()
+    assert values(tmp_path / ".env")["CARE_ENV"] == "dev"
 
 
 def test_existing_file_keeps_every_value_and_gains_only_the_secret_it_lacked(
