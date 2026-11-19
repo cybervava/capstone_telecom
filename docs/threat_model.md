@@ -78,7 +78,8 @@ person, not to a refusal). One run against a live model has been made: OpenAI's
 `gpt-5.4-mini` read the messages of the 18 attacks made of words, and all 58 runs passed
 (`evals/reports/attack_suite_openai.md`). One run of each of 18 attacks says little about how
 often a real model is moved; the obedient model remains the harder test. Claude has not been
-run (no key), and which model the demo may use is decision D2.
+run (no key). The demo uses that OpenAI model (decision D2), pinned to the dated snapshot that
+served the run, so that a model cannot change under the demo without a change to the settings.
 
 ### LLM02 Sensitive information disclosure
 

@@ -134,8 +134,11 @@ class Settings(BaseSettings):
     # The Claude model, for the anthropic provider.
     llm_model: str = "claude-opus-5-5"
     # The OpenAI model, for the openai provider, and the reasoning effort it is asked for.
-    # "omit" leaves the parameter out, for a model without reasoning (gpt-4.1, gpt-4o).
-    llm_openai_model: str = "gpt-5.4-mini"
+    # The model is a dated snapshot, not an alias such as gpt-5.4-mini that can move to a newer
+    # model without notice: every reading and its audit record then name the model that was
+    # evaluated (decision D2). "omit" leaves the effort out, for a model without reasoning
+    # (gpt-4.1, gpt-4o).
+    llm_openai_model: str = "gpt-5.4-mini-2026-03-17"
     llm_openai_reasoning_effort: Literal["none", "minimal", "low", "medium", "high", "omit"] = "low"
     llm_simulated_latency_seconds: float = Field(default=1.5, ge=0, le=60)
 

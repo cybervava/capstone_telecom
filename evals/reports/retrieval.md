@@ -6,7 +6,7 @@
 
 **Result (met).** Independent descriptions, scored once on a retriever built without sight of them: right section for 468 of 576 (81.25%; always answering 'no-internet' would score 47.92%). The retriever has been changed since; today the same descriptions score 89.58%, which is no longer an out-of-sample figure. In-sample: 99.07% of the transcript phrases and 96.67% of the author's paraphrases. Answers from another model's guide: 0.
 
-Written by the run of 2026-11-17T01:27:09+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: none (no language model takes part in this measurement).
+Written by the run of 2026-11-19T02:11:38+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: none (no language model takes part in this measurement).
 
 ## By set
 
@@ -40,7 +40,7 @@ Written by the run of 2026-11-17T01:27:09+00:00. Measured on synthetic stand-in 
 - An out-of-sample figure can be had once. The file of cases records the figure as first scored and a hash of what it was scored on (the retriever's code, the guides, the router models); when any of that changes, this report says so and stops calling the set out-of-sample.
 - The symptom rules were reworked after the first scoring, on what three code reviews found by reading them: a fault the customer rules out is not the fault (and is kept from the search as well), a word like 'dead' or 'gone' counts only when said of the service, and the service named as gone outranks a mention of Wi-Fi.
 - One change was prompted by this set itself: the Hindi 'lagta hai' (it seems) was read as 'lag'. No word was added to the rules from the descriptions this set got wrong.
-- The section is chosen mainly by keyword rules for the kind of fault (`rag/symptoms.py`), which know only the words they were given; the search contributes when the rules recognise nothing. The index uses a deterministic hashing embedder, not a learned model (A5, D2).
+- The section is chosen mainly by keyword rules for the kind of fault (`rag/symptoms.py`), which know only the words they were given; the search contributes when the rules recognise nothing. The index uses a deterministic hashing embedder, not a learned model (A5). D2 chose the model that reads a message's intent; the retriever was kept as measured here.
 - The labels accept two sections where a careful agent could send either, and most faults are no-service faults: the constant-answer column shows how much of each figure that alone explains.
 - Each description is put to the agent on its own. In a conversation the agent sees everything the customer wrote and goes by the latest message that names a fault.
 - A wrong section is still a set of safe steps from the customer's own router's guide. If they do not help, the customer says so and a person takes over.

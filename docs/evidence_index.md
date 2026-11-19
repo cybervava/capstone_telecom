@@ -58,7 +58,8 @@ can fail).
 - That a live language model withstands attack in general. The suite was run once with
   OpenAI's `gpt-5.4-mini` reading the 18 attacks made of words (58 of 58 runs passed, the
   model made all 24 readings: `evals/reports/attack_suite_openai.md`); one run says little
-  about how often a model is moved. Claude was not run (no key). Which model the demo may use
-  is decision D2. The other evaluations ran on the keyword rules.
+  about how often a model is moved. Claude was not run (no key). The demo uses that model
+  (decision D2), pinned to the snapshot of the run. The other evaluations ran on the keyword
+  rules.
 - That the build is a deployment. Vault, TLS, cloud IAM, edge limits and a retention job are
   named above as what is missing.

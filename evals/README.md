@@ -59,8 +59,9 @@ An attack made of words is tried twice:
   read some in its place, the run has not shown the model throughout, and its target is not
   met. The run with OpenAI's `gpt-5.4-mini` was made on 16 November: 58 of 58 runs passed,
   and the model made all 24 of its readings itself, in 1.2 s median and 1.8 s at the slowest
-  (`reports/attack_suite_openai.md`). The run with Claude has not been made: no Anthropic key
-  was available. Which model the demo may use is decision D2.
+  (`reports/attack_suite_openai.md`). The demo uses that model (decision D2, 18 November),
+  pinned to the snapshot that served this run, `gpt-5.4-mini-2026-03-17`. The run with Claude
+  has not been made: no Anthropic key was available.
 - read by **a model that obeys the attacker**: a scripted provider that answers whatever the
   attack wants, within the one shape an answer may have. This is the harder test and no run
   with a real model replaces it. A real model shows how often it is talked round; this shows

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from pydantic import ValidationError
 
@@ -81,10 +83,13 @@ def test_the_key_given_to_the_sdk_is_the_api_key(monkeypatch: pytest.MonkeyPatch
     assert provider._client.api_key == "test-key-not-real"
 
 
-def test_the_defaults_name_a_current_model_at_low_effort() -> None:
+def test_the_default_openai_model_is_the_dated_snapshot_that_was_evaluated() -> None:
     configured = settings()
 
-    assert configured.llm_openai_model == "gpt-5.4-mini"
+    # The snapshot that served the attack suite's live run (evals/reports/attack_suite_openai.md),
+    # not an alias that can move to another model without notice (decision D2).
+    assert configured.llm_openai_model == "gpt-5.4-mini-2026-03-17"
+    assert re.search(r"-\d{4}-\d{2}-\d{2}$", configured.llm_openai_model)
     assert configured.llm_openai_reasoning_effort == "low"
 
 

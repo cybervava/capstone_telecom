@@ -405,10 +405,10 @@ The form is all it returns. An answer with a field missing or a field too many i
 |---|---|---|
 | **Keyword rules** | A fixed list of words and phrases | The default. Also whenever a model is not allowed, too slow or failing |
 | **Claude** | Anthropic's model, through Anthropic's own software library | Only when switched on by a setting (`CARE_LLM_PROVIDER=anthropic`) |
-| **OpenAI** | OpenAI's model (`gpt-5.4-mini` unless set otherwise), through OpenAI's own software library | Only when switched on by a setting (`CARE_LLM_PROVIDER=openai`) |
+| **OpenAI** | OpenAI's model `gpt-5.4-mini`, fixed to one dated version of it, through OpenAI's own software library | Only when switched on by a setting (`CARE_LLM_PROVIDER=openai`). The demo uses this one |
 | **Simulated** | The keyword rules' answer after a deliberate pause of 1.5 seconds | Load tests, to put the cost of a model on the platform without paying for one |
 
-Out of the box, **no AI model is called at all**: the keyword rules read every message. Both model connections are tested against stand-ins. The OpenAI one has also been run against the live service, once, for the attack suite (section 7.5). OpenAI is asked not to keep a copy of what it is sent. The Claude one has not been run live, for want of a key. Which model the demo may use is still the client's decision.
+Out of the box, **no AI model is called at all**: the keyword rules read every message. Both model connections are tested against stand-ins. The OpenAI one has also been run against the live service, once, for the attack suite (section 7.5). OpenAI is asked not to keep a copy of what it is sent. The Claude one has not been run live, for want of a key. The team chose OpenAI's model for the demo (18 November). It is fixed to the dated version that was tested (`gpt-5.4-mini-2026-03-17`), because the plain name can be moved by OpenAI to a newer model without notice. The keyword rules stay the default, so that anyone without a key can still run everything.
 
 When a model is used, it gets 8 seconds. If it fails, is slow, refuses, or returns something that does not fit the form, the keyword rules answer instead, and the logbook says so. A model problem can slow the platform down but never stop it. Each call's record keeps which model answered and which version of the instructions (the *prompt*) it was given. The prompt's version is a fingerprint of its text, so any answer can be traced to the exact words that produced it.
 

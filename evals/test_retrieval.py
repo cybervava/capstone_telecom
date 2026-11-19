@@ -200,7 +200,8 @@ def assumptions(measured: Measured) -> list[str]:
         "The section is chosen mainly by keyword rules for the kind of fault"
         " (`rag/symptoms.py`), which know only the words they were given; the search"
         " contributes when the rules recognise nothing. The index uses a deterministic"
-        " hashing embedder, not a learned model (A5, D2).",
+        " hashing embedder, not a learned model (A5). D2 chose the model that reads a"
+        " message's intent; the retriever was kept as measured here.",
         "The labels accept two sections where a careful agent could send either, and most"
         " faults are no-service faults: the constant-answer column shows how much of each"
         " figure that alone explains.",
