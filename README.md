@@ -47,7 +47,7 @@ Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six ca
 - A learned embedding model for retrieval (the index uses a deterministic hashing embedder; see "Guide retrieval").
 - Metrics, dashboards and alerts (M5). The state of a circuit is in the logs (`circuit_opened`, `circuit_closed`), not yet in a metric. Traces of the workflow can be sent to LangSmith, with their contents hidden (see "Language model").
 - The evaluations on the container stack at 400,000 customers and on the demo's language model, OpenAI's `gpt-5.4-mini` (they run in process, on a 1,000-customer pack, with the offline rules and with weights measured on the large pack). Of them only the attack suite has been run with that model, once.
-- Simulator controls in the console (outages and faults are started with the admin API or the smoke run).
+- Simulator controls in the console: outages, line faults and failing APIs are `mock-oss` commands (see "Run it"), not buttons.
 - A button on the staff desk to take a conversation over (the API route exists: `POST /v1/contacts/{id}/takeover`).
 - For a deployment: a database role for each process; a managed secret store, TLS and encryption at rest; a job that enforces retention; export or erasure of a customer's data on request; limits at the edge; a second identity factor for customers who are not signed in (decision D9).
 - A run against Claude: no Anthropic key was available. The demo uses OpenAI's model instead (decision D2). `.gitlab-ci.yml` has never run (decision D6); its image scan was run by hand, before the OpenAI SDK was added (`docs/evidence/image_scan.md`).
@@ -61,7 +61,44 @@ The brief says SkyLink supplies the datasets, the credit policy, the router guid
 
 ## Run it
 
-Requirements: Python 3.12, [`uv`](https://docs.astral.sh/uv/), Docker with Compose.
+There are two ways. **With Docker alone**, on Windows, macOS or Linux, everything runs in containers: the way to try the platform and to demonstrate it. **For development**, on Linux or macOS (on Windows inside WSL 2), the five processes run on the machine against PostgreSQL in Docker, with the `make` targets.
+
+### With Docker, on Windows, macOS or Linux
+
+Needs Git, Docker Desktop (on Windows with its default WSL 2 engine; on Linux, Docker Engine with the Compose plugin will do) and [`uv`](https://docs.astral.sh/uv/getting-started/installation/), used once to write `.env`. Neither Python nor `make` nor bash is needed, and the commands are the same in PowerShell, Terminal and bash:
+
+```bash
+git clone https://github.com/cybervava/capstone_telecom.git
+cd capstone_telecom
+uv run --no-project scripts/init_env.py               # writes .env with fresh local secrets; never overwrites one
+docker compose --profile stack up -d --build --wait   # builds, generates 40,000 customers, seeds, starts
+```
+
+Open <http://127.0.0.1:8080/> for the customer desk and <http://127.0.0.1:8080/staff.html> for the staff desk. The staff key is `CARE_DEV_STAFF_KEY` in `.env` (`Select-String CARE_DEV_STAFF_KEY .env` in PowerShell, `grep CARE_DEV_STAFF_KEY .env` elsewhere). With the images built, the stack starts in about half a minute and takes about 310 MB of memory; the first build also downloads the base images and the locked dependencies.
+
+The simulator is driven with commands run inside the gateway's container, where its admin key already is:
+
+```bash
+docker compose exec mock-oss mock-oss customers --service-type broadband --mapping-defect none --limit 3
+docker compose exec mock-oss mock-oss outage-start --node-id <true_node_id> --eta-minutes 120
+docker compose exec mock-oss mock-oss messages --outage-id <outage_id>   # the SMS and push notices it sent
+docker compose exec mock-oss mock-oss line-fault <service_id>            # the line fails its remote test
+docker compose exec mock-oss mock-oss chaos network down                 # the curveball: the Network API fails
+docker compose exec mock-oss mock-oss chaos-clear
+docker compose exec mock-oss mock-oss outage-resolve <outage_id>
+```
+
+`docker compose exec mock-oss mock-oss --help` lists them all. `outage-start --started-minutes-ago 300` backdates an outage (a longer outage is owed a larger credit, and above INR 500 a supervisor approves it); `chaos` takes the other APIs and ways of failing (`timeout`, `latency`, `error_rate`, `response_loss`).
+
+For a demonstration, shorten the wait before a technician visit is offered from 10 minutes to 20 seconds: set `CARE_DISPATCH_HOLD_SECONDS=20` and `CARE_NETWORK_RECHECK_SECONDS=10` in `.env` and run the `up` command again (on the host, `make demo` does the same). For the language model the demo uses, set `CARE_LLM_PROVIDER=openai` and `OPENAI_API_KEY` (see "Language model"); without them the keyword rules read the messages and everything else is the same.
+
+`docker compose --profile stack down` stops the stack and keeps its data; with `-v` the data goes too, and the next start generates it afresh. A port that is already taken on your machine is moved in `.env`: `CARE_API_PORT` (8080), `MOCK_OSS_PORT` (8081), `CARE_DB_PORT` (55432).
+
+This was checked on Linux from a fresh clone made the way Git for Windows makes one (with its line-ending conversion on): the stack started, both desks answered, and `scripts/smoke.py` passed all eight journeys against it with the demo timing. It has not yet been run on a Windows or a Mac machine.
+
+### For development: Linux or macOS, or Windows inside WSL 2
+
+The processes use Unix signals, and the database driver's asynchronous mode does not run on Windows' default event loop, so on Windows they run in the containers above or inside WSL 2. Requirements: Python 3.12, [`uv`](https://docs.astral.sh/uv/), Docker with Compose.
 
 ```bash
 make init        # writes .env with freshly generated local secrets; on an existing .env it only adds a secret that is new
@@ -75,22 +112,18 @@ make demo        # instead of `make dev`: the wait before a visit is offered is 
 
 `make smoke` runs seven journeys against `make dev`. Against `make demo` it runs an eighth: the failing line is still failing after the hold, a visit is offered, the customer picks the second slot and the executor books it.
 
-Open <http://127.0.0.1:8080/> for the customer desk and <http://127.0.0.1:8080/staff.html> for the staff desk. The staff desk asks for a role, a name and the staff key: `grep CARE_DEV_STAFF_KEY .env` shows it. On the customer desk, leave the customer ID empty to arrive as an unidentified guest, or enter one; `make smoke` prints an outage being started, and the simulator can find customers for you:
+Open <http://127.0.0.1:8080/> for the customer desk and <http://127.0.0.1:8080/staff.html> for the staff desk. The staff desk asks for a role, a name and the staff key: `grep CARE_DEV_STAFF_KEY .env` shows it. On the customer desk, leave the customer ID empty to arrive as an unidentified guest, or enter one; `make smoke` prints an outage being started, and the simulator's commands (above) run here as `uv run --env-file .env mock-oss ...`:
 
 ```bash
-set -a; . ./.env; set +a
-curl -s -H "X-API-Key: $OSS_KEY_ADMIN" \
-  "http://127.0.0.1:8081/admin/v1/customers/search?service_type=broadband&mapping_defect=none&limit=3"
-curl -s -X POST -H "X-API-Key: $OSS_KEY_ADMIN" -H "Content-Type: application/json" \
-  -d '{"node_id":"<true_node_id from above>","cause":"FIBRE_CUT","eta_minutes":120}' \
-  http://127.0.0.1:8081/admin/v1/outages
+uv run --env-file .env mock-oss customers --service-type broadband --mapping-defect none --limit 3
+uv run --env-file .env mock-oss outage-start --node-id <true_node_id> --eta-minutes 120
 ```
 
-Starting an outage this way also notifies the consenting customers on that node; the simulated SMS and push messages can be read back from the gateway:
+Starting an outage also notifies the consenting customers on that node; the simulated SMS and push messages can be read back from the gateway:
 
 ```bash
-curl -s -H "X-API-Key: $OSS_KEY_ADMIN" "http://127.0.0.1:8081/notify/v1/messages?outage_id=<outage_id>&limit=5"
-curl -s -X POST -H "X-API-Key: $OSS_KEY_ADMIN" http://127.0.0.1:8081/admin/v1/outages/<outage_id>/resolve
+uv run --env-file .env mock-oss messages --outage-id <outage_id> --limit 5
+uv run --env-file .env mock-oss outage-resolve <outage_id>
 ```
 
 `make stop` stops the processes. Logs are in `var/log/`.
@@ -104,7 +137,7 @@ uv run --env-file .env care-admin feed-status      # exits 1 while a gap is mark
 uv run --env-file .env care-admin feed-clear-gap
 ```
 
-Everything in containers instead (generates and seeds a data pack on first start):
+The container stack of the section above, with `make` (`make smoke` runs against it too):
 
 ```bash
 make init && make stack-up      # then: make smoke
@@ -201,12 +234,11 @@ The executor applies a credit possibly days after it was proposed, and takes not
 
 The customer hears the outcome of every credit, in the amount that was frozen: applied (with Billing's reference), already on the account, not applied (a person follows up), or, when Billing stopped answering and the executor gave up, "could not be confirmed" (a person checks the account first; nobody is told it was not applied). This holds when a second outage brought a second credit, and when a person has taken the conversation over in the meantime.
 
-To see a credit locally, start an outage that began five hours ago, contact as a customer on that node, resolve it, and approve as an agent (the smoke run does exactly this):
+To see a credit locally, start an outage that began five hours ago, contact as a customer on that node, resolve it, and approve as an agent (the smoke run does exactly this). On the container stack (on the host: `uv run --env-file .env mock-oss ...`):
 
 ```bash
-curl -s -X POST -H "X-API-Key: $OSS_KEY_ADMIN" -H "Content-Type: application/json" \
-  -d '{"node_id":"<node>","cause":"FIBRE_CUT","started_minutes_ago":300}' \
-  http://127.0.0.1:8081/admin/v1/outages
+docker compose exec mock-oss mock-oss outage-start --node-id <node> --started-minutes-ago 300
+docker compose exec mock-oss mock-oss outage-resolve <outage_id>
 ```
 
 ### Technician visits
@@ -222,11 +254,10 @@ A visit is the remedy that costs a journey, and the one most often arranged for 
 
 The rule is applied twice. The orchestrator applies it after a fresh diagnosis, offers slots, reads the customer's reply and proposes a `VISIT_BOOK` action tied to the message that made the choice. The executor applies it again immediately before booking, on evidence it reads with its own key (the node's live state and the feed, the line's latest stored test, Field Service's bookings for the service), and ends the action as `SKIPPED` with the reason when it no longer holds. A unique index allows one booking in progress per service. A slot that filled up in the meantime leads to a fresh offer; a booking the customer could not be told about because a person had taken over is told from there.
 
-To see it locally, `make demo`, then make a line fail and contact as that customer:
+To see it locally, use the demo timing (`make demo`, or the two settings under "Run it"), then make a line fail and contact as that customer:
 
 ```bash
-curl -s -X POST -H "X-API-Key: $OSS_KEY_ADMIN" -H "Content-Type: application/json" \
-  -d '{"service_id":"<service>","fault":true}' http://127.0.0.1:8081/admin/v1/line-faults
+docker compose exec mock-oss mock-oss line-fault <service_id>     # --clear makes it pass again
 ```
 
 ### Guide retrieval

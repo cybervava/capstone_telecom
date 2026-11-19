@@ -677,7 +677,18 @@ Where to look for a particular question:
 
 ## 12. Running it yourself
 
-You need a computer with Python 3.12, the `uv` tool and Docker. From the repository folder:
+**On Windows, a Mac or Linux, with Docker alone.** Everything runs in containers. Install Git, Docker Desktop and the `uv` tool, then from the repository folder (the same in PowerShell and in a Mac or Linux terminal):
+
+| Command | What it does |
+|---|---|
+| `uv run --no-project scripts/init_env.py` | Writes the local `.env` file of freshly generated secrets, as `make init` does |
+| `docker compose --profile stack up -d --build --wait` | Builds the programs, invents the data, loads it and starts everything. The pages are at the addresses below |
+| `docker compose exec mock-oss mock-oss outage-start --node-id <node>` | Starts an outage in the simulator. `--help` lists the other controls: failing lines, failing systems, the messages sent |
+| `docker compose --profile stack down` | Stops it all, keeping the data |
+
+The README's "Run it" has the details, including the two settings that shorten the hold before a visit for a demonstration.
+
+**For development, on Linux or a Mac** (on Windows inside WSL 2, a Linux system that runs inside Windows; the programs themselves do not run on Windows directly), you need Python 3.12, the `uv` tool and Docker. From the repository folder:
 
 | Command | What it does |
 |---|---|
@@ -701,7 +712,7 @@ The project plan has nine milestones, M0 to M8. M0 to M4 are built. Still to com
 
 - **Monitoring and alerts** (milestone M5): a dashboard of response times, errors, cost and groundedness; alerts on error rates, slowness, cost spikes and a stale announcement stream; tracing across all the programs; a runbook of failure scenarios. One piece exists: the coordinator's work can be traced step by step in LangSmith, a tracing service, when a setting switches it on. The traces then show each step and how long it took, but none of the conversation's contents.
 - **The automated build pipeline has never run.** It is written for GitLab, and the repository lives on GitHub. Its image scan has been run by hand.
-- **The choice of AI model is the client's.** OpenAI's model has been tried once against the attack suite. Claude has not been tried.
+- **The AI model is chosen, and mostly untried.** The demo uses OpenAI's `gpt-5.4-mini` (decided on 18 November). It has been run once against the attack suite; the other evaluations have not yet been run with it. Claude has not been tried.
 - **For a real deployment**: proper staff sign-in (today a shared key and a typed name), a managed store for secrets, encrypted connections and storage, a separate database account for each program, limits at the network's edge, and a job that deletes old records when their retention period ends.
 - **Gaps in what staff can do**: staff can take a conversation over, but only through the API (the desk has no button yet), and they cannot reply to the customer from the desk. A booked visit cannot be changed or cancelled.
 - **The proactive outage texts do not say they are automated**, unlike every message of a conversation.
