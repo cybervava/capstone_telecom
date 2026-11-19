@@ -8,37 +8,18 @@ answers from the offline rules, so a model problem can slow the platform down bu
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
 import anthropic
 from pydantic import ValidationError
 
-from skylink_care.llm.base import LLMProviderError, TriageReading, Usage
+from skylink_care.llm.base import TRIAGE_SCHEMA, LLMProviderError, TriageReading, Usage
+from skylink_care.llm.prompts import customer_message
+
+__all__ = ["DEFAULT_MAX_TOKENS", "REFUSAL_FALLBACK_BETA", "TRIAGE_SCHEMA", "ClaudeProvider"]
 
 REFUSAL_FALLBACK_BETA = "server-side-fallback-2026-07-01"
-# "<" and ">" that are not part of a masking token such as <PHONE_1> or <NAME>.
-_ANGLE = re.compile(r"<(?![A-Z_]+(?:_\d+)?>)|(?<![A-Z\d])>")
-_LOOKALIKE = {"<": "\u2039", ">": "\u203a"}
 DEFAULT_MAX_TOKENS = 2048  # covers adaptive thinking at low effort plus a small JSON answer
-
-
-def _output_schema() -> dict[str, Any]:
-    """JSON schema for ``TriageReading`` in the form structured outputs expects."""
-    schema = TriageReading.model_json_schema()
-    properties = {
-        name: {key: value for key, value in spec.items() if key != "title"}
-        for name, spec in schema["properties"].items()
-    }
-    return {
-        "type": "object",
-        "properties": properties,
-        "required": list(properties),
-        "additionalProperties": False,
-    }
-
-
-TRIAGE_SCHEMA = _output_schema()
 
 
 class ClaudeProvider:
@@ -64,12 +45,7 @@ class ClaudeProvider:
             "model": self.model,
             "max_tokens": self._max_tokens,
             "system": system_prompt,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": f"<customer_message>\n{_as_data(masked_text)}\n</customer_message>",
-                }
-            ],
+            "messages": [{"role": "user", "content": customer_message(masked_text)}],
             "output_config": {
                 "effort": "low",
                 "format": {"type": "json_schema", "schema": TRIAGE_SCHEMA},
@@ -122,12 +98,3 @@ class ClaudeProvider:
         except anthropic.APIError as exc:
             # Anything else the SDK raises, e.g. a response it could not validate.
             raise LLMProviderError("api_error", type(exc).__name__) from exc
-
-
-def _as_data(masked_text: str) -> str:
-    """Make the customer's text unable to close the tag it is wrapped in.
-
-    Angle brackets are swapped for look-alike characters, except around the masking tokens
-    (``<PHONE_1>``), which the prompt refers to.
-    """
-    return _ANGLE.sub(lambda match: _LOOKALIKE[match.group(0)], masked_text)

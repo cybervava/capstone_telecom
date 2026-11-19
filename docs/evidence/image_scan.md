@@ -9,7 +9,7 @@ version the CI file names.
 |---|---|
 | Image | `skylink-care`, built from this repository's `Dockerfile` at M4 slice E (`docker build -t skylink-care:m4 .`), image id `sha256:687ccb9c3ce6`, 251 MB, base `python:3.12-slim-bookworm` (Debian 12.15) |
 | Scanner | Trivy 0.57.1 (`aquasec/trivy:0.57.1`), on the image saved to a file: the scanner was given no access to the Docker daemon |
-| Dependencies | Installed from `uv.lock` with `uv sync --locked --no-dev`; the lock file pins 77 packages with hashes, and the project itself |
+| Dependencies | Installed from `uv.lock` with `uv sync --locked --no-dev`; the lock file then pinned 77 packages with hashes, and the project itself. The OpenAI SDK (`openai` 3.52.0) has been added since, making 78; the image has not been scanned again |
 
 ## What the CI job asks: HIGH and CRITICAL vulnerabilities that have a fix
 

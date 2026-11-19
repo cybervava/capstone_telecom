@@ -8,12 +8,13 @@ record of provider, model, prompt version and token counts.
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from collections.abc import Mapping
 
 import structlog
 
-from skylink_care.config import Settings
+from skylink_care.config import MissingSecretError, Settings
 from skylink_care.guardrails.pii import mask_pii
 from skylink_care.llm.base import (
     CallRecord,
@@ -130,23 +131,55 @@ class LLMGateway:
 
 def build_gateway(settings: Settings) -> LLMGateway:
     """Construct the gateway for the configured provider."""
-    if settings.llm_provider == "offline":
-        return LLMGateway(OfflineProvider())
+    provider = build_provider(settings)
     if settings.llm_provider == "simulated":
-        from skylink_care.llm.simulated import SimulatedModelProvider
-
+        # The stand-in's own pace must not be cut off as a model that hangs would be.
         return LLMGateway(
-            SimulatedModelProvider(latency_seconds=settings.llm_simulated_latency_seconds),
-            # The stand-in's own pace must not be cut off as a model that hangs would be.
+            provider,
             timeout_seconds=max(
                 DEFAULT_TIMEOUT_SECONDS, settings.llm_simulated_latency_seconds * 2
             ),
         )
-    # Imported here so that offline deployments never load the SDK.
+    return LLMGateway(provider)
+
+
+def build_provider(settings: Settings) -> TriageProvider:
+    """The configured provider. A model's SDK is imported only when that model is configured,
+    so that offline deployments never load one."""
+    if settings.llm_provider == "offline":
+        return OfflineProvider()
+    if settings.llm_provider == "simulated":
+        from skylink_care.llm.simulated import SimulatedModelProvider
+
+        return SimulatedModelProvider(latency_seconds=settings.llm_simulated_latency_seconds)
+    if settings.llm_provider == "openai":
+        return _openai(settings)
+    return _claude(settings)
+
+
+def _openai(settings: Settings) -> TriageProvider:
+    import openai
+
+    from skylink_care.llm.openai_provider import OpenAIProvider
+
+    # Read here, not left to the SDK: it would also start with an admin key or a workload
+    # identity in the environment, and every call would then fail instead of the start.
+    key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not key:
+        raise MissingSecretError("OPENAI_API_KEY is not set")
+    client = openai.AsyncOpenAI(api_key=key, timeout=DEFAULT_TIMEOUT_SECONDS, max_retries=1)
+    return OpenAIProvider(
+        client,
+        model=settings.llm_openai_model,
+        reasoning_effort=settings.llm_openai_reasoning_effort,
+    )
+
+
+def _claude(settings: Settings) -> TriageProvider:
     import anthropic
 
     from skylink_care.llm.claude import ClaudeProvider
 
     # Credentials are resolved by the SDK (ANTHROPIC_API_KEY or an `ant auth login` profile).
     client = anthropic.AsyncAnthropic(timeout=DEFAULT_TIMEOUT_SECONDS, max_retries=1)
-    return LLMGateway(ClaudeProvider(client, model=settings.llm_model))
+    return ClaudeProvider(client, model=settings.llm_model)

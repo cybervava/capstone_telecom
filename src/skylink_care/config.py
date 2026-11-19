@@ -130,8 +130,13 @@ class Settings(BaseSettings):
 
     # "simulated" is for load tests: the rules' answer after the time a model call takes
     # (skylink_care.llm.simulated). No model is called.
-    llm_provider: Literal["offline", "anthropic", "simulated"] = "offline"
+    llm_provider: Literal["offline", "anthropic", "openai", "simulated"] = "offline"
+    # The Claude model, for the anthropic provider.
     llm_model: str = "claude-opus-5-5"
+    # The OpenAI model, for the openai provider, and the reasoning effort it is asked for.
+    # "omit" leaves the parameter out, for a model without reasoning (gpt-4.1, gpt-4o).
+    llm_openai_model: str = "gpt-5.4-mini"
+    llm_openai_reasoning_effort: Literal["none", "minimal", "low", "medium", "high", "omit"] = "low"
     llm_simulated_latency_seconds: float = Field(default=1.5, ge=0, le=60)
 
     @model_validator(mode="after")

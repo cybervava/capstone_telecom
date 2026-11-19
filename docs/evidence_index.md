@@ -35,7 +35,7 @@ can fail).
 | ☐ | Encryption in transit (TLS) and at rest for data stores and vector index | **Not in this build**: the stack runs on one machine without TLS. It belongs to the deployment the architecture describes |
 | ☑ | Vector index access filtered by user role (no cross-tenant or cross-role retrieval) | The search filters by the reader's role, by the customer's router model and by the quotable sections, in the query (`rag/index.py`). `tests/integration/test_guide_index.py::test_role_without_access_and_unknown_model_find_nothing`; attack suite B5. One tenant |
 | ◐ | API authentication on every endpoint; rate limiting on public-facing ones | Every route needs a token except the health check, the static pages and, in a development environment only, the token endpoint (which there signs anyone in as any customer: a stand-in for sign-in, off outside `dev`), and every route is tried against every role (`tests/integration/api/test_role_matrix.py`; attack suite I1, I3). New contacts for each caller and messages for each contact are limited (`tests/integration/api/test_api.py`). **Not shown**: the limits live in one API process; limits at the edge belong to the deployment |
-| ☑ | Container image scanned; dependencies pinned | Pinned: `uv.lock`, 77 packages with hashes (and the project itself). Scanned by hand with the scanner the CI file names (Trivy 0.57.1): no HIGH or CRITICAL vulnerability that has a fix; 101 in the base image without one (`docs/evidence/image_scan.md`). **The CI job itself has never run**: where the repository lives and which CI runs it is open (decision D6). Running it by hand found that it would have failed on false alarms; it is corrected |
+| ☑ | Container image scanned; dependencies pinned | Pinned: `uv.lock`, 78 packages with hashes (and the project itself). Scanned by hand with the scanner the CI file names (Trivy 0.57.1): no HIGH or CRITICAL vulnerability that has a fix; 101 in the base image without one (`docs/evidence/image_scan.md`). **The CI job itself has never run**: where the repository lives and which CI runs it is open (decision D6). Running it by hand found that it would have failed on false alarms; it is corrected |
 | ☑ | Logs redact PII and secrets | `observability/logging.py`, `guardrails/pii.py` `redact_for_log`; `tests/unit/test_logging_redaction.py`, `tests/unit/guardrails/test_pii.py` |
 | ☑ | Threat model done for the agent (OWASP Top 10 for LLM Applications) | `docs/threat_model.md` |
 
@@ -55,7 +55,10 @@ can fail).
 ## What this index does not claim
 
 - That the numbers are SkyLink's. The policy, the complaint rules and the data are stand-ins.
-- That a live language model was attacked. The suite can be run against one with a setting
-  (decision D2); what was run is the keyword rules and a scripted model that obeys the attacker.
+- That a live language model withstands attack in general. The suite was run once with
+  OpenAI's `gpt-5.4-mini` reading the 18 attacks made of words (58 of 58 runs passed, the
+  model made all 24 readings: `evals/reports/attack_suite_openai.md`); one run says little
+  about how often a model is moved. Claude was not run (no key). Which model the demo may use
+  is decision D2. The other evaluations ran on the keyword rules.
 - That the build is a deployment. Vault, TLS, cloud IAM, edge limits and a retention job are
   named above as what is missing.

@@ -3,8 +3,10 @@
 Seven scored runs, each tied to a line of the brief or to a claim this build makes. `make eval`
 (PostgreSQL must be up: `make up`) runs them and rewrites the reports in `evals/reports/`, one
 Markdown file to read and one JSON file with the same numbers. Each report states when it was
-written (`written_at`); all seven were last run on the code of M4, on 16 November. They are not
-part of `make test-all`: a failed evaluation means a target was missed, not that the code is broken.
+written (`written_at`); all seven were last run on the code of M4, on 16 November, and the
+attack suite once more with an OpenAI model reading the messages (`attack_suite_openai`, not
+part of `make eval`). They are not part of `make test-all`: a failed evaluation means a target
+was missed, not that the code is broken.
 
 | Report | Brief metric | How it is measured |
 |---|---|---|
@@ -22,6 +24,8 @@ The replays use the same in-process stack as the end-to-end tests: PostgreSQL, t
 gateway (`mock_oss`) with its own model of the network, and the platform with its workers, on a
 1,000-customer pack from `skylink_datagen`. The customers' messages are read by the offline
 keyword provider, not by a language model; every report names the provider that produced it.
+The one exception is a second run of the attack suite, `attack_suite_openai`, in which an
+OpenAI model read the messages (below).
 
 `cases/contact_mix.json` holds what was measured once on the 400,000-customer pack and frozen:
 how the 9,000 labelled outage contacts split by service, timing and mapping defect, how long
@@ -44,11 +48,19 @@ pass rate with counts; nothing is averaged away.
 An attack made of words is tried twice:
 
 - read by **the configured provider**. That is `offline` (the keyword rules) unless
-  `ATTACK_SUITE_LLM` names another. With `anthropic` the masked messages are sent to the
-  configured Claude model, the report is written as `attack_suite_anthropic` and names the
-  provider. It needs `ANTHROPIC_API_KEY` and costs a few dozen short calls:
-  `ATTACK_SUITE_LLM=anthropic uv run --env-file .env pytest evals/test_attack_suite.py`.
-  This run has not been made (decision D2: which model is permitted for the demo).
+  `ATTACK_SUITE_LLM` names another. With `anthropic` or `openai` the masked messages are sent
+  to the configured Claude or OpenAI model, and the report is written as
+  `attack_suite_anthropic` or `attack_suite_openai` and names the provider and the model. It
+  needs `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` and costs a few dozen short calls:
+  `ATTACK_SUITE_LLM=openai uv run --env-file .env pytest evals/test_attack_suite.py`.
+  The report also counts the readings the model made and those the rules made because the
+  model failed, with the cause, and the median and slowest time of a reading
+  (`model_tally.py`). Every reading the model was asked for must be its own: where the rules
+  read some in its place, the run has not shown the model throughout, and its target is not
+  met. The run with OpenAI's `gpt-5.4-mini` was made on 16 November: 58 of 58 runs passed,
+  and the model made all 24 of its readings itself, in 1.2 s median and 1.8 s at the slowest
+  (`reports/attack_suite_openai.md`). The run with Claude has not been made: no Anthropic key
+  was available. Which model the demo may use is decision D2.
 - read by **a model that obeys the attacker**: a scripted provider that answers whatever the
   attack wants, within the one shape an answer may have. This is the harder test and no run
   with a real model replaces it. A real model shows how often it is talked round; this shows

@@ -381,7 +381,7 @@ Two safeguards apply. An announcement more than 15 minutes old does not trigger 
 
 ### 6.1 The form it fills in
 
-A **large language model** (LLM, such as Anthropic's Claude) is the kind of AI that reads and writes text. Here it has one narrow job: read a customer's message and fill in a form of nine fields.
+A **large language model** (LLM, such as Anthropic's Claude or OpenAI's GPT) is the kind of AI that reads and writes text. Here it has one narrow job: read a customer's message and fill in a form of nine fields.
 
 | Field | Meaning |
 |---|---|
@@ -399,15 +399,16 @@ The form is all it returns. An answer with a field missing or a field too many i
 
 **What the model never decides**: who the customer is, whether there is an outage, whether a credit is owed or how much, whether a technician comes. What it reads only steers the conversation among options the evidence already allows. Asking for a credit does not get a credit, and asking for a technician does not get a technician. And it writes nothing a customer reads. Its one free sentence, the summary, goes to staff only, after it has been cleaned of contact details and markup and cut to 240 characters.
 
-### 6.2 Three ways of reading a message
+### 6.2 Four ways of reading a message
 
 | Reader | What it is | When it is used |
 |---|---|---|
 | **Keyword rules** | A fixed list of words and phrases | The default. Also whenever a model is not allowed, too slow or failing |
 | **Claude** | Anthropic's model, through Anthropic's own software library | Only when switched on by a setting (`CARE_LLM_PROVIDER=anthropic`) |
+| **OpenAI** | OpenAI's model (`gpt-5.4-mini` unless set otherwise), through OpenAI's own software library | Only when switched on by a setting (`CARE_LLM_PROVIDER=openai`) |
 | **Simulated** | The keyword rules' answer after a deliberate pause of 1.5 seconds | Load tests, to put the cost of a model on the platform without paying for one |
 
-Out of the box, **no AI model is called at all**: the keyword rules read every message. The Claude path is built and tested against a stand-in, but has not been run against the live service; that waits for the client to say which model may be used.
+Out of the box, **no AI model is called at all**: the keyword rules read every message. Both model connections are tested against stand-ins. The OpenAI one has also been run against the live service, once, for the attack suite (section 7.5). OpenAI is asked not to keep a copy of what it is sent. The Claude one has not been run live, for want of a key. Which model the demo may use is still the client's decision.
 
 When a model is used, it gets 8 seconds. If it fails, is slow, refuses, or returns something that does not fit the form, the keyword rules answer instead, and the logbook says so. A model problem can slow the platform down but never stop it. Each call's record keeps which model answered and which version of the instructions (the *prompt*) it was given. The prompt's version is a fingerprint of its text, so any answer can be traced to the exact words that produced it.
 
@@ -448,7 +449,7 @@ These facts guard the places where a reading alone would end a conversation:
 
 Each flagged message leaves an entry of its own in the logbook, so attempts to steer the assistant can be counted.
 
-**In the code:** `src/skylink_care/llm/` (`gateway.py` is the one door to a model; `offline.py` the keyword rules; `claude.py` the Claude connection; `prompts/triage.md` the instructions); masking in `src/skylink_care/guardrails/pii.py`.
+**In the code:** `src/skylink_care/llm/` (`gateway.py` is the one door to a model; `offline.py` the keyword rules; `claude.py` the Claude connection; `openai_provider.py` the OpenAI connection; `prompts/triage.md` the instructions); masking in `src/skylink_care/guardrails/pii.py`.
 
 ---
 
@@ -509,7 +510,7 @@ Four outcomes count as **critical**, and must never happen: a credit nobody appr
 
 The 18 attacks that depend on how a message is read are played twice. Once the message is read normally. Once it is read by an **"obedient model"**: a scripted stand-in for an AI model that has been completely talked round and answers whatever the attacker wants, within the nine fields of the form. That is the worst an AI model can do here. It shows what the platform does when the model is no longer on its side.
 
-Result: **58 of 58 runs pass, with no critical failure.** The suite's first run found five real gaps, none of them critical. A planted instruction in a guide was quoted to a customer, and so was a step changed in the stored index. A rude customer in an outage was declined instead of told of the outage. A model could close a complaint against the customer's plain "it is still not working". And a model could have a plain fault report declined as "off-topic". All five were fixed.
+Result: **58 of 58 runs pass, with no critical failure.** The suite was then run a second time with a real AI model, OpenAI's `gpt-5.4-mini`, reading the messages in place of the keyword rules: 58 of 58 again. The model made all 24 of the readings it was asked for; none fell back to the rules. One run is a small sample of how often a real model can be talked round, which is why the obedient model stays the harder test. The suite's first run found five real gaps, none of them critical. A planted instruction in a guide was quoted to a customer, and so was a step changed in the stored index. A rude customer in an outage was declined instead of told of the outage. A model could close a complaint against the customer's plain "it is still not working". And a model could have a plain fault report declined as "off-topic". All five were fixed.
 
 A test that cannot fail proves nothing, so the project also checks the suite itself. A script runs 27 such checks. In 25 of them it removes a safety control from the code (sometimes two at once), runs the attack meant to catch its absence, checks that the attack reports it, and puts the code back. In the other 2, where two locks stand one behind the other, it removes only the first and checks that the attack is still stopped. All 27 come out as they should.
 
@@ -557,7 +558,7 @@ If the radio's stream misses an announcement, the radio's record stops counting 
 
 ### 9.1 Automated tests
 
-There are **2,585 automated tests**. At the last full run all of them passed, and together they exercised 96% of the platform's code. They come in kinds:
+There are **2,643 automated tests**. At the last full run all of them passed, and together they exercised 96% of the platform's code. They come in kinds:
 
 | Kind | Proves |
 |---|---|
@@ -592,7 +593,7 @@ In the half-hour runs, every one of 13,941 and 14,041 contacts was accepted, wit
 ### 9.4 What the numbers do not prove
 
 - They are measured on invented data against a simulator that answers in milliseconds, not on SkyLink's real systems or customers.
-- No message has yet been read by a live AI model. Every evaluation used the keyword rules, and the attack suite used those and the obedient model.
+- Little has been read by a live AI model. Only the attack suite has been run with one (OpenAI's, once). Every other evaluation used the keyword rules.
 - The load test ran on one laptop, with one copy of each program. It shows the design holds at ten contacts a second; it is not a capacity figure for a real deployment.
 - A suite of attacks shows that *those* attacks fail, not that nothing could succeed. The threat model (`docs/threat_model.md`) lists what was not tried.
 
@@ -698,9 +699,9 @@ You need a computer with Python 3.12, the `uv` tool and Docker. From the reposit
 
 The project plan has nine milestones, M0 to M8. M0 to M4 are built. Still to come, or waiting on decisions by the client:
 
-- **Monitoring and alerts** (milestone M5): a dashboard of response times, errors, cost and groundedness; alerts on error rates, slowness, cost spikes and a stale announcement stream; tracing across the programs; a runbook of failure scenarios.
+- **Monitoring and alerts** (milestone M5): a dashboard of response times, errors, cost and groundedness; alerts on error rates, slowness, cost spikes and a stale announcement stream; tracing across all the programs; a runbook of failure scenarios. One piece exists: the coordinator's work can be traced step by step in LangSmith, a tracing service, when a setting switches it on. The traces then show each step and how long it took, but none of the conversation's contents.
 - **The automated build pipeline has never run.** It is written for GitLab, and the repository lives on GitHub. Its image scan has been run by hand.
-- **No live AI model has been tried**, pending the client's choice of model.
+- **The choice of AI model is the client's.** OpenAI's model has been tried once against the attack suite. Claude has not been tried.
 - **For a real deployment**: proper staff sign-in (today a shared key and a typed name), a managed store for secrets, encrypted connections and storage, a separate database account for each program, limits at the network's edge, and a job that deletes old records when their retention period ends.
 - **Gaps in what staff can do**: staff can take a conversation over, but only through the API (the desk has no button yet), and they cannot reply to the customer from the desk. A booked visit cannot be changed or cancelled.
 - **The proactive outage texts do not say they are automated**, unlike every message of a conversation.
@@ -746,7 +747,9 @@ The full list, with the open decisions, is in `docs/EXECUTION_PLAN.md` (sections
 
 **LangGraph**: the software library the coordinator's state machine is built with.
 
-**Large language model (LLM)**: an AI that reads and writes text, such as Claude.
+**LangSmith**: a tracing service made for LangGraph. When switched on, it shows each step of the coordinator's work and how long it took; here it is sent no contents of the conversation.
+
+**Large language model (LLM)**: an AI that reads and writes text, such as Claude or OpenAI's GPT.
 
 **Line test**: a remote check of one customer's line, which also names the node that serves it.
 

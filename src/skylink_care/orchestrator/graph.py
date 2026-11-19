@@ -17,6 +17,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import RetryPolicy
 
+from skylink_care.observability.tracing import keep_trace_contents_private
 from skylink_care.orchestrator.nodes import Nodes
 from skylink_care.orchestrator.state import ContactState, Route
 from skylink_care.runtime import OrchestratorRuntime
@@ -52,6 +53,9 @@ _SPECIALISTS = (
 def build_graph(
     runtime: OrchestratorRuntime, checkpointer: BaseCheckpointSaver[Any]
 ) -> ContactGraph:
+    # Whoever builds the graph may have LangSmith tracing on: its traces carry no contents
+    # unless a setting asks for them.
+    keep_trace_contents_private()
     nodes = Nodes(runtime)
     graph = StateGraph(ContactState)
 

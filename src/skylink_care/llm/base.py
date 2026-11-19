@@ -7,7 +7,7 @@ network status, eligibility or amounts, and it never sees unmasked personal data
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict
 
@@ -33,6 +33,25 @@ class TriageReading(BaseModel):
     @property
     def confidence_score(self) -> float:
         return CONFIDENCE_SCORE[self.confidence]
+
+
+def _output_schema() -> dict[str, Any]:
+    """JSON schema for ``TriageReading`` in the form structured outputs expect: closed, and
+    every field required. Both model providers send it as it is."""
+    schema = TriageReading.model_json_schema()
+    properties = {
+        name: {key: value for key, value in spec.items() if key != "title"}
+        for name, spec in schema["properties"].items()
+    }
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": list(properties),
+        "additionalProperties": False,
+    }
+
+
+TRIAGE_SCHEMA = _output_schema()
 
 
 @dataclass(frozen=True)

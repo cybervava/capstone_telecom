@@ -14,6 +14,9 @@
 # SIMULATED_MODEL_SECONDS=1.5 ./scripts/dev_stack.sh start  gives the orchestrator a stand-in
 # for a language model: the rules' answer after that many seconds. It is for load tests, to put
 # a model's cost on every turn without calling one.
+#
+# The orchestrator alone gets the model keys and the LangSmith settings: it is the one process
+# that calls a model and runs the LangGraph workflow that LangSmith traces.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 umask 077
@@ -43,7 +46,7 @@ allowed_variables() {
   case "$1" in
     mock-oss)      echo '^(MOCK_OSS_|OSS_KEY_)' ;;
     care-api)      echo '^(CARE_ENV|CARE_DB_|CARE_JWT_SECRET|CARE_DEV_STAFF_KEY|CARE_API_|CARE_SURGE_|CARE_WORKER_CONCURRENCY=|CARE_STATUS_MAX_AGE_SECONDS=)' ;;
-    care-worker)   echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_OSS_BREAKER_|CARE_OSS_READ_RETRIES|CARE_LLM_|CARE_SURGE_|CARE_WORKER_CONCURRENCY=|CARE_IDENTITY_|CARE_STATUS_|CARE_FEED_|CARE_KNOWLEDGE_|CARE_LINE_|CARE_DISPATCH_|CARE_VISIT_|CARE_CREDIT_|CARE_APPROVAL_|CARE_NETWORK_|CARE_SUSPECTED_|CARE_OUTAGE_|CARE_CLOSE_|ANTHROPIC_API_KEY|OSS_KEY_(TRIAGE|DIAGNOSTICS|RESOLUTION|DISPATCH)=)' ;;
+    care-worker)   echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_OSS_BREAKER_|CARE_OSS_READ_RETRIES|CARE_LLM_|CARE_SURGE_|CARE_WORKER_CONCURRENCY=|CARE_IDENTITY_|CARE_STATUS_|CARE_FEED_|CARE_KNOWLEDGE_|CARE_LINE_|CARE_DISPATCH_|CARE_VISIT_|CARE_CREDIT_|CARE_APPROVAL_|CARE_NETWORK_|CARE_SUSPECTED_|CARE_OUTAGE_|CARE_CLOSE_|ANTHROPIC_API_KEY=|OPENAI_API_KEY=|LANGSMITH_[A-Z_]+=|OSS_KEY_(TRIAGE|DIAGNOSTICS|RESOLUTION|DISPATCH)=)' ;;
     care-executor) echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_OSS_BREAKER_|CARE_OSS_READ_RETRIES|CARE_CREDIT_|CARE_STATUS_|CARE_FEED_|CARE_LINE_|CARE_DISPATCH_|CARE_VISIT_|OSS_KEY_EXECUTOR=)' ;;
     care-ingest)   echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_OSS_BREAKER_|CARE_OSS_READ_RETRIES|CARE_NOTIFY_|OSS_KEY_INGEST=)' ;;
   esac

@@ -2,9 +2,9 @@
 
 Three hundred synthetic customers each write their own details into a message, in the
 spellings people use: a number broken up with brackets and dashes, the last digits of it, a
-name with an ending, a pincode with a space. The whole request the Claude provider would send
-(the system prompt and the message) is then searched for exactly what was written in, and for
-the digits of every number however they were set apart.
+name with an ending, a pincode with a space. The whole request each model provider would send
+(Claude's and OpenAI's: the system prompt and the message) is then searched for exactly what
+was written in, and for the digits of every number however they were set apart.
 
 The check knows what it put in. It does not ask the masking's own rules what counts as a
 leak, so a spelling the masking misses is a failure here and not a blind spot.
@@ -25,8 +25,10 @@ import pytest
 
 from skylink_care.adapters.models import CustomerProfile
 from skylink_care.agents.triage import personal_values
+from skylink_care.llm.base import TriageProvider
 from skylink_care.llm.claude import ClaudeProvider
 from skylink_care.llm.gateway import LLMGateway
+from skylink_care.llm.openai_provider import OpenAIProvider
 from skylink_datagen.reference import customer_id, phone_for, service_id
 from skylink_datagen.wordlists import AREAS, CITIES, FIRST_NAMES, LAST_NAMES, PIN_PREFIX
 
@@ -63,14 +65,30 @@ MESSAGES = (
 )
 
 
-class Requests:
-    """Stands in for the Anthropic client: keeps every request it is asked to send."""
+PROVIDERS = ("anthropic", "openai")
 
-    def __init__(self) -> None:
+
+class Requests:
+    """Stands in for a model's client: keeps every request it is asked to send, and answers
+    in the shape of that provider."""
+
+    def __init__(self, provider: str = "anthropic") -> None:
+        self.provider = provider
         self.sent: list[dict[str, Any]] = []
 
     async def create(self, **request: Any) -> Any:
         self.sent.append(request)
+        if self.provider == "openai":
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=SimpleNamespace(content=json.dumps(ANSWER), refusal=None),
+                        finish_reason="stop",
+                    )
+                ],
+                usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1),
+                model="gpt-5.4-mini",
+            )
         return SimpleNamespace(
             content=[SimpleNamespace(type="text", text=json.dumps(ANSWER))],
             stop_reason="end_turn",
@@ -80,8 +98,14 @@ class Requests:
 
 
 def gateway_with(requests: Requests) -> LLMGateway:
-    client = SimpleNamespace(messages=requests, beta=SimpleNamespace(messages=requests))
-    return LLMGateway(ClaudeProvider(client, model="claude-opus-5-5"))  # type: ignore[arg-type]
+    provider: TriageProvider
+    if requests.provider == "openai":
+        client = SimpleNamespace(chat=SimpleNamespace(completions=requests))
+        provider = OpenAIProvider(client, model="gpt-5.4-mini")  # type: ignore[arg-type]
+    else:
+        client = SimpleNamespace(messages=requests, beta=SimpleNamespace(messages=requests))
+        provider = ClaudeProvider(client, model="claude-opus-5-5")  # type: ignore[arg-type]
+    return LLMGateway(provider)
 
 
 def profile(index: int, rng: random.Random, **changed: Any) -> CustomerProfile:
@@ -169,13 +193,14 @@ _TOKEN = re.compile(r"<[A-Z][A-Z0-9_]*>")
 
 def message_of(request: dict[str, Any]) -> str:
     """The one part of a request that is made from what the customer wrote."""
-    (message,) = request["messages"]
+    (message,) = [message for message in request["messages"] if message["role"] == "user"]
     return str(message["content"])
 
 
 def rest_of(request: dict[str, Any]) -> str:
     """Everything else that would leave: the system prompt, the model, every setting."""
-    return json.dumps({**request, "messages": None}, default=str, sort_keys=True)
+    others = [message for message in request["messages"] if message["role"] != "user"]
+    return json.dumps({**request, "messages": others}, default=str, sort_keys=True)
 
 
 def left_in(message: str, person: CustomerProfile, written: dict[str, str]) -> list[str]:
@@ -203,9 +228,12 @@ def left_in(message: str, person: CustomerProfile, written: dict[str, str]) -> l
     return found
 
 
-async def test_no_identifier_of_the_customer_is_in_anything_sent_to_the_model() -> None:
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_no_identifier_of_the_customer_is_in_anything_sent_to_the_model(
+    provider: str,
+) -> None:
     rng = random.Random(SEED)
-    requests = Requests()
+    requests = Requests(provider)
     gateway = gateway_with(requests)
     leaks: list[tuple[str, list[str]]] = []
 
@@ -228,6 +256,7 @@ async def test_no_identifier_of_the_customer_is_in_anything_sent_to_the_model() 
     assert {rest_of(request) for request in requests.sent} == {rest_of(requests.sent[0])}
 
 
+@pytest.mark.parametrize("provider", PROVIDERS)
 @pytest.mark.parametrize(
     ("full_name", "written"),
     [
@@ -239,10 +268,10 @@ async def test_no_identifier_of_the_customer_is_in_anything_sent_to_the_model() 
     ],
 )
 async def test_names_with_hyphens_apostrophes_and_more_parts_are_masked(
-    full_name: str, written: str
+    full_name: str, written: str, provider: str
 ) -> None:
     person = profile(0, random.Random(SEED), full_name=full_name)
-    requests = Requests()
+    requests = Requests(provider)
 
     await gateway_with(requests).read_contact(written, known_values=personal_values(person))
 

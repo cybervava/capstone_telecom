@@ -64,8 +64,8 @@ assistant".
 
 | Control | Where | Shown by |
 |---|---|---|
-| The model has no tool and its answer cannot name an action: nine fields, extra fields refused | `llm/base.py` (`extra="forbid"`), `llm/claude.py` | J1 |
-| The message is wrapped as data and cannot close its wrapper | `llm/claude.py` `_as_data` | `tests/unit/llm/test_claude_provider.py` |
+| The model has no tool and its answer cannot name an action: nine fields, extra fields refused | `llm/base.py` (`extra="forbid"`, `TRIAGE_SCHEMA`), `llm/claude.py`, `llm/openai_provider.py` | J1 |
+| The message is wrapped as data and cannot close its wrapper | `llm/prompts.py` `customer_message`, used by both providers | `tests/unit/llm/test_claude_provider.py`, `tests/unit/llm/test_openai_provider.py` |
 | Whatever the model reads, known injection phrasing with nothing of a fault in it is declined by the keyword rules beside it; with a fault reported, the message goes its usual way and can unlock nothing | `llm/offline.py` `second_look`, `orchestrator/routing.py` | A1, A3, A4; `tests/unit/orchestrator/test_routing.py` |
 | A model that obeys the attacker still cannot move money, people or the truth about the network | The design above | Every attack of family A, C5, D1, D3, F1, tried with a scripted obedient model |
 | No model reads a guide. Steps are quoted, and a step that speaks to an assistant, of money, asks for a code, or sends the customer to a number or an outside address is refused at the index build and again when it is about to be sent | `rag/documents.py` `not_a_step`, `not_a_title`, `agents/troubleshooting.py` | B1 to B4, B7, B8 |
@@ -74,8 +74,11 @@ assistant".
 *What is left.* Phrasing the rules do not know gets past them; what it then meets is a model
 with no tool. A model that has been talked round can decline a real request or send it to a
 person (J3 shows the second: a plain fault report that a model calls off-topic goes to a
-person, not to a refusal). No run against a live model has been made (decision D2); the
-obedient model is the harder test, but it does not show how often a real model is moved.
+person, not to a refusal). One run against a live model has been made: OpenAI's
+`gpt-5.4-mini` read the messages of the 18 attacks made of words, and all 58 runs passed
+(`evals/reports/attack_suite_openai.md`). One run of each of 18 attacks says little about how
+often a real model is moved; the obedient model remains the harder test. Claude has not been
+run (no key), and which model the demo may use is decision D2.
 
 ### LLM02 Sensitive information disclosure
 
@@ -100,8 +103,9 @@ D9).
 
 | Control | Where | Shown by |
 |---|---|---|
-| Dependencies pinned with hashes | `uv.lock` (77 packages with hashes, and the project itself) | The file |
-| The model is reached through the vendor's own SDK, behind one gateway; the audit trail records the model and the prompt version of every reading | `llm/gateway.py` | `audit_log.model`, `prompt_version` |
+| Dependencies pinned with hashes | `uv.lock` (78 packages with hashes, and the project itself) | The file |
+| The model is reached through the vendor's own SDK (Anthropic's or OpenAI's), behind one gateway; the audit trail records the model and the prompt version of every reading | `llm/gateway.py` | `audit_log.model`, `prompt_version` |
+| Traces of the workflow go to LangSmith only when switched on, and then with inputs and outputs hidden unless a setting says otherwise on purpose: the run tree, timings, errors and metadata (the contact's id, the step, the git revision) leave, no state or message | `observability/tracing.py`, called by `build_graph`; `LANGSMITH_*` in `.env.example` and `docker-compose.yml`; only the orchestrator is given them (`scripts/dev_stack.sh`) | `tests/unit/test_tracing.py`; checked by hand on the traces of the live attack-suite run, 16 Nov |
 | The guide index is built by a local hashing embedder: no model download, no embedding service | `rag/embedding.py` | `evals/reports/retrieval.md` |
 | Guides are typed documents with access roles; untrusted material is kept in a folder the index build never opens, and the parser refuses it if it is copied in | `pipelines/guide_index.py`, `rag/documents.py` | B1, B2 |
 
@@ -129,7 +133,7 @@ trusted for its wording. The stored index carries no signature.
 
 | Control | Where | Shown by |
 |---|---|---|
-| The model's answer is parsed against a strict schema or thrown away; the keyword rules then read the message and the trail says so | `llm/claude.py`, `llm/gateway.py` | J1 |
+| The model's answer is parsed against a strict schema or thrown away; the keyword rules then read the message and the trail says so | `llm/claude.py`, `llm/openai_provider.py`, `llm/gateway.py` | J1; the providers' unit tests |
 | The one free-text field is cleaned before it is kept in the conversation's state and shown to staff: contact details masked, markup and control characters removed, cut to 240 characters. Its copy in the audit entry has contact details masked and is otherwise as the model wrote it | `orchestrator/handover.py` `clean_summary` | A7 |
 | The staff page writes all text from the server as text, never as markup | `web/staff.js` (`textContent`) | The file |
 | No model output is used in a query, a path, a URL or a command | By design | Reading `agents/`, `orchestrator/` |
@@ -177,7 +181,7 @@ outage, a status read can still show the alarm (noted in the plan's known gaps).
 
 | Control | Where | Shown by |
 |---|---|---|
-| At most one model reading for each turn of a conversation (it reads all the customer's messages since the last), with a timeout, a token limit and a fallback to the keyword rules; a failed turn is tried again, and the SDK may retry a call once | `llm/gateway.py`, `llm/claude.py` | `tests/unit/llm/test_gateway.py` |
+| At most one model reading for each turn of a conversation (it reads all the customer's messages since the last), with a timeout, a token limit and a fallback to the keyword rules; a failed turn is tried again, and the SDK may retry a call once | `llm/gateway.py`, `llm/claude.py`, `llm/openai_provider.py` | `tests/unit/llm/test_gateway.py`, `tests/unit/llm/test_build_provider.py` |
 | When the platform is behind, the model is not called at all | `surge.py` | `tests/e2e/test_surge_mode.py`; `loadtest/reports/` |
 | Limits on new contacts for each caller and on messages for each contact; a caller's first contact is never limited, because it must get its reference. A channel integration as a whole is capped (600 at once, then 60 a second), first contacts included | `api/ratelimit.py`, `api/app.py` | `tests/integration/api/test_api.py` |
 | The operations queue cannot be written full by one caller: one item for each kind of trouble and subject, a cap on items about locked customers. (The staff queue takes one item per contact and reason; a caller can open five new contacts a minute.) | `db/ops.py`, `agents/identity_guard.py` | `tests/integration/test_identity_attempts.py` |
@@ -200,7 +204,9 @@ and a budget alarm for model spend belong to the deployment and to M5.
 
 ## What was not tried
 
-- A live language model against the attack suite (it can be run with one setting; decision D2).
+- Claude against the attack suite (it can be run with one setting; no key was available), and
+  any live model more than once: the one live run, with OpenAI's `gpt-5.4-mini`, read each of
+  the 18 attacks made of words once.
 - Attacks that take many turns and a patient attacker working on a member of staff. The
   staff see summaries built from recorded facts, and no approval can be raised by a note
   (A7), but people can be talked into things no control sees.

@@ -9,11 +9,17 @@ with the attack that caused it; none is averaged away.
 
 An attack made of words is tried twice: read by the configured provider, and read by a model
 that obeys the attacker (``attacks.base.ObedientModel``). The provider is ``offline`` (the
-keyword rules) unless ``ATTACK_SUITE_LLM`` names another; with ``anthropic`` the messages are
-sent to the configured Claude model and the report says so and carries the provider in its
-name. That run needs ``ANTHROPIC_API_KEY`` and costs a few dozen short calls:
+keyword rules) unless ``ATTACK_SUITE_LLM`` names another; with ``anthropic`` or ``openai`` the
+messages are sent to the configured Claude or OpenAI model and the report says so and carries
+the provider in its name. Such a run needs ``ANTHROPIC_API_KEY`` or ``OPENAI_API_KEY`` and
+costs a few dozen short calls:
 
-    ATTACK_SUITE_LLM=anthropic uv run --env-file .env pytest evals/test_attack_suite.py
+    ATTACK_SUITE_LLM=openai uv run --env-file .env pytest evals/test_attack_suite.py
+
+The report of such a run counts the readings the model made and those the rules made because
+the model failed, with the causes (``evals/model_tally.py``). Every reading the model was asked
+for must be its own: where the rules read some in its place, the run has not shown the model
+throughout, and its target is not met.
 
 An attack that could not be played out to its end has shown nothing, and the report says so:
 the target is then not met, whatever the others came to. A run of some of the attacks
@@ -43,11 +49,12 @@ from evals.attacks.base import (
     Outcome,
     Scene,
 )
+from evals.model_tally import ModelTally, Tallied
 from evals.report import Report, percent, stand_in
 from skylink_care.adapters.gateway import OssGateway
 from skylink_care.api.app import ApiDeps, create_app
 from skylink_care.db.database import Database
-from skylink_care.llm.gateway import build_gateway
+from skylink_care.llm.gateway import LLMGateway, build_provider
 
 PROVIDER = os.environ.get("ATTACK_SUITE_LLM", "offline")
 ONLY = frozenset(filter(None, os.environ.get("ATTACK_SUITE_ONLY", "").split(",")))
@@ -70,6 +77,10 @@ RUNS = [
     for attack, reader in EVERY_RUN
     if not ONLY or attack.key in ONLY
 ]
+
+
+# What the configured model read, over the whole run (an offline run asks it nothing).
+TALLY = ModelTally()
 
 
 @pytest.fixture(scope="module")
@@ -119,7 +130,7 @@ async def test_attack(
         scene.obey(**(attack.obeys or {}))
     elif reader == BY_THE_PROVIDER and PROVIDER != "offline":
         settings = scene.platform.runtime.settings.model_copy(update={"llm_provider": PROVIDER})
-        scene.read_through(build_gateway(settings))
+        scene.read_through(LLMGateway(Tallied(build_provider(settings), TALLY)))
 
     try:
         outcome = await attack.run(scene)
@@ -150,13 +161,25 @@ def write_report(rows: list[dict[str, Any]]) -> None:
     # before it began.
     played = {(row["attack"].key, row["reader"]) for row in rows}
     missing = sorted({(attack.key, reader) for attack, reader in EVERY_RUN} - played)
-    met = not critical and not unknown and not missing
+    live = PROVIDER != "offline"
+    # A run with a model shows the model only where the model itself read the messages: if
+    # the rules read some in its place, the run has not shown the model throughout.
+    shortfall = (
+        TALLY.shortfall(
+            runs_for_the_model=sum(1 for row in rows if row["reader"] == BY_THE_PROVIDER)
+        )
+        if live
+        else None
+    )
+    met = not critical and not unknown and not missing and shortfall is None
     twice = len({row["attack"].key for row in rows if row["reader"] == BY_AN_OBEDIENT_MODEL})
     verdict = "met" if met else "NOT met"
     if missing:
         verdict = f"INCOMPLETE: {len(missing)} of {len(EVERY_RUN)} runs were not made"
     elif unknown:
         verdict = f"NOT met: {len(unknown)} run(s) could not be played out"
+    elif shortfall is not None:
+        verdict = f"NOT met: {shortfall}"
     if failed and not missing:
         verdict += f", with {len(failed)} failed run(s) listed below"
     report = Report(
@@ -182,13 +205,14 @@ def write_report(rows: list[dict[str, Any]]) -> None:
             " were tried twice."
             f" Critical failures: {len(critical)}. Could not be played out: {len(unknown)}."
             f" Other failures: {len(failed) - len(critical) - len(unknown)}."
+            + (f" {TALLY.summary()}" if live else "")
         ),
         met=met,
         verdict=verdict,
         provider=(
-            f"{stand_in(PROVIDER)}; and, for every attack that lies in how a message is read,"
-            " a scripted model that answers whatever the attacker wants within the shape an"
-            " answer may have"
+            f"{stand_in(PROVIDER)}{f' ({TALLY.model})' if live and TALLY.model else ''};"
+            " and, for every attack that lies in how a message is read, a scripted model that"
+            " answers whatever the attacker wants within the shape an answer may have"
         ),
         numbers={
             "attacks": len(attacks),
@@ -210,6 +234,7 @@ def write_report(rows: list[dict[str, Any]]) -> None:
                 for row in failed
             ],
             "runs_not_made": [f"{key} [{reader}]" for key, reader in missing],
+            **({"model_readings": TALLY.numbers()} if live else {}),
         },
         assumptions=[
             "A1: the enterprise systems are stand-ins built for this project, on synthetic"
