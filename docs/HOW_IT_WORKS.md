@@ -7,7 +7,7 @@ This guide explains what the platform in this repository does, how its parts fit
 Two things to keep in mind throughout:
 
 - **Everything here is make-believe, on purpose.** SkyLink Telecom is a fictional company from a training brief. Its customers, its network, its credit policy and its computer systems are invented stand-ins built for this project. No real customer data is used anywhere.
-- **This describes the code as it stands on 16 November 2026**, after milestones M0 to M4 of the project plan (`docs/EXECUTION_PLAN.md`). Section 13 lists what is not built yet.
+- **This describes the code as it stands on 16 November 2026**, after milestones M0 to M4 of the project plan (`docs/EXECUTION_PLAN.md`), with what came after: the AI model chosen for the demonstration (section 6) and, on 22 November, the demonstration server on AWS (section 12). Section 13 lists what is not built yet.
 
 ## Contents
 
@@ -558,7 +558,7 @@ If the radio's stream misses an announcement, the radio's record stops counting 
 
 ### 9.1 Automated tests
 
-There are **2,658 automated tests**. At the last full run, on GitHub's automated pipeline on 19 November, all of them passed, and together they exercised 96% of the platform's code. They come in kinds:
+There are **2,662 automated tests**. At the last full run, on the GitLab pipeline that put the demonstration on AWS on 22 November, all of them passed, and together they exercised 96% of the platform's code. They come in kinds:
 
 | Kind | Proves |
 |---|---|
@@ -688,6 +688,8 @@ Where to look for a particular question:
 
 The README's "Run it" has the details, including the two settings that shorten the hold before a visit for a demonstration.
 
+**On AWS, for the demonstration.** The same containers run on one rented server in Amazon's Mumbai data centre, behind a front door that adds the padlock of an encrypted connection and asks everyone for one shared password. Nobody installs anything there by hand: each change to the code goes through an automated pipeline on GitLab.com, which runs every check, builds and scans the container, and has the server start it. The server then plays the same handful of conversations as `make smoke` against itself, and goes back to the version before if any of them fails. The pipeline holds no password to Amazon: Amazon trusts it for one branch of one project, and lets it do three things, nothing else. The README's "The demo on AWS" has the commands, including the ones that play a scene during the demonstration.
+
 **For development, on Linux or a Mac** (on Windows inside WSL 2, a Linux system that runs inside Windows; the programs themselves do not run on Windows directly), you need Python 3.12, the `uv` tool and Docker. From the repository folder:
 
 | Command | What it does |
@@ -711,9 +713,9 @@ The README's "Run it" has the details, including the two settings that shorten t
 The project plan has nine milestones, M0 to M8. M0 to M4 are built. Still to come, or waiting on decisions by the client:
 
 - **Monitoring and alerts** (milestone M5): a dashboard of response times, errors, cost and groundedness; alerts on error rates, slowness, cost spikes and a stale announcement stream; tracing across all the programs; a runbook of failure scenarios. One piece exists: the coordinator's work can be traced step by step in LangSmith, a tracing service, when a setting switches it on. The traces then show each step and how long it took, but none of the conversation's contents.
-- **Nothing is deployed automatically.** An automated pipeline on GitHub checks every change: the code's style and types, all the tests, the evaluations, a search of the whole history for secrets, and a scan of the container for known vulnerabilities. It then publishes the container. Putting it on a server is not built: that waits for the choice of cloud.
+- **One server, for a demonstration.** Since 22 November the demonstration runs on AWS, put there by a pipeline on GitLab.com after the same checks the GitHub pipeline runs (section 12). It is one server: if it fails, the demonstration stops until it is back, and a new version stops it for about half a minute while it starts.
 - **The AI model is chosen, and mostly untried.** The demo uses OpenAI's `gpt-5.4-mini` (decided on 18 November). It has been run once against the attack suite; the other evaluations have not yet been run with it. Claude has not been tried.
-- **For a real deployment**: proper staff sign-in (today a shared key and a typed name), a managed store for secrets, encrypted connections and storage, a separate database account for each program, limits at the network's edge, and a job that deletes old records when their retention period ends.
+- **For a real deployment**: proper staff sign-in (today a shared key and a typed name), a separate database account for each program, limits at the network's edge beyond one shared password, more than one server, and a job that deletes old records when their retention period ends. The demonstration server already keeps its secrets in Amazon's secret store and encrypts its connections and its disk.
 - **Gaps in what staff can do**: staff can take a conversation over, but only through the API (the desk has no button yet), and they cannot reply to the customer from the desk. A booked visit cannot be changed or cancelled.
 - **The proactive outage texts do not say they are automated**, unlike every message of a conversation.
 - **A customer's request to see or delete their data** is not handled: it is declined as off-topic unless they also ask for a person.

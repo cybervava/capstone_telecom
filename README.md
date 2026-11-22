@@ -9,7 +9,7 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 
 ## Status
 
-Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. M3 (the curveball and resilience) is built as well: a circuit for each dependency, shared status reads, a check on what every message claims about the network, an operations queue, surge mode with a load test of the brief's surge, and the curveball as a scored drill with its decision record ([ADR 0001](docs/adr/0001-degraded-mode-when-the-network-api-fails.md)). M4 (trust) is built: personal data kept out of model payloads and logs, an identity that holds, the attack suite and what it found, least privilege at the gateway, parity across customer segments, and the documents the brief's checklists ask for. Everything after M4 is not built.
+Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six capabilities) are built and tested: the NOC event feed, proactive notifications, remote line tests, cited troubleshooting, service credits with approval, technician visits, the disputed-outage path with a mobile journey, the staff desk, and scored evaluations of three of the brief's metrics. M3 (the curveball and resilience) is built as well: a circuit for each dependency, shared status reads, a check on what every message claims about the network, an operations queue, surge mode with a load test of the brief's surge, and the curveball as a scored drill with its decision record ([ADR 0001](docs/adr/0001-degraded-mode-when-the-network-api-fails.md)). M4 (trust) is built: personal data kept out of model payloads and logs, an identity that holds, the attack suite and what it found, least privilege at the gateway, parity across customer segments, and the documents the brief's checklists ask for. After M4, the demonstration was deployed to AWS by a GitLab.com pipeline (see "The demo on AWS"); the rest of M5 to M8 is not built.
 
 **Works today**
 
@@ -49,9 +49,9 @@ Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six ca
 - The evaluations on the container stack at 400,000 customers and on the demo's language model, OpenAI's `gpt-5.4-mini` (they run in process, on a 1,000-customer pack, with the offline rules and with weights measured on the large pack). Of them only the attack suite has been run with that model, once.
 - Simulator controls in the console: outages, line faults and failing APIs are `mock-oss` commands (see "Run it"), not buttons.
 - A button on the staff desk to take a conversation over (the API route exists: `POST /v1/contacts/{id}/takeover`).
-- For a deployment: a database role for each process; a managed secret store, TLS and encryption at rest; a job that enforces retention; export or erasure of a customer's data on request; limits at the edge; a second identity factor for customers who are not signed in (decision D9).
+- For a production deployment: a database role for each process; a job that enforces retention; export or erasure of a customer's data on request; limits at the edge beyond the demo's shared sign-in; a second identity factor for customers who are not signed in (decision D9). The demo on AWS has TLS, a managed secret store and an encrypted disk.
 - A run against Claude: no Anthropic key was available. The demo uses OpenAI's model instead (decision D2).
-- A deployment: CI builds, tests, scans and publishes the image, and deploys it nowhere (the target is decision D4).
+- More than one host: the demo on AWS is one instance, with no second zone, no managed database and no load balancer, and a release stops it while the next one starts.
 
 ## Two things that are stand-ins
 
@@ -156,7 +156,7 @@ make test-all           # everything with coverage (needs `make up`), about nine
 
 Other targets: `make help` lists them all; `make down` stops the containers and keeps the data; `make migrate` applies the database migrations; `make profile` writes the mapping-quality profile to `reports/data_profile.md`; `./scripts/dev_stack.sh status` shows which local processes run.
 
-`make test-all` runs unit, integration (real PostgreSQL), contract (adapters against the mock gateway, in process) and end-to-end journey tests. The language model is replaced by the offline rules provider in tests; nothing else is stubbed. At the last full run (in CI, 19 Nov) all 2,658 tests passed, with 96% branch coverage of `skylink_care`.
+`make test-all` runs unit, integration (real PostgreSQL), contract (adapters against the mock gateway, in process) and end-to-end journey tests. The language model is replaced by the offline rules provider in tests; nothing else is stubbed. At the last full run (on GitLab.com, 22 Nov) all 2,662 tests passed, with 96% branch coverage of `skylink_care`.
 
 **CI** (`.github/workflows/ci.yml`, GitHub Actions; decision D6) runs on every push to `dev` and every pull request:
 
@@ -165,6 +165,8 @@ Other targets: `make help` lists them all; `make down` stops the containers and 
 - the seven evaluations, with their reports kept as an artifact;
 - gitleaks over the whole history (`.gitleaksignore` lists, by fingerprint, the two findings that are test fixtures);
 - the container image, built and scanned by Trivy for HIGH and CRITICAL vulnerabilities that have a fix. On `dev` it is published as a release candidate to `ghcr.io/cybervava/capstone_telecom`.
+
+The same checks run on GitLab.com before every release to AWS (`.gitlab-ci.yml`; see "The demo on AWS").
 
 Actions are pinned to a commit, and the tools run at the versions the Dockerfile and the evidence name. Its first run, on 19 Nov, passed all five jobs in 9.4 minutes ([run 44446727763](https://github.com/cybervava/capstone_telecom/actions/runs/44446727763)). The published image is built for linux/amd64 only; on Apple Silicon the Compose file builds a native one, as in "Run it".
 
@@ -196,6 +198,40 @@ make stop
 ```
 
 The load test offers contacts on a schedule fixed in advance, whatever the platform answers, and measures every time from the instant a contact was due. It runs only against a stack on this machine, and it shares the database with the tests and the evaluations: stop the stack before running those. What is offered, the targets and how to read the report are in [loadtest/README.md](loadtest/README.md).
+
+## The demo on AWS
+
+The demonstration runs on AWS: <https://13-233-226-59.sslip.io/> for the customer desk and `/staff.html` for the staff desk. One shared sign-in stands in front of both (`deploy/aws/operate.sh sign-in` prints it); the staff desk then asks for the staff key, as on a laptop (`deploy/aws/operate.sh staff-key`).
+
+**What runs.** One EC2 instance in Mumbai (`t3.medium`, Ubuntu 24.04) runs the containers of `docker-compose.yml` from the image the pipeline built, with Caddy in front (`deploy/aws/compose.aws.yml`). Caddy serves HTTPS with a Let's Encrypt certificate for the host's sslip.io name, and asks for the sign-in once, then lets the browser through on a cookie: the desks send their own Bearer token, which leaves no room for Basic credentials (`deploy/aws/Caddyfile`). Only ports 80 and 443 are open; there is no SSH and no key pair, and the host is reached through AWS Systems Manager. Its settings are a secret in Secrets Manager, generated once with fresh secrets and read by the host at every start; its disk is encrypted. It runs with the demo timing, and with OpenAI's `gpt-5.4-mini` reading the messages.
+
+**How a release gets there.** `.gitlab-ci.yml` runs on GitLab.com, in the project `prathap.aneesh/capstone_telecom` (`git push gitlab dev`):
+
+1. The checks of the GitHub workflow: lint and types, the suite with its coverage gate, the evaluations, the secret scan.
+2. The image is built, pushed to the project's registry, and scanned by Trivy.
+3. On `dev` only, the scanned image is copied to ECR under its commit (a tag there never moves), and the commit's release bundle to S3: the compose files, the setup and smoke scripts, the proxy's configuration and the host's deploy script.
+4. SSM runs one document on the host, `skylink-care-demo-deploy`, whose only input must be a commit. The host pulls the release, stops what runs, starts the release from a clean demo state, and plays the journeys of `scripts/smoke.py` against itself. If the release does not come up healthy, or a journey fails, the release before it is started again and the job fails.
+
+The first release that passed, on 22 Nov ([pipeline 3100350454](https://gitlab.com/prathap.aneesh/capstone_telecom/-/pipelines/3100350454)), took 15 minutes from push to live, most of it the suite (10.4) and, beside it, the evaluations (5.1); on the host the site was down for 24 s while the stack restarted, and the eight journeys passed in 55 s with `gpt-5.4-mini` reading the messages. The release before it had found a fault no run on the keyword rules could show: the model called a customer's "2", in answer to a visit offer, off-topic, and the visit was not booked. It is fixed.
+
+The pipeline signs in to AWS with its OIDC token, as a role that trusts only the `dev` branch of that project and may push the image, upload the bundle and run that one document, nothing else (`deploy/aws/terraform/iam.tf`). No AWS key is stored in GitLab. To keep pushes off the host during a demo, set the project variable `DEPLOY_PAUSED` to `true`. To roll back, redeploy an earlier deployment of the `aws-demo` environment in GitLab, or run `deploy/aws/operate.sh rollback`.
+
+**Running the demo** from a laptop with the AWS CLI (or Docker) and the `skylink-demo` profile, from any network:
+
+```bash
+deploy/aws/operate.sh sign-in                  # the site and its shared sign-in
+deploy/aws/operate.sh staff-key                # the key the staff desk asks for
+deploy/aws/operate.sh scene customers --service-type broadband --mapping-defect none --limit 3
+deploy/aws/operate.sh scene outage-start --node-id <true_node_id> --eta-minutes 120
+deploy/aws/operate.sh scene chaos network down # any mock-oss command of "Run it"
+deploy/aws/operate.sh reset                    # back to a clean demo state, before presenting
+deploy/aws/operate.sh llm offline              # if the model misbehaves: the keyword rules, at once
+deploy/aws/operate.sh logs worker              # also: status, rollback
+```
+
+**Setting it up, and taking it down.** Terraform holds all of it (`deploy/aws/terraform`; the state stays on the machine that applied it): `terraform apply`, then `deploy/aws/operate.sh env-init` (the host's settings, once), `GITLAB_TOKEN=… deploy/aws/operate.sh gitlab-setup` (the pipeline's settings, as protected project variables, none of them secret), and a pipeline on `dev`. `terraform destroy` removes everything, the secrets and the images included. On demand it costs about $1.30 a day: the instance $0.0448 an hour, the disk, the public address and the two secrets the rest. It is to be destroyed after the presentation.
+
+It runs with `CARE_ENV=dev`, because staff sign in through the development token endpoint, which in `dev` also signs anyone in as any customer; the shared sign-in is what keeps that endpoint from the internet.
 
 ## Configuration
 
