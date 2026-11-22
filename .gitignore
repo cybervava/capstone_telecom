@@ -40,8 +40,8 @@ var/
 # A run of part of the attack suite: never the report of the whole.
 evals/reports/*_partial.*
 
-# Terraform: the provider plug-ins and the state stay on the machine that applies
-# (deploy/aws/terraform). The lock file is tracked.
+# Terraform: the provider plug-ins stay on the machine that applies; the state is in S3
+# (deploy/aws/terraform/versions.tf), and a local copy is never committed. The lock file is tracked.
 .terraform/
 *.tfstate
 *.tfstate.*
