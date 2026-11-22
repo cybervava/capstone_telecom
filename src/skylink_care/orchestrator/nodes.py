@@ -24,6 +24,7 @@ from skylink_care.orchestrator.network_nodes import NetworkNodes
 from skylink_care.orchestrator.node_support import waits_on_network
 from skylink_care.orchestrator.routing import decide_route
 from skylink_care.orchestrator.state import ContactState, Phase, Trigger, pending_credits
+from skylink_care.orchestrator.visit_nodes import answers_the_offer
 
 
 class Nodes(NetworkNodes):
@@ -110,7 +111,16 @@ class Nodes(NetworkNodes):
             "rules": asdict(outcome.second),
         }
         earlier = state.get("intent")
-        if earlier and intent["intent"] == "other" and not intent["abusive_or_off_topic"]:
+        # An answer to an offer of a visit ("2", "yes", "no thanks") is read by the offer's own
+        # rules, whatever a model made of the words: the model is shown the message, not the
+        # offer it answers. On the demo host gpt-5.4-mini called a bare "2" off-topic, and the
+        # customer who had chosen a slot was told the assistant could not help with that.
+        answers_offer = answers_the_offer(state, text, now=self._rt.now())
+        if (
+            earlier
+            and intent["intent"] == "other"
+            and (not intent["abusive_or_off_topic"] or answers_offer)
+        ):
             # A short follow-up ("it is C0001234", "still the same") carries no topic of its
             # own. What the customer came about has not changed.
             intent = {
@@ -120,6 +130,7 @@ class Nodes(NetworkNodes):
                 "summary": earlier.get("summary", intent["summary"]),
                 # The topic is the earlier one: this message named none of its own.
                 "carried_over": True,
+                "answers_visit_offer": answers_offer,
             }
 
         identified = identity.get("status") == IdentityStatus.IDENTIFIED.value

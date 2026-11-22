@@ -8,11 +8,20 @@ that has gone stale.
 
 from __future__ import annotations
 
+import dataclasses
 from typing import Any
 
 import pytest
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
+from skylink_care.adapters.gateway import OssGateway
 from skylink_care.db.actions import VISIT_BOOK, ActionStatus
+from skylink_care.llm.base import TriageReading, Usage
+from skylink_care.llm.gateway import LLMGateway
+from skylink_care.llm.offline import OfflineProvider
+from skylink_care.orchestrator.graph import build_graph
+from skylink_care.orchestrator.worker import OrchestratorWorker
+from skylink_care.runtime import build_orchestrator_runtime
 from tests.support.platform import Platform
 from tests.support.stack import Simulator
 
@@ -122,6 +131,98 @@ async def test_chosen_slot_is_booked_once_and_confirmed_with_its_appointment(
     steps = [(record.step, record.outcome) for record in trail]
     assert ("visit.answer", "CHOSEN") in steps
     assert ("visit.recheck", "ELIGIBLE") in steps  # the executor's own look, before booking
+
+
+class SeesTheReplyNotTheOffer:
+    """A language model shown a reply without the offer it answers. It reads as the keyword
+    rules do, except that what they find no topic in, it calls off-topic: so OpenAI's
+    gpt-5.4-mini read a bare "2" on the demo host on 22 Nov."""
+
+    name = "sees-the-reply-not-the-offer"
+    model = "sees-the-reply-not-the-offer"
+
+    def __init__(self) -> None:
+        self._rules = OfflineProvider()
+        self.called_off_topic: list[str] = []
+
+    async def read_contact(
+        self, masked_text: str, *, system_prompt: str
+    ) -> tuple[TriageReading, Usage]:
+        reading, usage = await self._rules.read_contact(masked_text, system_prompt=system_prompt)
+        if reading.intent == "other":
+            self.called_off_topic.append(masked_text)
+            reading = reading.model_copy(update={"abusive_or_off_topic": True})
+        return reading, usage
+
+
+def read_by(platform: Platform, gateway: OssGateway, model: SeesTheReplyNotTheOffer) -> Platform:
+    """The same platform, with the customer's messages read by this model."""
+    runtime = build_orchestrator_runtime(
+        platform.runtime.settings,
+        platform.runtime.db,
+        gateway,
+        llm=LLMGateway(model),
+        now=platform.runtime.now,
+    )
+    checkpointer = AsyncPostgresSaver(runtime.db.pool)
+    worker = OrchestratorWorker(
+        runtime, build_graph(runtime, checkpointer), checkpointer, retry_backoff_seconds=0.05
+    )
+    return dataclasses.replace(platform, runtime=runtime, worker=worker, checkpointer=checkpointer)
+
+
+@pytest.mark.parametrize(("reply", "position"), [("2", 1), ("yes", 0)])
+async def test_choice_a_model_calls_off_topic_is_still_read_as_a_choice(
+    platform: Platform, simulator: Simulator, gateway: OssGateway, reply: str, position: int
+) -> None:
+    """The offer's own narrow rules read the answer to it, whatever a model made of the words.
+    On the demo host, gpt-5.4-mini called a bare "2" off-topic, and the customer who had chosen
+    a slot was told the assistant could not help with that."""
+    model = SeesTheReplyNotTheOffer()
+    platform = read_by(platform, gateway, model)
+    customer = await customer_on_a_healthy_node(simulator)
+    intake, offer = await offered_a_visit(platform, simulator, customer)
+    wanted = slots_in(offer)[position].split(". ", 1)[1]
+
+    confirmation = await answer(platform, intake, reply)
+
+    assert any(reply in text for text in model.called_off_topic)  # the model did call it that
+    (appointment,) = await appointments(simulator, customer)
+    assert appointment["status"] == "BOOKED"
+    assert f"Your technician visit is booked for {wanted}" in confirmation
+    assert await handoff_reasons(platform) == []
+
+
+async def test_refusal_a_model_calls_off_topic_is_still_read_as_a_refusal(
+    platform: Platform, simulator: Simulator, gateway: OssGateway
+) -> None:
+    model = SeesTheReplyNotTheOffer()
+    platform = read_by(platform, gateway, model)
+    customer = await customer_on_a_healthy_node(simulator)
+    intake, _ = await offered_a_visit(platform, simulator, customer)
+
+    declined = await answer(platform, intake, "no thanks")
+
+    assert any("no thanks" in text for text in model.called_off_topic)
+    assert "I haven't booked a visit" in declined
+    assert await appointments(simulator, customer) == []
+
+
+async def test_words_off_topic_while_an_offer_is_open_are_still_declined(
+    platform: Platform, simulator: Simulator, gateway: OssGateway
+) -> None:
+    """Only an answer the offer's rules can read gets past the model's reading: anything else
+    the model calls off-topic is declined, as it is with no offer open."""
+    model = SeesTheReplyNotTheOffer()
+    platform = read_by(platform, gateway, model)
+    customer = await customer_on_a_healthy_node(simulator)
+    intake, _ = await offered_a_visit(platform, simulator, customer)
+
+    declined = await answer(platform, intake, "what is the capital of France")
+
+    assert "I can help with SkyLink broadband and mobile service problems" in declined
+    assert await appointments(simulator, customer) == []
+    assert await visit_actions(platform, intake) == []
 
 
 async def test_refusal_books_nothing_and_a_change_of_mind_gets_a_fresh_offer(

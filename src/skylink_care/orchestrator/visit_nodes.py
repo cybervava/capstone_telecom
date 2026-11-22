@@ -388,6 +388,17 @@ def _evidence(state: ContactState, view: FieldView, *, consented: bool) -> Visit
     )
 
 
+def answers_the_offer(state: ContactState, text: str, *, now: datetime) -> bool:
+    """Whether a message chooses a slot or declines, read by the offer's own narrow rules,
+    while an offer of a visit waits for the customer's answer."""
+    visit = state.get("visit") or {}
+    if visit.get("status") != VISIT_OFFERED:
+        return False
+    offered = [_slot(item) for item in visit.get("slots", [])]
+    answer = read_answer(text, offered, now=now)
+    return answer.kind in {AnswerKind.CHOSEN, AnswerKind.DECLINED}
+
+
 def _as_state(slot: OfferedSlot) -> dict[str, str]:
     return {
         "slot_id": slot.slot_id,
