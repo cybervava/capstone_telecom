@@ -34,8 +34,15 @@ compose() { # <release dir> <args...>: docker compose for that release, with the
 fetch_settings() { # the host's .env from Secrets Manager; mktemp makes it readable by root only
   local tmp
   tmp="$(mktemp "$ROOT/.env.XXXXXX")"
+  # Through a pipe: run by SSM, the snap of the AWS CLI writes nothing at all to a file its
+  # output is redirected to, and still exits 0.
   aws secretsmanager get-secret-value --secret-id "$ENV_SECRET" \
-    --query SecretString --output text > "$tmp"
+    --query SecretString --output text | cat > "$tmp"
+  if ! grep -q '^CARE_DB_PASSWORD=.' "$tmp"; then
+    rm -f "$tmp"
+    log "the settings read from $ENV_SECRET are empty or incomplete"
+    return 1
+  fi
   mv "$tmp" "$ROOT/.env"
 }
 
@@ -55,8 +62,9 @@ smoke() { # <release dir>: the live checks of `make smoke`, from the host, again
     -v "$1/scripts/smoke.py:/smoke.py:ro" "$(cat "$1/IMAGE")" python /smoke.py
 }
 
-current() { readlink -f "$ROOT/current" 2> /dev/null || true; }
-previous() { readlink -f "$ROOT/previous" 2> /dev/null || true; }
+# -e, not -f: a link that is not there must read as no release, not as a path.
+current() { readlink -e "$ROOT/current" 2> /dev/null || true; }
+previous() { readlink -e "$ROOT/previous" 2> /dev/null || true; }
 
 make_current() { # <release dir>
   local was
@@ -82,6 +90,8 @@ deploy() { # <commit>
     log "not a commit: $release"
     return 2
   }
+  # The runner packs the files as it checked them out, writable by all.
+  chmod -R go-w "$dir"
   echo "$REPOSITORY:$release" > "$dir/IMAGE"
   good="$(current)"
   log "release $release: fetching its image and the host's settings"
