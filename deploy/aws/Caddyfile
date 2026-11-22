@@ -1,0 +1,50 @@
+# HTTPS for the demo host, with a certificate for its sslip.io name, and one shared sign-in in
+# front of both desks (deploy/aws/compose.aws.yml).
+#
+# The desks send their own Bearer token in the Authorization header, which leaves no room for
+# Basic credentials on those requests. So the sign-in is asked for once, and then remembered in
+# a cookie that lets every later request through.
+{
+	servers {
+		# HTTP/3 would need UDP 443, which the security group keeps closed.
+		protocols h1 h2
+	}
+}
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=86400"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	# Open, so the pipeline can check a release without the sign-in. It tells only that the API
+	# and its database answer.
+	handle /health {
+		reverse_proxy api:8080
+	}
+
+	# The browser goes on sending the Basic sign-in wherever a desk sets no header of its own.
+	# It is taken off before the API, which has no use for the demo password.
+	@basic header Authorization "Basic *"
+
+	@signed_in header Cookie *demo_gate={$DEMO_GATE_COOKIE}*
+	handle @signed_in {
+		request_header @basic -Authorization
+		reverse_proxy api:8080
+	}
+
+	handle {
+		route {
+			basic_auth {
+				{$DEMO_USER} {$DEMO_PASSWORD_HASH}
+			}
+			request_header -Authorization
+			header >Set-Cookie "demo_gate={$DEMO_GATE_COOKIE}; Path=/; Max-Age=604800; Secure; HttpOnly; SameSite=Lax"
+			reverse_proxy api:8080
+		}
+	}
+}

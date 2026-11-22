@@ -15,3 +15,5 @@ docs/
 .playwright-mcp/
 __pycache__/
 *.sqlite*
+# The deployment's own files; the Terraform plug-ins alone are hundreds of megabytes.
+deploy/

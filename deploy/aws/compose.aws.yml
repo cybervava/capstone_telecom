@@ -1,0 +1,47 @@
+# The demo host on AWS (deploy/aws/terraform): the services of docker-compose.yml, run from the
+# image the pipeline pushed to ECR, with Caddy in front for HTTPS and one shared sign-in.
+# deploy/aws/host/deploy.sh runs it on the host:
+#
+#   CARE_IMAGE=<ecr>/skylink-care:<commit> docker compose -f docker-compose.yml \
+#     -f deploy/aws/compose.aws.yml --env-file /opt/skylink/.env --profile stack up -d --no-build
+#
+# The API, the gateway and PostgreSQL stay bound to the host's loopback, as in docker-compose.yml;
+# only Caddy listens on the network.
+
+x-release: &release
+  image: ${CARE_IMAGE:?set by deploy.sh}
+  # deploy.sh pulls the image from ECR before anything starts.
+  pull_policy: never
+
+services:
+  setup: *release
+  mock-oss: *release
+  api: *release
+  worker: *release
+  ingest: *release
+  executor: *release
+
+  caddy:
+    image: caddy:2.11.9-alpine
+    profiles: ["stack"]
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?run deploy/aws/operate.sh env-init}
+      DEMO_USER: ${DEMO_USER:?run deploy/aws/operate.sh env-init}
+      DEMO_PASSWORD_HASH: ${DEMO_PASSWORD_HASH:?run deploy/aws/operate.sh env-init}
+      DEMO_GATE_COOKIE: ${DEMO_GATE_COOKIE:?run deploy/aws/operate.sh env-init}
+    volumes:
+      - ./deploy/aws/Caddyfile:/etc/caddy/Caddyfile:ro
+      # The certificate and its account key, kept across releases.
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

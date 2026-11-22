@@ -1,0 +1,179 @@
+# CI/CD for the SkyLink care agent on GitLab.com: the checks the GitHub workflow runs, then a
+# release to the demo host on AWS (deploy/aws).
+#
+#   verify   lint and strict types, the test suite with its coverage gate, the evaluations,
+#            a secret scan of the whole history
+#   build    the image, pushed to this project's registry
+#   scan     its vulnerabilities, before it can go anywhere
+#   publish  the scanned image copied to ECR, the release bundle to S3            (dev only)
+#   deploy   SSM starts the release on the host and runs the smoke checks there; if they fail,
+#            the host goes back to the release before it                        (dev only)
+#
+# publish and deploy sign in to AWS with this pipeline's OIDC token, as a role that trusts only
+# the dev branch of this project (deploy/aws/terraform/iam.tf): no AWS key is stored in GitLab.
+# Where they deploy comes from protected project variables that `deploy/aws/operate.sh
+# gitlab-setup` writes. To keep pushes off the host, during a demo, set DEPLOY_PAUSED to "true".
+# To roll back, redeploy an earlier deployment of the aws-demo environment.
+
+stages: [verify, build, scan, publish, deploy]
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH
+  auto_cancel:
+    on_new_commit: interruptible
+
+default:
+  interruptible: true
+
+variables:
+  UV_VERSION: "0.11.19"
+  UV_LINK_MODE: copy
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+  RELEASE: "$CI_COMMIT_SHORT_SHA"
+  IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+
+.python:
+  image: python:3.12-slim-bookworm
+  before_script:
+    - pip install --quiet "uv==$UV_VERSION"
+    - uv sync --locked
+  cache:
+    key:
+      files: [uv.lock]
+    paths: [.uv-cache]
+
+lint:
+  extends: .python
+  stage: verify
+  script:
+    - uv run ruff check src tests scripts evals loadtest
+    - uv run ruff format --check src tests scripts evals loadtest
+    - uv run mypy
+
+# What needs a database: the test suite and the evaluations.
+.with-postgres:
+  extends: .python
+  services:
+    - name: pgvector/pgvector:pg17
+      alias: postgres
+  variables:
+    POSTGRES_DB: care
+    POSTGRES_USER: care
+    POSTGRES_PASSWORD: ci-only-not-a-secret
+    CARE_ENV: test
+    CARE_DB_HOST: postgres
+    CARE_DB_PORT: "5432"
+    CARE_DB_NAME: care
+    CARE_DB_USER: care
+    CARE_DB_PASSWORD: ci-only-not-a-secret
+    # Integration tests fail, rather than skip, when the database is missing.
+    CARE_REQUIRE_DB: "1"
+
+test:
+  extends: .with-postgres
+  stage: verify
+  script:
+    - uv run pytest --cov --cov-report=term --cov-report=xml --cov-fail-under=80 --junitxml=junit.xml
+  coverage: '/^TOTAL.*\s(\d+(?:\.\d+)?)%$/'
+  artifacts:
+    when: always
+    reports:
+      junit: junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+# The scored evaluations (evals/README.md). A failure here means a target of the brief was
+# missed on the stand-in data; the reports say by how much and why.
+eval:
+  extends: .with-postgres
+  stage: verify
+  script:
+    - uv run pytest evals -p no:cacheprovider --no-cov -q
+  artifacts:
+    when: always
+    paths:
+      - evals/reports/
+
+secret-scan:
+  stage: verify
+  image:
+    name: zricethezav/gitleaks:v8.21.2
+    entrypoint: [""]
+  variables:
+    # The whole history, not the last 20 commits of a shallow clone.
+    GIT_DEPTH: "0"
+  script:
+    - gitleaks detect --source . --redact --no-banner
+
+# Not named "image": at the top level that word is the keyword for the default image.
+build-image:
+  stage: build
+  image: docker:27
+  services: [docker:27-dind]
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker build --pull -t "$IMAGE" .
+    - docker push "$IMAGE"
+
+image-scan:
+  stage: scan
+  image:
+    name: aquasec/trivy:0.57.1
+    entrypoint: [""]
+  script:
+    # Vulnerabilities only. The secret scanner takes the examples in the Anthropic SDK's
+    # docstrings for service-account credentials and would fail every build
+    # (docs/evidence/image_scan.md).
+    - trivy image --exit-code 1 --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed
+      --no-progress --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" "$IMAGE"
+
+# --- Release to AWS ----------------------------------------------------------------------------
+
+.aws:
+  id_tokens:
+    AWS_ID_TOKEN:
+      aud: sts.amazonaws.com
+  variables:
+    AWS_WEB_IDENTITY_TOKEN_FILE: /tmp/aws-web-identity-token
+    AWS_ROLE_SESSION_NAME: "gitlab-$CI_PIPELINE_ID"
+  rules:
+    - if: $DEPLOY_PAUSED == "true"
+      when: never
+    - if: $CI_COMMIT_BRANCH == "dev" && $AWS_DEPLOY_ROLE_ARN
+
+.aws-sign-in:
+  script:
+    - printf '%s' "$AWS_ID_TOKEN" > "$AWS_WEB_IDENTITY_TOKEN_FILE"
+    - export AWS_ROLE_ARN="$AWS_DEPLOY_ROLE_ARN"
+    - aws sts get-caller-identity --query Arn --output text
+
+publish:
+  extends: .aws
+  stage: publish
+  image: docker:27
+  services: [docker:27-dind]
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  script:
+    - apk add --no-cache aws-cli > /dev/null
+    - !reference [.aws-sign-in, script]
+    - sh deploy/aws/ci/publish.sh
+
+deploy:
+  extends: .aws
+  stage: deploy
+  image: alpine:3.21
+  interruptible: false
+  # One release at a time, in the order the pipelines reach it.
+  resource_group: aws-demo
+  environment:
+    name: aws-demo
+    url: https://$DEMO_SITE
+  script:
+    - apk add --no-cache aws-cli curl > /dev/null
+    - !reference [.aws-sign-in, script]
+    - sh deploy/aws/ci/deploy.sh

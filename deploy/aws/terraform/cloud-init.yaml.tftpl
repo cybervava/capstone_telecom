@@ -1,0 +1,33 @@
+#cloud-config
+# First boot of the demo host: Docker with the Compose plugin, the AWS CLI, swap, and the
+# settings the deploy script reads. Nothing secret belongs here: anyone who can describe the
+# instance can read its user data.
+package_update: true
+packages:
+  - ca-certificates
+  - curl
+  - jq
+
+write_files:
+  - path: /etc/skylink/host.conf
+    permissions: "0644"
+    content: |
+      REGION=${region}
+      ENV_SECRET=${env_secret}
+      REPOSITORY=${repository}
+  - path: /etc/docker/daemon.json
+    permissions: "0644"
+    content: |
+      {"log-driver": "json-file", "log-opts": {"max-size": "20m", "max-file": "5"}}
+
+runcmd:
+  - [sh, -c, "fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' >> /etc/fstab"]
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - [sh, -c, 'echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu noble stable" > /etc/apt/sources.list.d/docker.list']
+  - apt-get update
+  - [sh, -c, "DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin"]
+  - snap install aws-cli --classic
+  - systemctl enable --now docker
+  - install -m 0750 -d /opt/skylink /opt/skylink/releases
