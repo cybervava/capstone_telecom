@@ -5,8 +5,9 @@
 #
 #   operate.sh env-init             create the host's settings, once: fresh secrets, the model
 #                                   and tracing settings of ./.env, demo timing, the sign-in
-#   operate.sh sign-in              the site's address and its shared sign-in
+#   operate.sh sign-in              the site's address, its shared sign-in and the demo console
 #   operate.sh staff-key            the key the staff desk asks for
+#   operate.sh oss-key              the key the demo console asks for (the simulator's admin key)
 #   operate.sh scene <args...>      a mock-oss command on the host: scene outages --active
 #   operate.sh reset                start the current release again, from a clean demo state
 #   operate.sh rollback             start the release before the current one again
@@ -114,8 +115,12 @@ gitlab_setup() {
 
 case "${1:-}" in
   env-init) env_init ;;
-  sign-in) secret "$(tf sign_in_secret)" | jq -r '"Site:     \(.site)\nUser:     \(.user)\nPassword: \(.password)"' ;;
+  sign-in)
+    secret "$(tf sign_in_secret)" |
+      jq -r '"Site:     \(.site)\nUser:     \(.user)\nPassword: \(.password)\nConsole:  \(.site | rtrimstr("/"))/sim/console/"'
+    ;;
   staff-key) secret "$(tf env_secret)" | sed -n 's/^CARE_DEV_STAFF_KEY=//p' ;;
+  oss-key) secret "$(tf env_secret)" | sed -n 's/^OSS_KEY_ADMIN=//p' ;;
   scene)
     shift
     on_host "bash $HOST_DEPLOY compose exec -T mock-oss mock-oss $(quote "$@")"
@@ -141,7 +146,7 @@ case "${1:-}" in
   status) on_host "bash $HOST_DEPLOY compose ps" ;;
   gitlab-setup) gitlab_setup ;;
   *)
-    sed -n '2,19p' "$0" >&2
+    sed -n '2,18p' "$0" >&2
     exit 2
     ;;
 esac

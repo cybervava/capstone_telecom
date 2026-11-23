@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SkyLink Demo Console</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="console.css">
+</head>
+<body>
+  <header class="masthead">
+    <div>
+      <p class="masthead__mark">SkyLink <span>Demo Console</span></p>
+      <p class="masthead__note">Backstage. This page plays the telco's network, field force and failures through the simulator. The platform never sees it. Synthetic data only.</p>
+    </div>
+    <nav class="masthead__desks" aria-label="The desks">
+      <a id="link-desk" href="#" target="skylink-desk" rel="noopener">Customer desk ↗</a>
+      <a id="link-staff" href="#" target="skylink-staff" rel="noopener">Staff desk ↗</a>
+    </nav>
+  </header>
+
+  <section class="connect" aria-label="Connection to the simulator">
+    <form method="post" id="key-form" class="connect__form">
+      <label for="admin-key">Simulator admin key
+        <span class="hint">OSS_KEY_ADMIN in .env · on the AWS host: deploy/aws/operate.sh oss-key</span>
+      </label>
+      <div class="row">
+        <input id="admin-key" type="password" autocomplete="off" required>
+        <button type="submit">Connect</button>
+      </div>
+    </form>
+    <p id="connection" class="status" role="status">Not connected.</p>
+    <button type="button" id="forget" class="quiet" hidden>Forget the key</button>
+    <details class="settings">
+      <summary>Where the desks are</summary>
+      <form method="post" id="desk-form" class="row">
+        <label class="visually-hidden" for="desk-url">Address of the customer desk</label>
+        <input id="desk-url" type="url" required>
+        <button type="submit" class="quiet">Save</button>
+      </form>
+    </details>
+    <button type="button" id="end-all" class="quiet quiet--alarm" disabled>End everything in force</button>
+  </section>
+
+  <main class="console" id="console" hidden>
+    <nav class="scenes" aria-labelledby="scenes-heading">
+      <h2 id="scenes-heading">Scenes</h2>
+      <ol id="scene-list" class="scene-list"></ol>
+      <p class="hint">Each scene finds its own customer and node, so they can be played in any order. Mentors can swap the customer, or change anything under Free play.</p>
+    </nav>
+
+    <section class="script" id="script" aria-live="polite"></section>
+
+    <aside class="board" aria-label="What the simulator shows">
+      <section class="board__part" aria-labelledby="evidence-heading">
+        <h2 id="evidence-heading">On the enterprise systems</h2>
+        <p class="hint">What the platform wrote for this scene, read back from the simulator.</p>
+        <div id="evidence" class="evidence"></div>
+      </section>
+      <section class="board__part" aria-labelledby="world-heading">
+        <h2 id="world-heading">In force now</h2>
+        <div id="world" class="world"></div>
+      </section>
+    </aside>
+  </main>
+
+  <script type="module" src="console.js"></script>
+</body>
+</html>

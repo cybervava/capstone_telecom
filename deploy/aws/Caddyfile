@@ -1,5 +1,5 @@
 # HTTPS for the demo host, with a certificate for its sslip.io name, and one shared sign-in in
-# front of both desks (deploy/aws/compose.aws.yml).
+# front of both desks and the demo console (deploy/aws/compose.aws.yml).
 #
 # The desks send their own Bearer token in the Authorization header, which leaves no room for
 # Basic credentials on those requests. So the sign-in is asked for once, and then remembered in
@@ -8,6 +8,22 @@
 	servers {
 		# HTTP/3 would need UDP 443, which the security group keeps closed.
 		protocols h1 h2
+	}
+}
+
+# Where a signed-in request goes. Under /sim: the demo console and the simulator's admin API it
+# drives, which asks for the simulator's admin key as well (operate.sh oss-key). Nothing else of
+# the simulator is reachable from outside. Everything else: the API and its desks.
+(upstream) {
+	route {
+		redir /sim /sim/console/
+		redir /sim/ /sim/console/
+		redir /sim/console /sim/console/
+		handle @simulator {
+			uri strip_prefix /sim
+			reverse_proxy mock-oss:8081
+		}
+		reverse_proxy api:8080
 	}
 }
 
@@ -30,11 +46,12 @@
 	# The browser goes on sending the Basic sign-in wherever a desk sets no header of its own.
 	# It is taken off before the API, which has no use for the demo password.
 	@basic header Authorization "Basic *"
+	@simulator path /sim/console/* /sim/admin/v1/* /sim/health
 
 	@signed_in header Cookie *demo_gate={$DEMO_GATE_COOKIE}*
 	handle @signed_in {
 		request_header @basic -Authorization
-		reverse_proxy api:8080
+		import upstream
 	}
 
 	handle {
@@ -44,7 +61,7 @@
 			}
 			request_header -Authorization
 			header >Set-Cookie "demo_gate={$DEMO_GATE_COOKIE}; Path=/; Max-Age=604800; Secure; HttpOnly; SameSite=Lax"
-			reverse_proxy api:8080
+			import upstream
 		}
 	}
 }

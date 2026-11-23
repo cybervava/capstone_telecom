@@ -9,6 +9,30 @@ const POLL_WHEN_DELAYED_MS = 5000;
 
 const newId = () => crypto.randomUUID().replaceAll("-", "");
 
+// The demo console can open the desk as a customer, with what they will say:
+//   /?customer=C0000005&say=first line&say=second line
+// The session starts by itself. Each line waits in the message box, the next one once the
+// assistant has answered; nothing is sent without a click, and a line can be changed first.
+const scripted = (() => {
+  const params = new URLSearchParams(location.search);
+  const customer = (params.get("customer") ?? "").trim().toUpperCase();
+  return {
+    customer: /^C\d{7}$/.test(customer) ? customer : null,
+    lines: params.getAll("say").map((line) => line.trim().slice(0, 4000)).filter(Boolean),
+    next: 0,
+    offered: false,
+    on: false,
+  };
+})();
+
+function offerNextLine() {
+  const box = el("message");
+  if (!scripted.on || scripted.offered || box.disabled || box.value.trim()) return;
+  if (scripted.next >= scripted.lines.length) return;
+  box.value = scripted.lines[scripted.next];
+  scripted.offered = true;
+}
+
 async function api(path, { method = "GET", body, token = state.token } = {}) {
   const response = await fetch(path, {
     method,
@@ -107,6 +131,7 @@ async function refresh() {
       if (message.direction === "outbound") {
         addMessage(message);
         state.awaiting = false;
+        offerNextLine();
       }
       state.seen = Math.max(state.seen, message.message_id);
     }
@@ -152,6 +177,12 @@ el("persona-form").addEventListener("submit", async (event) => {
     el("persona-status").textContent = customerId
       ? `Signed in as ${customerId} (identity verified by the channel).`
       : "Arrived as a guest (identity not known).";
+    // A new session for the console's customer starts its lines again; anyone else, none.
+    Object.assign(scripted, { on: customerId === scripted.customer, next: 0, offered: false });
+    if (scripted.on && scripted.lines.length) {
+      el("persona-status").textContent += " The demo console's lines wait in the message box.";
+    }
+    offerNextLine();
     el("message").focus();
   } catch (error) {
     el("persona-status").textContent = `Could not start a session: ${error.message}`;
@@ -163,6 +194,7 @@ el("message-form").addEventListener("submit", async (event) => {
   const text = el("message").value.trim();
   if (!text || !state.token) return;
   el("message").value = "";
+  if (scripted.offered) Object.assign(scripted, { next: scripted.next + 1, offered: false });
   addMessage({ direction: "inbound", author: "customer", body: text });
   try {
     if (!state.contactId) {
@@ -201,6 +233,11 @@ el("trail-refresh").addEventListener("click", async () => {
     el("persona-status").textContent = `Could not refresh the staff view: ${error.message}`;
   });
 });
+
+if (scripted.customer) {
+  el("customer-id").value = scripted.customer;
+  el("persona-form").requestSubmit();
+}
 
 el("trail-form").addEventListener("submit", async (event) => {
   event.preventDefault();

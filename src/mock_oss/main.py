@@ -13,11 +13,23 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI, Request
 
-from mock_oss import admin, admin_cli, admin_search, billing, crm, field, incident, network, notify
+from mock_oss import (
+    admin,
+    admin_activity,
+    admin_cli,
+    admin_search,
+    billing,
+    crm,
+    field,
+    incident,
+    network,
+    notify,
+)
 from mock_oss.auth import KeyRing
 from mock_oss.chaos import ChaosRules
 from mock_oss.clock import Clock, SystemClock, iso
 from mock_oss.config import DEFAULT_DB, Settings
+from mock_oss.console import mount_console
 from mock_oss.db import Database, read_counter
 from mock_oss.errors import install_error_handlers
 from mock_oss.middleware import RequestCounters, install_gateway_middleware
@@ -34,6 +46,7 @@ ROUTERS = [
     notify.router,
     admin.router,
     admin_search.router,
+    admin_activity.router,
 ]
 
 
@@ -69,6 +82,7 @@ def create_app(settings: Settings, *, clock: Clock | None = None) -> FastAPI:
     for router in ROUTERS:
         app.include_router(router)
     app.add_api_route("/health", _health, methods=["GET"])
+    mount_console(app)
     return app
 
 

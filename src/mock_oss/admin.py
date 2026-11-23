@@ -110,6 +110,17 @@ def line_fault(body: LineFaultIn, request: Request) -> dict[str, Any]:
     }
 
 
+@router.get("/line-faults")
+def list_line_faults(request: Request) -> dict[str, Any]:
+    """The lines made to fail their remote test, and how."""
+    with get_db(request).read() as conn:
+        rows = conn.execute(
+            "SELECT service_id, result FROM line_fault_overrides WHERE fault = 1 "
+            "ORDER BY service_id"
+        ).fetchall()
+    return {"line_faults": [{"service_id": r["service_id"], "result": r["result"]} for r in rows]}
+
+
 @router.post("/consent")
 def set_consent(body: ConsentIn, request: Request) -> dict[str, Any]:
     channel = (body.channel or "sms") if body.outage_notifications else "none"

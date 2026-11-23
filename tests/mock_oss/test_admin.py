@@ -6,10 +6,11 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from tests.mock_oss.conftest import auth, idem
-from tests.mock_oss.test_billing_field import credit_body
+from tests.mock_oss.test_billing_field import appt_body, credit_body
 
 Admin = Callable[..., dict[str, Any]]
 
@@ -25,6 +26,8 @@ def _search(client: TestClient, query: str) -> list[dict[str, Any]]:
     ("query", "service_ids"),
     [
         ("node_id=BLR-OLT-0002", ["S0000003", "S0000004"]),
+        ("customer_id=C0000004", ["S0000004"]),
+        ("customer_id=C9999999", []),
         ("mapping_defect=ambiguous", ["S0000003"]),
         ("consent=false", ["S0000003"]),
         ("segment=sme", ["S0000006"]),
@@ -48,6 +51,7 @@ def test_search_row_shape(client: TestClient) -> None:
         "mapped_node_ids": ["BLR-OLT-0003"],
         "router_model": "NX-R2",
         "monthly_fee_inr": "3999.00",
+        "service_status": "active",
         "consent": True,
         "mapping_defect": "stale",
         "phone": "+919845000004",
@@ -63,8 +67,48 @@ def test_search_consent_reflects_runtime_flip(client: TestClient, admin: Admin) 
     assert [c["service_id"] for c in _search(client, "consent=false")] == ["S0000003", "S0000004"]
 
 
+def test_search_by_the_status_of_the_line(client: TestClient, app: FastAPI) -> None:
+    # An active customer can have a suspended line: the platform then talks about another one.
+    with app.state.db.write() as conn:
+        conn.execute("UPDATE services SET status = 'suspended' WHERE service_id = 'S0000005'")
+    broadband = "service_type=broadband&mapping_defect=none&status=active"
+    active = _search(client, f"{broadband}&service_status=active")
+    assert [c["service_id"] for c in active] == ["S0000001", "S0000006"]
+    (suspended,) = _search(client, f"{broadband}&service_status=suspended")
+    assert (suspended["service_id"], suspended["service_status"]) == ("S0000005", "suspended")
+
+
+def test_search_untouched_skips_what_the_platform_wrote_for(client: TestClient) -> None:
+    broadband = "service_type=broadband&mapping_defect=none&limit=5"
+    assert [c["customer_id"] for c in _search(client, f"{broadband}&untouched=true")] == [
+        "C0000001",
+        "C0000005",
+        "C0000006",
+    ]
+    # A visit on C0000001's line, a notice to C0000005, a credit on C0000006's account.
+    visit = client.post("/field/v1/appointments", json=appt_body(), headers=idem())
+    assert visit.status_code == 201
+    notice = {"customer_id": "C0000005", "channel": "sms", "template_id": "T", "body": "b"}
+    assert client.post("/notify/v1/messages", json=notice, headers=idem()).status_code == 202
+    credit = credit_body(customer_id="C0000006", service_id="S0000006")
+    assert client.post("/billing/v1/credits", json=credit, headers=idem()).status_code == 201
+
+    assert _search(client, f"{broadband}&untouched=true") == []
+    assert len(_search(client, broadband)) == 3
+    assert len(_search(client, f"{broadband}&untouched=false")) == 3
+
+
 @pytest.mark.parametrize(
-    "query", ["limit=51", "limit=0", "consent=maybe", "mapping_defect=odd", "min_monthly_fee=x"]
+    "query",
+    [
+        "limit=51",
+        "limit=0",
+        "consent=maybe",
+        "mapping_defect=odd",
+        "min_monthly_fee=x",
+        "untouched=x",
+        "service_status=closed",
+    ],
 )
 def test_search_rejects_bad_filters(client: TestClient, query: str) -> None:
     resp = client.get(f"/admin/v1/customers/search?{query}", headers=auth("admin"))

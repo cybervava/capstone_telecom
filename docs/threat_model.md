@@ -34,6 +34,7 @@ shows it. Attack keys (A1, C3, …) are those of `evals/reports/attack_suite.md`
 | A member of staff acting outside their role | An agent's or an operator's token |
 | A dependency that fails | Not an attacker; the same care is owed (curveball, `evals/reports/curveball.md`) |
 | Anyone on the internet, at the demo site on AWS | Its address. Everything but the health check is behind one shared sign-in (`deploy/aws/Caddyfile`); the host has ports 80 and 443 open and nothing else |
+| Someone with the shared sign-in to the demo site | The desks, as on a laptop, and the demo console's page under `/sim`. The page holds no key: driving the simulator through it needs the simulator's admin key as well, and the rest of the simulator's APIs are not reachable from outside (`deploy/aws/Caddyfile`). The console reaches the stand-in systems only, never the platform |
 | Whoever can push to `dev` of the GitLab.com project | A release on the demo host: the pipeline's role may push the image, upload the bundle and run one SSM document whose only input is a commit, and no other command (`deploy/aws/terraform/iam.tf`) |
 
 Out of scope, and said so: SkyLink's systems behind the gateway (stand-ins here); the channel
