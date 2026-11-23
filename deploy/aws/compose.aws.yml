@@ -1,20 +1,36 @@
 # The demo host on AWS (deploy/aws/terraform): the services of docker-compose.yml, run from the
 # image the pipeline pushed to ECR, with Caddy in front for HTTPS and one shared sign-in.
+# PostgreSQL is not run here: it is RDS (deploy/aws/terraform/database.tf).
 # deploy/aws/host/deploy.sh runs it on the host:
 #
 #   CARE_IMAGE=<ecr>/skylink-care:<commit> docker compose -f docker-compose.yml \
 #     -f deploy/aws/compose.aws.yml --env-file /opt/skylink/.env --profile stack up -d --no-build
 #
-# The API, the gateway and PostgreSQL stay bound to the host's loopback, as in docker-compose.yml;
-# only Caddy listens on the network.
+# The API and the gateway stay bound to the host's loopback, as in docker-compose.yml; only Caddy
+# listens on the network.
 
 x-release: &release
   image: ${CARE_IMAGE:?set by deploy.sh}
   # deploy.sh pulls the image from ECR before anything starts.
   pull_policy: never
+  environment:
+    # deploy.sh puts the address of the RDS instance in the host's settings. The connection is
+    # TLS, and the server's certificate is checked against the RDS certificate authorities.
+    CARE_DB_HOST: ${CARE_DB_HOST:?set by deploy.sh}
+    CARE_DB_PORT: ${CARE_DB_PORT:?set by deploy.sh}
+    PGSSLMODE: verify-full
+    PGSSLROOTCERT: /etc/ssl/certs/rds-ca.pem
+  volumes:
+    - /opt/skylink/rds-ca.pem:/etc/ssl/certs/rds-ca.pem:ro
 
 services:
-  setup: *release
+  # Only with a profile this file never turns on: the database is RDS.
+  postgres:
+    profiles: ["container-db"]
+
+  setup:
+    <<: *release
+    depends_on: !reset {}
   mock-oss: *release
   api: *release
   worker: *release

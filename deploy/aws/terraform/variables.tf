@@ -16,6 +16,12 @@ variable "instance_type" {
   default     = "t3.medium"
 }
 
+variable "db_instance_class" {
+  description = "RDS for PostgreSQL. The demo's database is small: 40,000 customers and the guide index."
+  type        = string
+  default     = "db.t4g.micro"
+}
+
 variable "disk_gb" {
   description = "Root volume: the OS, Docker images, the database and the data pack."
   type        = number

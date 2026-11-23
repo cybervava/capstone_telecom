@@ -31,6 +31,10 @@ output "deploy_document" {
   value = aws_ssm_document.deploy.name
 }
 
+output "db_endpoint" {
+  value = aws_db_instance.main.endpoint
+}
+
 output "env_secret" {
   value = aws_secretsmanager_secret.env.name
 }

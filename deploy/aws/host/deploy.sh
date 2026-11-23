@@ -20,8 +20,19 @@ ROOT=/opt/skylink
 # shellcheck source=/dev/null
 . /etc/skylink/host.conf
 export PATH="$PATH:/snap/bin" AWS_REGION="$REGION"
+# The deployment's name, the first part of its secrets' names: skylink-care-demo.
+PREFIX="${ENV_SECRET##*:secret:}"
+PREFIX="${PREFIX%%/*}"
+RDS_CA="$ROOT/rds-ca.pem"
+DB_MASTER_SECRET=""
 
 log() { printf '[deploy %s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
+
+env_set() { # <file> <key> <value>: that key's line replaced, or added
+  if grep -q "^$2=" "$1"; then sed -i "s|^$2=.*|$2=$3|" "$1"; else echo "$2=$3" >> "$1"; fi
+}
+
+env_value() { sed -n "s/^$1=//p" "$ROOT/.env" | head -1; }
 
 compose() { # <release dir> <args...>: docker compose for that release, with the host's settings
   local dir="$1"
@@ -43,7 +54,40 @@ fetch_settings() { # the host's .env from Secrets Manager; mktemp makes it reada
     log "the settings read from $ENV_SECRET are empty or incomplete"
     return 1
   fi
+  # Where the database is, and which secret holds its master password (database.tf).
+  local database
+  database="$(aws ssm get-parameter --name "/$PREFIX/database" \
+    --query Parameter.Value --output text | cat)"
+  env_set "$tmp" CARE_DB_HOST "$(jq -r .host <<< "$database")"
+  env_set "$tmp" CARE_DB_PORT "$(jq -r .port <<< "$database")"
+  DB_MASTER_SECRET="$(jq -r .master_secret <<< "$database")"
   mv "$tmp" "$ROOT/.env"
+}
+
+rds_ca() { # the certificate authorities of RDS, against which the database's certificate is checked
+  if [ -s "$RDS_CA" ] && [ -z "$(find "$RDS_CA" -mtime +30)" ]; then return 0; fi
+  curl -fsS -o "$RDS_CA.new" https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+  grep -q 'BEGIN CERTIFICATE' "$RDS_CA.new"
+  chmod 644 "$RDS_CA.new"
+  mv "$RDS_CA.new" "$RDS_CA"
+}
+
+prepare_database() { # <release dir>: the platform's role, its password and pgvector, on RDS
+  local master
+  master="$(aws secretsmanager get-secret-value --secret-id "$DB_MASTER_SECRET" \
+    --query SecretString --output text | cat)"
+  docker run --rm -i --network host --env-file "$ROOT/.env" \
+    -e PGSSLMODE=verify-full -e PGSSLROOTCERT=/etc/ssl/certs/rds-ca.pem \
+    -v "$RDS_CA:/etc/ssl/certs/rds-ca.pem:ro" \
+    -v "$1/deploy/aws/host/db_bootstrap.py:/db_bootstrap.py:ro" \
+    "$(cat "$1/IMAGE")" python /db_bootstrap.py <<< "$master"
+}
+
+uses_rds() { [ -f "$1/deploy/aws/host/db_bootstrap.py" ]; }
+
+remove_container_db() { # the database container of a release from before RDS, if one is left
+  docker ps -aq --filter label=com.docker.compose.project=skylink-care \
+    --filter label=com.docker.compose.service=postgres | xargs -r docker rm -f > /dev/null
 }
 
 pull() { # <release dir>
@@ -54,6 +98,11 @@ pull() { # <release dir>
 
 start() { # <release dir>: stop what runs, then start this release and wait until it is healthy
   compose "$1" down --remove-orphans --timeout 20
+  # A release from before the move to RDS brings its own database container, and uses it.
+  if uses_rds "$1"; then
+    remove_container_db
+    rds_ca && prepare_database "$1" || return 1
+  fi
   compose "$1" up -d --no-build --wait --wait-timeout 300 --remove-orphans
 }
 

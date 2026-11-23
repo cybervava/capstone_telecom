@@ -45,6 +45,17 @@ data "aws_iam_policy_document" "host" {
     actions   = ["secretsmanager:GetSecretValue"]
     resources = [aws_secretsmanager_secret.env.arn]
   }
+  statement {
+    sid       = "FindTheDatabase"
+    actions   = ["ssm:GetParameter"]
+    resources = [aws_ssm_parameter.database.arn]
+  }
+  # To set up the platform's role and the vector extension before a start (database.tf).
+  statement {
+    sid       = "ReadTheDatabaseMasterPassword"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_db_instance.main.master_user_secret[0].secret_arn]
+  }
 }
 
 resource "aws_iam_role_policy" "host" {
