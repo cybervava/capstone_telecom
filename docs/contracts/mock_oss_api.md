@@ -132,7 +132,7 @@ CRM does not return a network node. The care platform derives it from `address_n
 
 | Endpoint | Scope | Behaviour |
 |---|---|---|
-| `GET /billing/v1/accounts/{customer_id}/credits?since=YYYY-MM-DD` | `billing:read` | `{"credits": [credit…]}` newest first |
+| `GET /billing/v1/accounts/{customer_id}/credits?since=YYYY-MM-DD` | `billing:read` | `{"credits": [credit…]}` newest first. `since` is a day in IST: credits created from 00:00 IST that day |
 | `POST /billing/v1/credits` | `billing:write` | Idempotent create. Body `{"customer_id", "service_id", "amount_inr", "reason_code", "outage_id", "policy_version", "complaint_ref", "approved_by"}` (`outage_id`, `approved_by` nullable). `201` with the credit. `422 INVALID_AMOUNT` if not `0 < amount ≤ 5000.00`; `404` for unknown customer or service; `409 ACCOUNT_SUSPENDED` |
 | `GET /billing/v1/credits/by-key/{idempotency_key}` | `billing:read` | The credit or `404 NOT_FOUND` |
 

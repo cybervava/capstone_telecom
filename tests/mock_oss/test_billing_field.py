@@ -91,6 +91,18 @@ def test_list_credits_newest_first_and_since(client: TestClient, clock: ManualCl
     assert other.json()["credits"] == []
 
 
+def test_list_credits_since_is_a_day_in_ist(client: TestClient, clock: ManualClock) -> None:
+    """The day starts at 00:00 IST, which is 18:30 UTC the day before."""
+    clock.advance(14 * 3600 + 20 * 60)  # 2026-11-15T18:20:00Z, 23:50 IST on the 15th
+    client.post("/billing/v1/credits", json=credit_body(amount_inr="1.00"), headers=idem())
+    clock.advance(20 * 60)  # 2026-11-15T18:40:00Z, 00:10 IST on the 16th
+    client.post("/billing/v1/credits", json=credit_body(amount_inr="2.00"), headers=idem())
+    since = client.get(
+        "/billing/v1/accounts/C0000001/credits?since=2026-11-16", headers=auth("resolution")
+    )
+    assert [c["amount_inr"] for c in since.json()["credits"]] == ["2.00"]
+
+
 def test_list_credits_errors(client: TestClient) -> None:
     unknown = client.get("/billing/v1/accounts/C9999999/credits", headers=auth("resolution"))
     assert unknown.status_code == 404
