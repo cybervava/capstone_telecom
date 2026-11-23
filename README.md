@@ -51,7 +51,7 @@ Milestones M0 (foundations), M1 (reference-first outage path) and M2 (the six ca
 - A button on the staff desk to take a conversation over (the API route exists: `POST /v1/contacts/{id}/takeover`).
 - For a production deployment: a database role for each process; a job that enforces retention; export or erasure of a customer's data on request; limits at the edge beyond the demo's shared sign-in; a second identity factor for customers who are not signed in (decision D9). The demo on AWS has TLS, a managed secret store and an encrypted disk.
 - A run against Claude: no Anthropic key was available. The demo uses OpenAI's model instead (decision D2).
-- More than one host: the demo on AWS is one instance, with no second zone, no managed database and no load balancer, and a release stops it while the next one starts.
+- More than one host: the demo on AWS is one instance and one database instance, each in a single zone, with no load balancer, and a release stops it while the next one starts.
 
 ## Two things that are stand-ins
 
@@ -205,6 +205,8 @@ The demonstration runs on AWS: <https://13-233-226-59.sslip.io/> for the custome
 
 **What runs.** One EC2 instance in Mumbai (`t3.medium`, Ubuntu 24.04) runs the containers of `docker-compose.yml` from the image the pipeline built, with Caddy in front (`deploy/aws/compose.aws.yml`). Caddy serves HTTPS with a Let's Encrypt certificate for the host's sslip.io name, and asks for the sign-in once, then lets the browser through on a cookie: the desks send their own Bearer token, which leaves no room for Basic credentials (`deploy/aws/Caddyfile`). Only ports 80 and 443 are open; there is no SSH and no key pair, and the host is reached through AWS Systems Manager. Its settings are a secret in Secrets Manager, generated once with fresh secrets and read by the host at every start; its disk is encrypted. It runs with the demo timing, and with OpenAI's `gpt-5.4-mini` reading the messages.
 
+PostgreSQL is not one of those containers: it is Amazon RDS (`deploy/aws/terraform/database.tf`), PostgreSQL 17 with pgvector on a `db.t4g.micro`, encrypted, with a day of automated backups, reachable only from the host's security group and over TLS with its certificate checked (`PGSSLMODE=verify-full`). The platform logs in as its own role, `care`, which owns its tables and has no other right. RDS keeps the master user's password in Secrets Manager and rotates it; before each start the host uses it to make sure the role, its password and the vector extension are there (`deploy/aws/host/db_bootstrap.py`), so a rotation never reaches the platform.
+
 **How a release gets there.** `.gitlab-ci.yml` runs on GitLab.com, in the project `prathap.aneesh/capstone_telecom` (`git push gitlab dev`):
 
 1. The checks of the GitHub workflow: lint and types, the suite with its coverage gate, the evaluations, the secret scan.
@@ -229,7 +231,7 @@ deploy/aws/operate.sh llm offline              # if the model misbehaves: the ke
 deploy/aws/operate.sh logs worker              # also: status, rollback
 ```
 
-**Setting it up, and taking it down.** Terraform holds all of it (`deploy/aws/terraform`). Its state is in S3, in a private, versioned bucket that `deploy/aws/terraform/state-bucket.sh create` makes once, outside the configuration, so any machine with the `skylink-demo` profile can plan from it; it has no lock, so one person applies at a time. Then: `terraform apply`, `deploy/aws/operate.sh env-init` (the host's settings, once), `GITLAB_TOKEN=… deploy/aws/operate.sh gitlab-setup` (the pipeline's settings, as protected project variables, none of them secret), and a pipeline on `dev`. `terraform destroy` removes everything, the secrets and the images included, and `state-bucket.sh delete` then removes the state. On demand it costs about $1.30 a day: the instance $0.0448 an hour, the disk, the public address and the two secrets the rest. It is to be destroyed after the presentation.
+**Setting it up, and taking it down.** Terraform holds all of it (`deploy/aws/terraform`). Its state is in S3, in a private, versioned bucket that `deploy/aws/terraform/state-bucket.sh create` makes once, outside the configuration, so any machine with the `skylink-demo` profile can plan from it; it has no lock, so one person applies at a time. Then: `terraform apply`, `deploy/aws/operate.sh env-init` (the host's settings, once), `GITLAB_TOKEN=… deploy/aws/operate.sh gitlab-setup` (the pipeline's settings, as protected project variables, none of them secret), and a pipeline on `dev`. `terraform destroy` removes everything, the secrets and the images included, and `state-bucket.sh delete` then removes the state. On demand it costs about $1.90 a day: the instance $0.0448 an hour, the database $0.021 an hour and its storage, and the disk, the public address and the secrets the rest. It is to be destroyed after the presentation.
 
 It runs with `CARE_ENV=dev`, because staff sign in through the development token endpoint, which in `dev` also signs anyone in as any customer; the shared sign-in is what keeps that endpoint from the internet.
 
