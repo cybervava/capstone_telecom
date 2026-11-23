@@ -1,0 +1,2694 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font: 14px system-ui, sans-serif; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<title>SkyLink Discovery Workshop</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Atkinson+Hyperlegible+Mono:wght@400..700&family=Atkinson+Hyperlegible+Next:ital,wght@0,300..800;1,300..800&display=swap">
+<style>
+/* Layout: a seven-stop route runs across the top, drawn as a network path. Each stop opens one
+   stage of the workshop. Text sits on the ground; only things you operate get a surface. */
+:root {
+  --ground: #EDF1F4;
+  --surface: #FFFFFF;
+  --sunken: #E2E8ED;
+  --ink: #12233A;
+  --ink-2: #43556B;
+  --ink-3: #5A6B7E;
+  --line: #CCD6DF;
+  --line-strong: #A3B2C0;
+  --accent: #0B7A83;
+  --accent-strong: #08656D;
+  --accent-ink: #086169;
+  --accent-soft: #D7EEF0;
+  --on-accent: #FFFFFF;
+  --slab: #12233A;
+  --on-slab: #F1F5F8;
+  --slab-accent: #7ADAE1;
+  --out: #BE362D;
+  --out-ink: #9A2720;
+  --out-soft: #FBE3E0;
+  --unk: #B06D00;
+  --unk-ink: #7F4D00;
+  --unk-soft: #FBECCF;
+  --ok: #1E8752;
+  --ok-ink: #14633B;
+  --ok-soft: #DAF1E4;
+  --hum: #5B45B0;
+  --hum-ink: #4A3796;
+  --hum-soft: #E8E3F8;
+  --bubble: #E2E8ED;
+  --focus: #1C64D9;
+  --scrim: rgb(8 16 28 / .55);
+  --fibre-1: #2F6FD6;
+  --fibre-2: #DE7A1D;
+  --fibre-3: #2E9E5B;
+  --fibre-4: #96693C;
+  --shadow: 0 1px 2px rgb(18 35 58 / .06), 0 10px 28px rgb(18 35 58 / .09);
+  --font-display: "Archivo", "Arial Nova", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0C1520; --surface: #142030; --sunken: #0F1A27; --ink: #E8EEF4; --ink-2: #B5C3D1;
+    --ink-3: #93A4B6; --line: #26364A; --line-strong: #40546B; --accent: #2BB3BD;
+    --accent-strong: #4CC8D1; --accent-ink: #62D3DB; --accent-soft: #10353A; --on-accent: #06242A;
+    --slab: #1C2D42; --on-slab: #F1F5F8; --slab-accent: #7ADAE1; --out: #E0665B; --out-ink: #FFA198;
+    --out-soft: #3B1917; --unk: #D99A2B; --unk-ink: #F5C76A; --unk-soft: #37280C; --ok: #3DB877;
+    --ok-ink: #7BE0AA; --ok-soft: #10301F; --hum: #A794F5; --hum-ink: #C3B5FF; --hum-soft: #241D45; --bubble: #1F2E42;
+    --focus: #8AB4FF; --scrim: rgb(0 0 0 / .65); --fibre-1: #5B93F0; --fibre-2: #F09544;
+    --fibre-3: #4CC07F; --fibre-4: #B98A5C;
+    --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 28px rgb(0 0 0 / .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0C1520; --surface: #142030; --sunken: #0F1A27; --ink: #E8EEF4; --ink-2: #B5C3D1;
+  --ink-3: #93A4B6; --line: #26364A; --line-strong: #40546B; --accent: #2BB3BD;
+  --accent-strong: #4CC8D1; --accent-ink: #62D3DB; --accent-soft: #10353A; --on-accent: #06242A;
+  --slab: #1C2D42; --on-slab: #F1F5F8; --slab-accent: #7ADAE1; --out: #E0665B; --out-ink: #FFA198;
+  --out-soft: #3B1917; --unk: #D99A2B; --unk-ink: #F5C76A; --unk-soft: #37280C; --ok: #3DB877;
+  --ok-ink: #7BE0AA; --ok-soft: #10301F; --hum: #A794F5; --hum-ink: #C3B5FF; --hum-soft: #241D45; --bubble: #1F2E42;
+  --focus: #8AB4FF; --scrim: rgb(0 0 0 / .65); --fibre-1: #5B93F0; --fibre-2: #F09544;
+  --fibre-3: #4CC07F; --fibre-4: #B98A5C;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 28px rgb(0 0 0 / .35);
+  color-scheme: dark;
+}
+
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--ground); color: var(--ink);
+  font: 400 1rem/1.55 var(--font-body); -webkit-text-size-adjust: 100%;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--ground);
+}
+.wrap {
+  max-width: 72rem; margin-inline: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); text-wrap: balance; }
+p, figure, blockquote { margin: 0; }
+a { color: var(--accent-ink); text-underline-offset: .2em; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+[tabindex="-1"]:focus { outline: none; }
+[hidden] { display: none !important; }
+.sprite { position: absolute; inline-size: 0; block-size: 0; overflow: hidden; }
+.vh { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ico {
+  inline-size: 1.1rem; block-size: 1.1rem; flex: none; fill: none; stroke: currentColor;
+  stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round;
+}
+.skip {
+  position: absolute; left: 1rem; top: -4rem; z-index: 20; padding: .6rem .9rem; border-radius: 8px;
+  background: var(--slab); color: var(--on-slab);
+}
+.skip:focus { top: calc(env(safe-area-inset-top, 0px) + .5rem); }
+.eyebrow {
+  font: 600 .74rem/1.3 var(--font-mono); letter-spacing: .09em; text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.lead { font-size: 1.125rem; color: var(--ink-2); max-width: 65ch; }
+.prose { max-width: 65ch; color: var(--ink-2); }
+.src { font-size: .88rem; color: var(--ink-2); max-width: 75ch; }
+.aside-line { font-size: .95rem; color: var(--ink-2); max-width: 70ch; }
+.scroll-x { overflow-x: auto; }
+
+/* ---------- evidence tags: the border says how firm the claim is ---------- */
+.tag {
+  display: inline-block; padding: .26rem .4rem; border: 1px solid var(--line-strong); border-radius: 4px;
+  font: 600 .66rem/1 var(--font-mono); letter-spacing: .07em; text-transform: uppercase;
+  color: var(--ink-2); white-space: nowrap; vertical-align: .08em;
+}
+.tag--sim { border-style: dashed; }
+.tag--prop, .tag--demo { border-style: dotted; }
+.tag--ok { border-color: transparent; background: var(--accent-soft); color: var(--accent-ink); }
+.tag--ext { border-color: var(--hum); color: var(--hum-ink); }
+.tag--curve { border-color: transparent; background: var(--unk-soft); color: var(--unk-ink); }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; padding: .55rem 1.05rem;
+  border: 1px solid var(--accent); border-radius: 8px; background: var(--accent); color: var(--on-accent);
+  font: 650 .95rem/1.15 var(--font-display); text-decoration: none; cursor: pointer;
+  transition: background-color .15s, border-color .15s, transform .15s;
+}
+.btn:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+.btn:active { transform: translateY(1px); }
+.btn--ghost { background: transparent; border-color: var(--line-strong); color: var(--ink); }
+.btn--ghost:hover { background: var(--sunken); border-color: var(--ink-3); }
+.btn--small { min-height: 2.25rem; padding: .35rem .75rem; font-size: .85rem; }
+.chip {
+  min-height: 2rem; padding: .25rem .6rem; border: 1px solid var(--line-strong); border-radius: 6px;
+  background: transparent; color: var(--ink); font: 600 .78rem/1 var(--font-mono); cursor: pointer;
+  transition: background-color .15s, border-color .15s;
+}
+.chip:hover { border-color: var(--accent); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--ground); }
+
+/* ---------- masthead and route ---------- */
+.masthead__in {
+  display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: .75rem 1.5rem;
+  padding-block: 1.1rem .9rem;
+}
+.brand { display: grid; gap: .3rem; min-width: 0; }
+.brand__name { font-size: 1.25rem; font-weight: 760; font-stretch: 108%; line-height: 1.15; letter-spacing: -.01em; }
+.brand__name span { font-weight: 500; font-stretch: 100%; color: var(--ink-2); margin-left: .4rem; }
+.masthead__tools { display: flex; align-items: center; gap: .75rem; }
+.flag {
+  padding: .3rem .5rem; border: 1px dashed var(--line-strong); border-radius: 4px;
+  font: 600 .68rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2);
+}
+.route {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--ground);
+  border-block: 1px solid var(--line);
+}
+.route__list { list-style: none; margin: 0; padding: .35rem 0; display: flex; align-items: center; gap: .5rem; }
+.route__list li { display: flex; align-items: center; gap: .5rem; flex: 1 1 auto; min-width: 0; }
+.route__list li:last-child { flex: 0 0 auto; }
+.route__list li::after {
+  content: ""; flex: 1; min-width: .4rem; height: 2px; border-radius: 1px; background: var(--line-strong);
+  transition: background-color .2s;
+}
+.route__list li:last-child::after { display: none; }
+.route__list li.is-done::after { background: var(--accent); }
+.route a {
+  display: inline-flex; align-items: center; gap: .45rem; min-height: 2.75rem; padding: .3rem .2rem;
+  color: var(--ink-2); font: 650 .9rem/1 var(--font-display); text-decoration: none; border-radius: 999px;
+}
+.route a:hover { color: var(--ink); }
+.route__dot {
+  inline-size: 1.75rem; block-size: 1.75rem; display: grid; place-items: center; flex: none;
+  border: 2px solid var(--line-strong); border-radius: 50%; background: var(--surface);
+  font: 600 .78rem/1 var(--font-mono); color: var(--ink-2);
+  transition: background-color .2s, border-color .2s, color .2s;
+}
+.route a:hover .route__dot { border-color: var(--accent); }
+.is-done .route__dot { border-color: var(--accent); color: var(--accent-ink); }
+.route a[aria-current] { color: var(--ink); }
+.route a[aria-current] .route__dot { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.route__now { display: none; }
+
+/* ---------- stages ---------- */
+main:focus { outline: none; }
+/* The tall scroll margin keeps a link to #stage from scrolling the masthead away. */
+.stage { display: flex; flex-direction: column; gap: 1.5rem; padding-block: 2.25rem 3rem; scroll-margin-top: 100vh; }
+.js .stage:not(.is-active) { display: none; }
+.stage__head { display: grid; gap: .8rem; max-width: 48rem; }
+.stage__head h2 {
+  font-size: clamp(1.9rem, 1.15rem + 3.1vw, 3.15rem); font-weight: 770; font-stretch: 110%;
+  line-height: 1.04; letter-spacing: -.02em;
+}
+.stage > h3 { margin-top: 1.5rem; font-size: 1.35rem; font-weight: 720; font-stretch: 105%; line-height: 1.2; }
+.stage__nav {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: .75rem; margin-top: 1.5rem;
+  padding-top: 1.5rem; border-top: 1px solid var(--line);
+}
+.stage__nav > :only-child { margin-left: auto; }
+
+/* ---------- 1. brief ---------- */
+.gap { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; }
+.gap__node {
+  display: grid; gap: .2rem; padding: .9rem 1rem; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); font-size: .9rem; color: var(--ink-2);
+}
+.gap__node strong { font: 720 1.08rem/1.2 var(--font-display); color: var(--ink); }
+.gap__lamp { inline-size: .7rem; block-size: .7rem; margin-bottom: .2rem; border-radius: 50%; background: var(--line-strong); }
+.gap__node--live .gap__lamp { background: var(--ok); box-shadow: 0 0 0 4px var(--ok-soft); }
+.gap__link { inline-size: clamp(4.5rem, 20vw, 15rem); display: flex; }
+.gap__cut { inline-size: 100%; block-size: auto; display: block; }
+.cable { fill: none; stroke-width: 7; }
+.cable--live { stroke: var(--accent); }
+.cable--dead { stroke: var(--line-strong); }
+.strand { fill: none; stroke-width: 2.2; stroke-linecap: round; }
+.s1 { stroke: var(--fibre-1); }
+.s2 { stroke: var(--fibre-2); }
+.s3 { stroke: var(--fibre-3); }
+.s4 { stroke: var(--fibre-4); }
+.gap figcaption { grid-column: 1 / -1; margin-top: .9rem; max-width: 65ch; font-size: .95rem; color: var(--ink-2); }
+
+.chain { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.chain li {
+  position: relative; display: grid; gap: .3rem; align-content: start; padding: 1.5rem 1.1rem 0 0;
+  border-top: 2px solid var(--line-strong); font-size: .92rem; color: var(--ink-2);
+}
+.chain__n {
+  position: absolute; top: -.95rem; left: 0; inline-size: 1.8rem; block-size: 1.8rem; display: grid;
+  place-items: center; border: 2px solid var(--line-strong); border-radius: 50%; background: var(--surface);
+  font: 600 .78rem/1 var(--font-mono); color: var(--ink);
+}
+.chain strong { font: 700 1rem/1.25 var(--font-display); color: var(--ink); }
+.chain li:nth-child(n+3) { border-top-color: var(--out); }
+.chain li:nth-child(n+3) .chain__n { border-color: var(--out); color: var(--out-ink); }
+
+.figures { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.3fr); border-block: 1px solid var(--line); }
+.figures > div { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: .45rem; padding: 1.2rem 1.1rem; }
+.figures > div:first-child { padding-left: 0; }
+.figures > div + div { border-left: 1px solid var(--line); }
+.figures dd {
+  margin: 0; font: 770 clamp(1.6rem, .9rem + 1.9vw, 2.3rem)/1 var(--font-display); font-stretch: 108%;
+  letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.figures dt { font-size: .92rem; line-height: 1.45; color: var(--ink-2); }
+.figures__sum dd { color: var(--out-ink); }
+
+.verdict {
+  display: grid; gap: 1rem; margin-top: 1rem; padding: clamp(1.25rem, 3vw, 2rem); border-radius: 14px;
+  background: var(--slab); color: var(--on-slab);
+}
+.verdict .eyebrow, .ask .eyebrow { color: var(--slab-accent); }
+.verdict__line {
+  font: 750 clamp(1.45rem, 1rem + 1.9vw, 2.2rem)/1.1 var(--font-display);
+  font-stretch: 108%; letter-spacing: -.015em; text-wrap: balance;
+}
+.verdict__line span { display: block; }
+.verdict__gloss { max-width: 70ch; opacity: .9; }
+.verdict__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem 2rem; }
+.verdict__list li { position: relative; padding-left: 1.4rem; }
+.verdict__list li::before { content: ""; position: absolute; left: 0; top: .72em; inline-size: .7rem; block-size: 2px; background: var(--slab-accent); }
+.verdict .src, .ask .src { color: var(--on-slab); opacity: .85; }
+.verdict .tag, .ask .tag { border: 1px solid var(--slab-accent); background: transparent; color: var(--on-slab); }
+
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 2rem; }
+.note { display: grid; gap: .6rem; align-content: start; padding-top: .9rem; border-top: 2px solid var(--ink); color: var(--ink-2); }
+.note h3 { font-size: 1.05rem; font-weight: 720; color: var(--ink); }
+.legend { margin: 0; display: grid; gap: .45rem; }
+.legend > div { display: grid; grid-template-columns: 8.4rem minmax(0, 1fr); gap: .6rem; align-items: baseline; }
+.legend dd { margin: 0; font-size: .92rem; }
+
+/* ---------- 2. discover ---------- */
+.tally {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.25rem; padding: .7rem 1rem;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+}
+.tally__count { font: 650 1rem/1.2 var(--font-display); }
+.tally__count strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; color: var(--accent-ink); }
+.tally__pips { display: flex; gap: .3rem; margin-right: auto; }
+.tally__pips i { inline-size: 1.6rem; block-size: .45rem; border-radius: 999px; background: var(--line); transition: background-color .25s; }
+.tally__pips i.is-on { background: var(--accent); }
+
+.people { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: 1rem; }
+.person { display: grid; gap: .75rem; align-content: start; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.person__about, .person__qs { display: grid; gap: .75rem; align-content: start; }
+.person--wide { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: .75rem 1.5rem; background: transparent; border-style: dashed; }
+.person--wide .person__qs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.person__head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .1rem .75rem; align-items: center; }
+.person__mono {
+  grid-row: span 2; inline-size: 2.9rem; block-size: 2.9rem; display: grid; place-items: center;
+  border-radius: 8px; background: var(--slab); color: var(--on-slab);
+  font: 700 .78rem/1 var(--font-mono); letter-spacing: .03em;
+}
+.person__role { font-size: 1.05rem; font-weight: 720; line-height: 1.2; }
+.person__kind { font-size: .85rem; color: var(--ink-2); }
+.person__concern { min-height: 3.1em; padding-left: .75rem; border-left: 2px solid var(--line-strong); font-style: italic; color: var(--ink-2); }
+.person__owns { font-size: .85rem; color: var(--ink-2); }
+.q { display: grid; gap: .5rem; }
+.q__btn {
+  display: grid; gap: .25rem; inline-size: 100%; padding: .65rem .8rem; text-align: left;
+  border: 1px solid var(--line-strong); border-radius: 8px; background: var(--ground); color: var(--ink);
+  font: 600 .97rem/1.35 var(--font-body); cursor: pointer; transition: background-color .15s, border-color .15s;
+}
+.q__btn:hover, .q__btn[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.q__kind { font: 600 .66rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-ink); }
+.q__a { display: grid; gap: .5rem; padding: .1rem .2rem .3rem .8rem; font-size: .97rem; animation: rise .25s ease-out; }
+.q__meta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.q__found { display: flex; gap: .5rem; padding: .5rem .6rem; border-radius: 6px; background: var(--ok-soft); color: var(--ok-ink); font-size: .9rem; font-weight: 600; }
+
+.board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.find {
+  display: grid; gap: .5rem; align-content: start; min-height: 10rem; padding: 1rem;
+  border: 1px dashed var(--line-strong); border-radius: 12px; color: var(--ink-2);
+}
+.find.is-found { border-style: solid; border-color: var(--line); background: var(--surface); }
+.find.is-new { animation: ping 1.1s ease-out; }
+.find__n { font: 600 .7rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.find__plain { font: 720 1.08rem/1.25 var(--font-display); color: var(--ink); }
+.find__formal { font: 500 .78rem/1.3 var(--font-mono); color: var(--ink-2); }
+.find dl { margin: 0; display: grid; gap: .45rem; font-size: .92rem; }
+.find dt, .std__label, .cell-label {
+  font: 600 .68rem/1.3 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3);
+}
+.find dd { margin: 0; color: var(--ink); }
+
+.statement { display: grid; gap: .7rem; margin-top: 1rem; padding-block: 1.4rem; border-block: 1px solid var(--line); }
+.statement blockquote { max-width: 62ch; font-size: clamp(1.08rem, .96rem + .6vw, 1.35rem); line-height: 1.45; font-weight: 500; }
+.checkpoints { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.checkpoints li { display: grid; gap: .15rem; align-content: start; padding: .75rem 1rem .5rem 0; border-top: 2px solid var(--accent); }
+.checkpoints b { font: 600 .74rem/1.3 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--accent-ink); }
+.checkpoints strong { font: 720 1rem/1.25 var(--font-display); }
+.checkpoints span { font: 500 .82rem/1.3 var(--font-mono); color: var(--ink-2); }
+
+/* ---------- 3. decide ---------- */
+.calls { display: grid; gap: 1.25rem; }
+.call {
+  display: grid; gap: .9rem; min-width: 0; padding: clamp(1rem, 2.5vw, 1.5rem);
+  border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
+}
+.call__top { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.call__title { font-size: 1.4rem; font-weight: 740; font-stretch: 106%; line-height: 1.15; }
+.call__ask { max-width: 68ch; color: var(--ink-2); }
+.options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+.option { position: relative; display: grid; cursor: pointer; }
+.option__input { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.option__body {
+  display: grid; gap: .3rem; align-content: start; padding: .85rem .9rem;
+  border: 1.5px solid var(--line-strong); border-radius: 10px; background: var(--ground);
+  transition: border-color .15s, background-color .15s, box-shadow .15s;
+}
+.option:hover .option__body { border-color: var(--accent); }
+.option__input:checked + .option__body { border-color: var(--ink); background: var(--surface); box-shadow: inset 0 0 0 1px var(--ink); }
+.option__input:focus-visible + .option__body { outline: 3px solid var(--focus); outline-offset: 2px; }
+.option__label { font: 720 1.02rem/1.25 var(--font-display); }
+.option__hint { font-size: .9rem; color: var(--ink-2); }
+.option__mark { justify-self: start; margin-top: .2rem; }
+.call__out { display: grid; gap: .6rem; padding: .9rem 1rem; border-radius: 10px; background: var(--sunken); }
+.call__wait { color: var(--ink-2); font-size: .95rem; }
+.call__verdict { display: flex; gap: .5rem; align-items: center; font: 720 1.02rem/1.3 var(--font-display); }
+.call__verdict.is-match { color: var(--ok-ink); }
+.call__verdict.is-diff { color: var(--unk-ink); }
+.call__trade, .call__why { max-width: 72ch; }
+.call__why { padding-top: .6rem; border-top: 1px dashed var(--line-strong); color: var(--ink-2); }
+
+table { inline-size: 100%; border-collapse: collapse; font-size: .95rem; }
+th, td { padding: .75rem 1rem .75rem 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+thead th {
+  border-bottom: 2px solid var(--ink); font: 600 .7rem/1.3 var(--font-mono); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+tbody th { min-width: 12rem; font: 720 1rem/1.25 var(--font-display); }
+tbody th small { display: block; margin-top: .2rem; font: 400 .85rem/1.35 var(--font-body); color: var(--ink-2); }
+.rights td:last-child { color: var(--out-ink); font-weight: 600; }
+
+.scope { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 2rem; }
+.scope h4 { padding-bottom: .5rem; border-bottom: 2px solid var(--ok); font: 600 .74rem/1.3 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; }
+.scope__col--out h4 { border-bottom-color: var(--line-strong); color: var(--ink-2); }
+.scope ul { list-style: none; margin: .7rem 0 0; padding: 0; display: grid; gap: .5rem; }
+.scope li { position: relative; padding-left: 1.5rem; font-size: .97rem; }
+.scope li::before { content: "+"; position: absolute; left: .1rem; top: 0; font: 700 1rem/1.5 var(--font-mono); color: var(--ok-ink); }
+.scope__col--out li { color: var(--ink-2); }
+.scope__col--out li::before { content: "\2212"; color: var(--ink-3); }
+
+/* ---------- 4. demo ---------- */
+.presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+.preset {
+  display: grid; gap: .15rem; padding: .7rem .85rem; text-align: left; border: 1.5px solid var(--line-strong);
+  border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.preset:hover { border-color: var(--accent); }
+.preset[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.preset b { font: 720 .98rem/1.2 var(--font-display); }
+.preset span { font-size: .85rem; color: var(--ink-2); }
+
+.controls {
+  display: flex; flex-wrap: wrap; align-items: start; gap: 1rem 1.75rem; padding: 1rem;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--sunken);
+}
+.seg { display: flex; flex-wrap: wrap; gap: .4rem; min-width: 0; margin: 0; padding: 0; border: 0; }
+.seg legend, .ctl > label:not(.check) {
+  padding: 0 0 .4rem; font: 600 .7rem/1.3 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-2);
+}
+.seg label { position: relative; display: inline-flex; }
+.seg input { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.seg span {
+  display: inline-flex; align-items: center; min-height: 2.5rem; padding: .4rem .8rem;
+  border: 1.5px solid var(--line-strong); border-radius: 8px; background: var(--surface);
+  font-size: .92rem; font-weight: 600; transition: background-color .15s, border-color .15s, color .15s;
+}
+.seg label:hover span { border-color: var(--accent); }
+.seg input:checked + span { background: var(--ink); border-color: var(--ink); color: var(--ground); }
+.seg input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+.ctl { display: grid; min-width: min(100%, 15rem); }
+.ctl > label:not(.check) { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; }
+.ctl output { font: 700 .95rem/1 var(--font-mono); letter-spacing: 0; text-transform: none; color: var(--ink); }
+input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-color: var(--accent); }
+.check { display: inline-flex; align-items: center; gap: .55rem; min-height: 2.5rem; font-size: .95rem; font-weight: 600; cursor: pointer; }
+.check input { inline-size: 1.15rem; block-size: 1.15rem; margin: 0; accent-color: var(--accent); }
+
+.demo { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 1.5rem; align-items: start; }
+.phone { display: grid; gap: .8rem; padding: 1.1rem; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); box-shadow: var(--shadow); }
+.phone h3, .trace h3, .result h3 { font: 600 .74rem/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.chat { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; align-content: start; min-height: 15rem; }
+.msg { max-width: 90%; padding: .6rem .8rem; border-radius: 14px; font-size: .95rem; line-height: 1.45; animation: rise .25s ease-out; }
+.msg--customer { justify-self: end; border-bottom-right-radius: 4px; background: var(--accent); color: var(--on-accent); }
+.msg--care { justify-self: start; border-bottom-left-radius: 4px; background: var(--bubble); }
+.msg__who { display: block; margin-bottom: .3rem; font: 600 .66rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.msg--care .msg__who { color: var(--ink-2); }
+.chat__divider { justify-self: center; padding: .5rem 0 .2rem; font: 500 .72rem/1.3 var(--font-mono); text-align: center; color: var(--ink-3); }
+
+.trace { display: grid; gap: .9rem; padding-top: .4rem; }
+.trace__head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; min-height: 15rem; align-content: start; }
+.step { position: relative; display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: .15rem .8rem; padding-bottom: 1rem; animation: rise .28s ease-out; }
+.step::before { content: ""; position: absolute; left: calc(1rem - 1px); top: 2rem; bottom: 0; inline-size: 2px; background: var(--line); }
+.step:last-child { padding-bottom: 0; }
+.step:last-child::before { display: none; }
+.step__ico { inline-size: 2rem; block-size: 2rem; display: grid; place-items: center; border: 1.5px solid currentColor; border-radius: 50%; background: var(--surface); }
+.step__title { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .45rem; min-height: 2rem; font: 720 1rem/1.3 var(--font-display); color: var(--ink); }
+.step__text { grid-column: 2; font-size: .93rem; color: var(--ink-2); }
+.step--ok { color: var(--ok-ink); }
+.step--ok .step__ico { background: var(--ok-soft); }
+.step--alert { color: var(--out-ink); }
+.step--alert .step__ico { background: var(--out-soft); }
+.step--warn { color: var(--unk-ink); }
+.step--warn .step__ico { background: var(--unk-soft); }
+.step--human { color: var(--hum-ink); }
+.step--human .step__ico { background: var(--hum-soft); }
+.step--stop { color: var(--ink); }
+.step--stop .step__ico { background: var(--sunken); }
+.step--info { color: var(--ink-3); }
+.rule { padding: .22rem .38rem; border: 0; border-radius: 4px; background: var(--accent-soft); color: var(--accent-ink); font: 600 .68rem/1 var(--font-mono); cursor: pointer; transition: background-color .15s, color .15s; }
+.rule:hover { background: var(--accent); color: var(--on-accent); }
+
+.result { display: grid; gap: 1rem; padding: 1.1rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); transition: opacity .2s; }
+.result.is-pending { opacity: .45; }
+.tiles { margin: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem 1.25rem; }
+.tile { display: grid; gap: .25rem; align-content: start; padding-top: .6rem; border-top: 3px solid var(--line-strong); }
+.tile dt { font: 600 .68rem/1.3 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+.tile dd { margin: 0; display: grid; gap: .2rem; }
+.tile__value { font: 740 1.12rem/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.tile__note { font-size: .86rem; line-height: 1.4; color: var(--ink-2); }
+.tile--ok { border-top-color: var(--ok); }
+.tile--ok .tile__value { color: var(--ok-ink); }
+.tile--warn { border-top-color: var(--unk); }
+.tile--warn .tile__value { color: var(--unk-ink); }
+.tile--human { border-top-color: var(--hum); }
+.tile--human .tile__value { color: var(--hum-ink); }
+.today { display: grid; gap: .35rem; padding-top: .9rem; border-top: 1px dashed var(--line-strong); }
+.today .eyebrow { color: var(--out-ink); }
+.today p:last-child { max-width: 78ch; color: var(--ink-2); }
+
+.proactive {
+  display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 1.5rem 2rem; align-items: center;
+  margin-top: 1rem; padding-top: 1.75rem; border-top: 1px solid var(--line);
+}
+.proactive > div:first-child { display: grid; gap: .7rem; }
+.proactive h3 { font-size: 1.35rem; font-weight: 720; font-stretch: 105%; }
+.sms {
+  display: grid; gap: .5rem; align-content: center; min-height: 9rem; padding: 1.1rem;
+  border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow);
+}
+.sms.is-held { border-style: dashed; background: transparent; box-shadow: none; color: var(--ink-2); }
+.sms__from { font: 600 .68rem/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+
+/* ---------- 5. value ---------- */
+.calc {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 1.5rem 2rem;
+  padding: clamp(1rem, 2.5vw, 1.5rem); border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
+}
+.calc__in { display: grid; gap: 1.4rem; align-content: start; }
+.calc .ctl { gap: .35rem; }
+.quick { display: flex; flex-wrap: wrap; gap: .35rem; }
+.fixed { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.fixed dt { font-size: .85rem; color: var(--ink-2); }
+.fixed dd { margin: .15rem 0 0; font: 740 1.35rem/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.calc__out { display: grid; gap: 1.1rem; align-content: start; padding: 1.2rem; border-radius: 10px; background: var(--sunken); }
+.money { display: grid; gap: .25rem; }
+.money__label { font-size: .92rem; color: var(--ink-2); }
+.money__value {
+  font: 770 clamp(2rem, 1.3rem + 2.6vw, 3rem)/1 var(--font-display); font-stretch: 108%;
+  letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--out-ink);
+}
+.money--save .money__value { color: var(--ok-ink); }
+.money__sub { font: 500 .84rem/1.35 var(--font-mono); color: var(--ink-2); }
+.bar { position: relative; block-size: 1.1rem; overflow: hidden; border-radius: 4px; background: var(--out); }
+.bar__save {
+  position: absolute; inset: 0; background: var(--ok); border-right: 2px solid var(--sunken);
+  transform-origin: left center; transform: scaleX(var(--share, .5)); transition: transform .25s ease-out;
+}
+.bar__key { display: flex; flex-wrap: wrap; gap: .3rem 1.25rem; font-size: .84rem; color: var(--ink-2); }
+.bar__key span { display: inline-flex; align-items: center; gap: .4rem; }
+.key { inline-size: .7rem; block-size: .7rem; border-radius: 2px; }
+.key--save { background: var(--ok); }
+.key--left { background: var(--out); }
+
+.cautions { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem 2rem; font-size: .95rem; color: var(--ink-2); }
+.cautions li { position: relative; padding-left: 1.6rem; }
+.cautions li::before {
+  content: "!"; position: absolute; left: 0; top: .2em; inline-size: 1.05rem; block-size: 1.05rem;
+  border-radius: 50%; background: var(--unk-soft); color: var(--unk-ink);
+  font: 700 .72rem/1.05rem var(--font-mono); text-align: center;
+}
+
+.gates { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 2rem; }
+.gates li { display: grid; grid-template-columns: 6.6rem minmax(0, 1fr); gap: .15rem .9rem; align-items: start; padding: .95rem 0; border-top: 1px solid var(--line); }
+.gates b {
+  grid-row: span 2; font: 770 1.5rem/1.15 var(--font-display); font-stretch: 106%; letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--accent-ink);
+}
+.gates strong { font: 700 .98rem/1.3 var(--font-display); }
+.gates span { grid-column: 2; font-size: .88rem; color: var(--ink-2); }
+.gates--zero { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.gates--zero li { grid-template-columns: 1.8rem minmax(0, 1fr); border-top: 2px solid var(--ink); }
+.gates--zero b { color: var(--ink); }
+
+.pilot { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pilot li { display: grid; gap: .35rem; align-content: start; padding: 1rem 1.5rem 1rem 0; border-top: 3px solid var(--line-strong); }
+.pilot li:nth-child(2) { border-top-color: color-mix(in srgb, var(--accent) 50%, var(--line-strong)); }
+.pilot li:nth-child(3) { border-top-color: var(--accent); }
+.pilot__n { font: 600 .72rem/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.pilot strong { font: 740 1.2rem/1.2 var(--font-display); }
+.pilot li > span:last-child { font-size: .94rem; color: var(--ink-2); }
+
+.more { border-top: 1px solid var(--line); }
+.more[open] { padding-bottom: 1.25rem; }
+.more summary {
+  display: flex; align-items: center; gap: .7rem; padding: .95rem 0; list-style: none; cursor: pointer;
+  font: 720 1.08rem/1.3 var(--font-display);
+}
+.more summary::-webkit-details-marker { display: none; }
+.more summary::before {
+  content: "+"; flex: none; inline-size: 1.6rem; block-size: 1.6rem; display: grid; place-items: center;
+  border: 1.5px solid var(--line-strong); border-radius: 50%; font: 600 1rem/1 var(--font-mono);
+}
+.more[open] summary::before { content: "\2212"; }
+.more h4 { margin-bottom: .4rem; font: 600 .74rem/1.3 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-2); }
+.more .aside-line { margin-top: 1rem; }
+.plain { margin: 0; padding-left: 1.2rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem 2rem; color: var(--ink-2); }
+
+/* ---------- 6. standards ---------- */
+.standards { display: grid; }
+.std { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: .9rem 2.5rem; padding: 1.5rem 0; border-top: 1px solid var(--line); }
+.std h3 { font-size: 1.22rem; font-weight: 740; font-stretch: 105%; line-height: 1.2; }
+.std__side, .std__main { display: grid; gap: .6rem; align-content: start; }
+.std__side p { color: var(--ink-2); font-size: .95rem; }
+.std__mean { font-weight: 600; }
+.std__label { display: block; margin-bottom: .2rem; }
+.links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; font-size: .9rem; }
+.links a { display: inline-flex; align-items: center; gap: .3rem; min-height: 1.75rem; }
+.links .ico { inline-size: .95rem; block-size: .95rem; }
+
+/* ---------- 7. next ---------- */
+.ask, .open { display: grid; gap: .8rem; align-content: start; padding: 1.3rem; border-radius: 14px; }
+.ask { background: var(--slab); color: var(--on-slab); }
+.ask ol { margin: 0; padding-left: 1.3rem; display: grid; gap: .45rem; font-size: 1.05rem; font-weight: 600; line-height: 1.35; }
+.open { border: 1px dashed var(--line-strong); }
+.open .eyebrow { color: var(--unk-ink); }
+.open ul { margin: 0; padding-left: 1.1rem; display: grid; gap: .4rem; color: var(--ink-2); }
+.steps-next { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 2rem; }
+.steps-next li { counter-increment: step; display: grid; gap: .3rem; align-content: start; padding: 1rem 0; border-top: 1px solid var(--line); }
+.steps-next li::before { content: counter(step, decimal-leading-zero); font: 600 .78rem/1 var(--font-mono); color: var(--accent-ink); }
+.steps-next strong { font: 720 1.06rem/1.25 var(--font-display); }
+.steps-next span { font-size: .93rem; color: var(--ink-2); }
+.steps-next em { font: 500 .78rem/1.35 var(--font-mono); font-style: normal; color: var(--ink-3); }
+.owners { margin: 0; display: grid; }
+.owners > div { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 1rem; padding: .55rem 0; border-bottom: 1px solid var(--line); font-size: .93rem; }
+.owners dt { font-weight: 700; }
+.owners dd { margin: 0; color: var(--ink-2); }
+.filters { display: flex; flex-wrap: wrap; gap: .4rem; padding-bottom: .9rem; }
+.register { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 2.5rem; }
+.register li { break-inside: avoid; display: grid; grid-template-columns: 2.6rem minmax(0, 1fr); gap: .6rem; padding: .5rem 0; border-bottom: 1px solid var(--line); font-size: .93rem; }
+.register b { font: 600 .8rem/1.6 var(--font-mono); color: var(--accent-ink); }
+
+/* ---------- footer, glossary, popover ---------- */
+.foot { padding-block: 1.5rem 2.5rem; border-top: 1px solid var(--line); font-size: .88rem; color: var(--ink-2); }
+.foot .wrap { display: grid; gap: .6rem; }
+.foot p { max-width: 90ch; }
+.glossary {
+  inline-size: min(42rem, calc(100vw - 2rem)); max-block-size: min(82vh, 46rem); padding: 0;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.glossary::backdrop { background: var(--scrim); }
+.glossary__head {
+  position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--line); background: var(--surface);
+}
+.glossary__head h2 { font-size: 1.35rem; font-weight: 750; font-stretch: 106%; }
+.glossary__list { margin: 0; padding: .4rem 1.25rem 1.25rem; display: grid; }
+.glossary__list > div { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: 1rem; padding: .65rem .4rem; border-bottom: 1px solid var(--line); }
+.glossary__list > div.is-hit { background: var(--accent-soft); }
+.glossary__list dt { font: 720 .97rem/1.35 var(--font-display); }
+.glossary__list dd { margin: 0; font-size: .95rem; color: var(--ink-2); }
+.term { all: unset; cursor: help; border-bottom: 1.5px dotted var(--accent); }
+.term:hover { background: var(--accent-soft); }
+.term:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
+.pop {
+  position: fixed; inset: auto; margin: 0; max-inline-size: min(21rem, calc(100vw - 2rem)); padding: .8rem .95rem;
+  border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.pop__term { margin-bottom: .2rem; font: 720 .97rem/1.3 var(--font-display); }
+.pop__meaning { font-size: .92rem; color: var(--ink-2); }
+
+/* ---------- motion ---------- */
+@keyframes rise { from { opacity: .35; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes ping { from { box-shadow: 0 0 0 0 var(--accent); } to { box-shadow: 0 0 0 12px transparent; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+/* ---------- narrower screens ---------- */
+@media (min-width: 62.01rem) {
+  .phone { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 4.5rem); }
+}
+@media (max-width: 62rem) {
+  .demo, .calc, .proactive, .std, .person--wide { grid-template-columns: minmax(0, 1fr); }
+  .gates, .steps-next, .board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gates--zero { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .chat, .steps { min-height: 0; }
+}
+@media (max-width: 58rem) {
+  .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .figures > div { padding: 1rem .9rem; }
+  .figures > div:nth-child(odd) { padding-left: 0; border-left: 0; }
+  .figures > div:nth-child(n+3) { border-top: 1px solid var(--line); }
+}
+@media (max-width: 48rem) {
+  .route__list li { gap: .25rem; }
+  .route__label { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .route__now { display: block; padding-bottom: .5rem; font: 600 .74rem/1.2 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-2); }
+  .brand__name span { display: block; margin: .15rem 0 0; font-size: 1rem; }
+  .stage { padding-block: 1.5rem 2.5rem; }
+  .gap__node { padding: .7rem; }
+  .chain { grid-template-columns: minmax(0, 1fr); margin-left: .95rem; }
+  .chain li { padding: 0 0 1.2rem 1.7rem; border-top: 0; border-left: 2px solid var(--line-strong); }
+  .chain li:last-child { padding-bottom: 0; }
+  .chain li:nth-child(n+3) { border-left-color: var(--out); }
+  .chain__n { top: -.1rem; left: -.95rem; }
+  .pair, .scope, .verdict__list, .cautions, .options, .pilot, .person--wide .person__qs { grid-template-columns: minmax(0, 1fr); }
+  .person__concern { min-height: 0; }
+  .pilot li { padding-right: 0; }
+  .checkpoints, .presets, .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tile:first-child { grid-column: 1 / -1; }
+  .register { columns: 1; }
+  table, tbody, tr, tbody th, td { display: block; }
+  thead { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+  tr { padding-block: .85rem; border-bottom: 1px solid var(--line); }
+  tbody th, td { min-width: 0; padding: .15rem 0; border: 0; }
+  td::before {
+    content: attr(data-label); display: block; margin-top: .4rem;
+    font: 600 .68rem/1.3 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3);
+  }
+}
+@media (max-width: 32rem) {
+  .figures, .gates, .gates--zero, .steps-next, .board, .plain { grid-template-columns: minmax(0, 1fr); }
+  .figures > div:nth-child(n) { padding-left: 0; border-left: 0; }
+  .figures > div + div { border-top: 1px solid var(--line); }
+  .preset span { display: none; }
+  .legend > div, .glossary__list > div, .owners > div { grid-template-columns: minmax(0, 1fr); gap: .2rem; }
+  .masthead__tools { inline-size: 100%; justify-content: space-between; }
+  .stage__nav .btn { flex: 1 1 auto; justify-content: center; }
+}
+</style>
+
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8.5-11H12z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.6a2.4 2.4 0 113.9 1.9c-.9.6-1.6 1.1-1.6 2.2M12 16.9v.2"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M6.2 17.8L17.8 6.2"/></symbol>
+  <symbol id="i-human" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8M11 7H6v11h11v-5"/></symbol>
+</svg>
+
+<a class="skip" href="#main">Skip to the workshop</a>
+
+<header class="masthead">
+  <div class="wrap masthead__in">
+    <div class="brand">
+      <p class="eyebrow">Forward deployed engineering · Group 3 capstone</p>
+      <h1 class="brand__name">SkyLink discovery workshop <span>Outage-aware customer care</span></h1>
+    </div>
+    <div class="masthead__tools">
+      <span class="flag">Simulated workshop</span>
+      <button type="button" class="btn btn--ghost btn--small" id="open-glossary">Jargon buster</button>
+    </div>
+  </div>
+</header>
+
+<nav class="route" aria-label="Workshop stages">
+  <div class="wrap">
+    <ol class="route__list" id="route">
+      <li><a href="#brief"><span class="route__dot">1</span><span class="route__label">Brief</span></a></li>
+      <li><a href="#discover"><span class="route__dot">2</span><span class="route__label">Discover</span></a></li>
+      <li><a href="#decide"><span class="route__dot">3</span><span class="route__label">Decide</span></a></li>
+      <li><a href="#demo"><span class="route__dot">4</span><span class="route__label">Demo</span></a></li>
+      <li><a href="#value"><span class="route__dot">5</span><span class="route__label">Value</span></a></li>
+      <li><a href="#standards"><span class="route__dot">6</span><span class="route__label">Standards</span></a></li>
+      <li><a href="#next"><span class="route__dot">7</span><span class="route__label">Next</span></a></li>
+    </ol>
+    <p class="route__now" id="route-now">Stage 1 of 7 · Brief</p>
+  </div>
+</nav>
+
+<main id="main" class="wrap" tabindex="-1">
+  <noscript><p class="lead">This page needs JavaScript for its interactive parts: the stakeholder questions, the design calls, the demo and the calculator.</p></noscript>
+
+  <!-- ============================== 1. BRIEF ============================== -->
+  <section class="stage" id="brief" aria-labelledby="brief-h">
+    <header class="stage__head">
+      <p class="eyebrow">Stage 1 of 7 · The brief</p>
+      <h2 id="brief-h" tabindex="-1">The network team knows. Customer care doesn't.</h2>
+      <p class="lead">SkyLink Telecom is the fictional operator in our capstone case study. When a fibre cable is cut, its network team sees the fault within minutes. The care team finds out from the customers who call in. This page walks through what a discovery workshop made of that problem, in plain words.</p>
+    </header>
+
+    <figure class="gap">
+      <div class="gap__node gap__node--live">
+        <span class="gap__lamp" aria-hidden="true"></span>
+        <strong>Network team</strong>
+        <span>Sees the fault within minutes</span>
+      </div>
+      <div class="gap__link" aria-hidden="true">
+        <svg class="gap__cut" viewBox="0 0 120 44">
+          <path class="strand s1" d="M30 22C40 22 42 9 52 7"/>
+          <path class="strand s2" d="M30 22C40 22 45 17 55 16"/>
+          <path class="strand s3" d="M30 22C40 22 45 27 55 29"/>
+          <path class="strand s4" d="M30 22C40 22 42 35 52 38"/>
+          <path class="strand s1" d="M90 22C80 22 78 9 68 7"/>
+          <path class="strand s2" d="M90 22C80 22 75 17 65 16"/>
+          <path class="strand s3" d="M90 22C80 22 75 27 65 29"/>
+          <path class="strand s4" d="M90 22C80 22 78 35 68 38"/>
+          <path class="cable cable--live" d="M0 22H30"/>
+          <path class="cable cable--dead" d="M90 22H120"/>
+        </svg>
+      </div>
+      <div class="gap__node">
+        <span class="gap__lamp" aria-hidden="true"></span>
+        <strong>Customer care</strong>
+        <span>Hears about it from customers</span>
+      </div>
+      <figcaption>The cable gets repaired in hours. The gap between these two teams stays open, and that gap is what the project is about.</figcaption>
+    </figure>
+
+    <h3>What happens today</h3>
+    <ol class="chain">
+      <li><span class="chain__n">1</span><strong>A fibre is cut</strong><span>Broadband stops for a whole neighbourhood.</span></li>
+      <li><span class="chain__n">2</span><strong>Customers contact care</strong><span>Thousands at once. Care has no outage information it can act on.</span></li>
+      <li><span class="chain__n">3</span><strong>Restart your router</strong><span>Every caller gets the same script. It cannot repair a cut cable.</span></li>
+      <li><span class="chain__n">4</span><strong>A technician is sent</strong><span>30% of these calls end in a visit to a home where nothing is wrong.</span></li>
+      <li><span class="chain__n">5</span><strong>The customer complains again</strong><span>A repeat complaint within 7 days is the strongest sign a customer will leave.</span></li>
+    </ol>
+    <p class="src"><span class="tag tag--case">Case fact</span> All five steps come from the case study. The regulator also tracks how long complaints take to resolve.</p>
+
+    <h3>The pain in numbers</h3>
+    <dl class="figures">
+      <div><dt>broadband customers, plus 8 million on mobile <span class="tag tag--case">Case fact</span></dt><dd>3.5 million</dd></div>
+      <div><dt>of outage calls end in an unnecessary technician visit <span class="tag tag--case">Case fact</span></dt><dd>30%</dd></div>
+      <div><dt>the cost of each unnecessary visit <span class="tag tag--case">Case fact</span></dt><dd>INR 650</dd></div>
+      <div class="figures__sum"><dt>wasted on every 1,000 outage calls, or 1.95 lakh. That is 1,000 × 30% × INR 650. <span class="tag tag--calc">Worked out</span></dt><dd>INR 195,000</dd></div>
+    </dl>
+
+    <div class="verdict">
+      <p class="eyebrow">What the workshop recommends</p>
+      <p class="verdict__line"><span>Approve a gated pilot-validation phase.</span> <span>Do not approve unrestricted automation yet.</span></p>
+      <p class="verdict__gloss">The next phase gathers proof before anything is automated: mapping quality, a contract for each system, safety controls, signed-off baselines and a working demo on mock systems.</p>
+      <ul class="verdict__list">
+        <li>Start with broadband. Mobile follows.</li>
+        <li>The software assists care agents. It does not replace them.</li>
+        <li>Fixed rules decide credits and technician visits. A person handles the exceptions.</li>
+        <li>When the network status cannot be verified, say so. Never guess.</li>
+      </ul>
+      <p class="src"><span class="tag tag--ok">Approved</span> Thirty decisions, D1 to D30, were approved in the workshop.</p>
+    </div>
+
+    <div class="pair">
+      <div class="note">
+        <h3>What kind of workshop this was</h3>
+        <p>A simulated discovery workshop, run for the capstone and written up on 22 November 2026. Six stakeholder roles were played. Decisions were approved at four checkpoints. No real SkyLink staff were interviewed, nothing was measured in production, and no executive has signed anything.</p>
+      </div>
+      <div class="note">
+        <h3>How to read the tags</h3>
+        <dl class="legend">
+          <div><dt><span class="tag tag--case">Case fact</span></dt><dd>Stated in the case study.</dd></div>
+          <div><dt><span class="tag tag--calc">Worked out</span></dt><dd>Arithmetic on case facts.</dd></div>
+          <div><dt><span class="tag tag--sim">Simulated</span></dt><dd>Said by a role played in the workshop.</dd></div>
+          <div><dt><span class="tag tag--ok">Approved</span></dt><dd>A decision approved in the workshop.</dd></div>
+          <div><dt><span class="tag tag--prop">Proposed</span></dt><dd>A design proposal, not yet proven.</dd></div>
+          <div><dt><span class="tag tag--demo">Assumption</span></dt><dd>An example value, chosen to illustrate.</dd></div>
+          <div><dt><span class="tag tag--ext">Outside source</span></dt><dd>A real-world reference added for context.</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="stage__nav">
+      <a class="btn" href="#discover">Meet the people in the room <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a>
+    </div>
+  </section>
+
+  <!-- ============================== 2. DISCOVER ============================== -->
+  <section class="stage" id="discover" aria-labelledby="discover-h">
+    <header class="stage__head">
+      <p class="eyebrow">Stage 2 of 7 · Discovery</p>
+      <h2 id="discover-h" tabindex="-1">Six people, six different worries</h2>
+      <p class="lead">Discovery means asking the people who run the business what hurts, what must never go wrong, and who decides. Six roles sat in this workshop. Put a question to each of them. Six of the answers uncover a root cause of the problem.</p>
+    </header>
+
+    <div class="tally">
+      <p class="tally__count" aria-live="polite"><strong id="found-count">0</strong> of 6 root causes uncovered</p>
+      <div class="tally__pips" id="found-pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <button type="button" class="btn btn--ghost btn--small" id="reveal-all">Reveal all six</button>
+    </div>
+
+    <div class="people" id="people"></div>
+    <p class="src"><span class="tag tag--sim">Simulated</span> The answers paraphrase positions recorded in the report. Each role was played in the workshop. Nobody was interviewed.</p>
+
+    <h3 id="board-h" tabindex="-1">What the workshop found</h3>
+    <ol class="board" id="board" aria-labelledby="board-h"></ol>
+
+    <figure class="statement">
+      <figcaption class="eyebrow">The agreed problem statement</figcaption>
+      <blockquote>SkyLink customer-care channels cannot consistently link a contacting customer to the correct service, address, network <button type="button" class="term" data-term="node">node</button> and current outage state. Agents therefore run generic scripts, create avoidable visits, and risk inconsistent treatment. The solution must make authoritative network knowledge actionable while preserving safety under missing or stale data.</blockquote>
+    </figure>
+
+    <h3>How the workshop was run</h3>
+    <ol class="checkpoints" id="checkpoints"></ol>
+    <p class="aside-line">All thirty decisions were approved one checkpoint at a time. The full register is under <a href="#next">Next</a>.</p>
+
+    <div class="stage__nav">
+      <a class="btn btn--ghost" href="#brief"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg> Brief</a>
+      <a class="btn" href="#decide">Make the design calls <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a>
+    </div>
+  </section>
+
+  <!-- ============================== 3. DECIDE ============================== -->
+  <section class="stage" id="decide" aria-labelledby="decide-h">
+    <header class="stage__head">
+      <p class="eyebrow">Stage 3 of 7 · Design calls</p>
+      <h2 id="decide-h" tabindex="-1">Four calls that shape the design</h2>
+      <p class="lead">Each call has three plausible answers. Pick the one you would choose, then compare it with what the workshop approved. You can change your mind at any time.</p>
+    </header>
+
+    <div class="calls" id="calls"></div>
+    <p class="src"><span class="tag tag--ok">Approved</span> The approved option in each call comes from the decision register. The notes on the other options are plain-language reasoning added for this page.</p>
+
+    <h3>Who does what</h3>
+    <p class="prose">The design gives each kind of technology one job and one firm limit. The AI talks. It never touches the money.</p>
+    <div class="scroll-x">
+      <table class="rights">
+        <thead><tr><th scope="col">Part of the system</th><th scope="col">Its job</th><th scope="col">Never allowed to</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Fixed rules <small>works like a calculator</small></th><td data-label="Its job">Work out credits, thresholds, data freshness, technician checks, duplicate prevention and consent.</td><td data-label="Never allowed to">Be overridden by the AI.</td></tr>
+          <tr><th scope="row">Looked-up documents <small><button type="button" class="term" data-term="rag">RAG</button>, like a librarian</small></th><td data-label="Its job">Fetch router guides, policy and complaint rules, each with its version and a citation.</td><td data-label="Never allowed to">Offer unverified steps, or steps for the wrong router.</td></tr>
+          <tr><th scope="row">Language AI <small><button type="button" class="term" data-term="llm">LLM</button>, like an interpreter</small></th><td data-label="Its job">Understand the request, hold the conversation, summarise, and explain from the facts it is given.</td><td data-label="Never allowed to">Calculate a credit, or declare the network healthy.</td></tr>
+          <tr><th scope="row">Machine learning <small><button type="button" class="term" data-term="ml">ML</button>, a pattern spotter</small></th><td data-label="Its job">Sort contacts, support confidence in the address match, and study churn in aggregate.</td><td data-label="Never allowed to">Give different rights or credits to different customers.</td></tr>
+          <tr><th scope="row">Human approval <small>the supervisor</small></th><td data-label="Its job">Approve credits above INR 500, low-confidence cases, exceptions and overrides.</td><td data-label="Never allowed to">Be bypassed silently, with no log.</td></tr>
+          <tr><th scope="row">Action layer <small>the only keyholder</small></th><td data-label="Its job">Make typed, authorised, repeat-safe changes in company systems.</td><td data-label="Never allowed to">Run free-form tools that nobody approved.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="src"><span class="tag tag--prop">Proposed</span> Section 8 of the report, on solution decision rights.</p>
+
+    <h3>In the first version, and out of it</h3>
+    <div class="scope">
+      <div class="scope__col scope__col--in">
+        <h4>In</h4>
+        <ul>
+          <li>Helping care agents in chat, or from a call transcript</li>
+          <li>Matching customer, service, address and network node</li>
+          <li>Fresh outage status and <button type="button" class="term" data-term="remote-line-test">remote line tests</button></li>
+          <li>An early complaint reference, linked to the outage incident</li>
+          <li>Router-specific steps from the official guide, when there is no outage</li>
+          <li>Credits by fixed rule, with approval above INR 500</li>
+          <li>Checks before any technician visit, and no duplicates</li>
+          <li>Safe behaviour when a system is down, an audit trail, and readiness for a 10x <button type="button" class="term" data-term="surge">surge</button></li>
+          <li>Proactive outage texts, shown in the capstone demo</li>
+          <li>Broadband first, with mobile designed as the expansion</li>
+        </ul>
+      </div>
+      <div class="scope__col scope__col--out">
+        <h4>Out, or later</h4>
+        <ul>
+          <li>Replacing the phone system or its menus</li>
+          <li>Automatic repair of network inventory records</li>
+          <li>Predicting faults, or repairing the physical network</li>
+          <li>Replacing the company's incident system</li>
+          <li>Repair steps invented by the AI</li>
+          <li>Credits calculated by the AI, or policy changed without people</li>
+          <li>Planning technician routes</li>
+          <li>Replacing customer care with unrestricted automation</li>
+          <li>A broad production rollout of notifications</li>
+          <li>Full mobile-specific diagnosis</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="stage__nav">
+      <a class="btn btn--ghost" href="#discover"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg> Discover</a>
+      <a class="btn" href="#demo">See it work <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a>
+    </div>
+  </section>
+
+  <!-- ============================== 4. DEMO ============================== -->
+  <section class="stage" id="demo" aria-labelledby="demo-h">
+    <header class="stage__head">
+      <p class="eyebrow">Stage 4 of 7 · Demo</p>
+      <h2 id="demo-h" tabindex="-1">One message, six situations</h2>
+      <p class="lead">A customer writes: "My internet has been down since morning." What happens next depends on what the network is doing. Pick a situation, or change the controls yourself and watch the outcome change.</p>
+    </header>
+
+    <div class="presets" id="presets" role="group" aria-label="Situations"></div>
+
+    <form class="controls" id="controls" aria-label="Change the situation">
+      <fieldset class="seg" id="ctl-map">
+        <legend>Address matched to a network node</legend>
+        <label><input type="radio" name="map" id="map-sure" value="sure" checked><span>Confident match</span></label>
+        <label><input type="radio" name="map" id="map-unsure" value="unsure"><span>Two possible nodes</span></label>
+      </fieldset>
+      <fieldset class="seg" id="ctl-net">
+        <legend>What the network system reports</legend>
+        <label><input type="radio" name="net" id="net-outage" value="outage" checked><span>Confirmed outage</span></label>
+        <label><input type="radio" name="net" id="net-clear" value="clear"><span>No outage</span></label>
+        <label><input type="radio" name="net" id="net-unknown" value="unknown"><span>No answer</span></label>
+      </fieldset>
+      <fieldset class="seg" id="ctl-line">
+        <legend>Remote test of the customer's line</legend>
+        <label><input type="radio" name="line" id="line-pass" value="pass" checked><span>Passes</span></label>
+        <label><input type="radio" name="line" id="line-fail" value="fail"><span>Fails</span></label>
+      </fieldset>
+      <div class="ctl" id="ctl-hours">
+        <label for="hours">The outage lasts <output id="hours-out" for="hours">5 hours</output></label>
+        <input type="range" id="hours" name="hours" min="1" max="96" step="1" value="5">
+      </div>
+      <fieldset class="seg" id="ctl-fee">
+        <legend>The customer's plan</legend>
+        <label><input type="radio" name="fee" id="fee-home" value="999" checked><span>Home, INR 999 a month</span></label>
+        <label><input type="radio" name="fee" id="fee-business" value="4999"><span>Business, INR 4,999 a month</span></label>
+      </fieldset>
+      <div class="ctl" id="ctl-repeat">
+        <label class="check"><input type="checkbox" id="repeat" name="repeat"><span>This request was already made once</span></label>
+      </div>
+    </form>
+
+    <div class="demo">
+      <section class="phone" aria-labelledby="phone-h">
+        <h3 id="phone-h">What the customer is told</h3>
+        <ol class="chat" id="chat"></ol>
+      </section>
+      <section class="trace" aria-labelledby="trace-h">
+        <div class="trace__head">
+          <h3 id="trace-h">What happens behind the scenes</h3>
+          <button type="button" class="btn btn--ghost btn--small" id="replay">Replay</button>
+        </div>
+        <ol class="steps" id="steps"></ol>
+      </section>
+    </div>
+
+    <section class="result" aria-labelledby="result-h">
+      <h3 id="result-h">How it ends</h3>
+      <p class="vh" id="outcome-live" aria-live="polite"></p>
+      <dl class="tiles" id="outcome"></dl>
+      <div class="today">
+        <p class="eyebrow">Today, for comparison</p>
+        <p id="today"></p>
+      </div>
+    </section>
+    <p class="src"><span class="tag tag--demo">Assumption</span> This simulation runs in your browser on made-up data and follows the target journey in the report. The credit formula is the capstone's placeholder. SkyLink's real credit policy is still an open item.</p>
+
+    <section class="proactive" aria-labelledby="pro-h">
+      <div>
+        <h3 id="pro-h">Before they call</h3>
+        <p class="prose">One more path starts with the network team. When it declares an outage, affected customers can be told before they pick up the phone. The text goes only to customers who agreed to service messages, and that choice is checked at the moment of sending.</p>
+        <label class="check"><input type="checkbox" id="consent" checked><span>This customer has agreed to outage texts</span></label>
+        <p class="src"><span class="tag tag--prop">Proposed</span> Shown in the capstone demo only. A broad production rollout is deferred (D18, D23).</p>
+      </div>
+      <div class="sms" id="sms" aria-live="polite"></div>
+    </section>
+
+    <div class="stage__nav">
+      <a class="btn btn--ghost" href="#decide"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg> Decide</a>
+      <a class="btn" href="#value">Count the value <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a>
+    </div>
+  </section>
+
+  <!-- ============================== 5. VALUE ============================== -->
+  <section class="stage" id="value" aria-labelledby="value-h">
+    <header class="stage__head">
+      <p class="eyebrow">Stage 5 of 7 · Value and proof</p>
+      <h2 id="value-h" tabindex="-1">What it could save, and how we would know</h2>
+      <p class="lead">The clearest saving is the technician visit that no longer happens. The case gives two of the numbers. The third, how many outage contacts SkyLink really gets, is not known yet, so move the slider and see how much depends on it.</p>
+    </header>
+
+    <form class="calc" id="calc" aria-label="Savings calculator">
+      <div class="calc__in">
+        <div class="ctl">
+          <label for="contacts">Outage-related contacts each month <output id="contacts-out" for="contacts">10,000</output></label>
+          <input type="range" id="contacts" name="contacts" min="1000" max="50000" step="500" value="10000">
+          <div class="quick" id="quick" role="group" aria-label="Volumes used in the report"></div>
+          <p class="src"><span class="tag tag--demo">Assumption</span> SkyLink's real monthly volume has not been measured.</p>
+        </div>
+        <div class="ctl">
+          <label for="reduction">Unnecessary visits prevented <output id="reduction-out" for="reduction">50%</output></label>
+          <input type="range" id="reduction" name="reduction" min="0" max="100" step="5" value="50">
+          <p class="src"><span class="tag tag--case">Case fact</span> The target is at least 50%, measured in simulation.</p>
+        </div>
+        <dl class="fixed">
+          <div><dt>Outage calls ending in an unnecessary visit</dt><dd>30%</dd></div>
+          <div><dt>Cost of each visit</dt><dd>INR 650</dd></div>
+        </dl>
+      </div>
+      <div class="calc__out" aria-live="polite">
+        <div class="money">
+          <p class="money__label">Spent each year on visits that fix nothing</p>
+          <p class="money__value" id="waste">INR 23.40m</p>
+          <p class="money__sub" id="waste-sub"></p>
+        </div>
+        <div class="money money--save">
+          <p class="money__label">Saved each year at this level</p>
+          <p class="money__value" id="saving">INR 11.70m</p>
+          <p class="money__sub" id="saving-sub"></p>
+        </div>
+        <div class="bar" id="bar" role="img" aria-label="">
+          <span class="bar__save" id="bar-save"></span>
+        </div>
+        <p class="bar__key"><span><i class="key key--save"></i>Saved</span><span><i class="key key--left"></i>Still spent on unnecessary visits</span></p>
+      </div>
+    </form>
+    <p class="src"><span class="tag tag--calc">Worked out</span> Yearly contacts × 30% × the share prevented × INR 650. At 1,000, 5,000, 10,000, 25,000 and 50,000 contacts a month this reproduces the table in the report.</p>
+
+    <ul class="cautions">
+      <li>Yearly savings cannot be claimed until real outage-contact volumes and real results are measured.</li>
+      <li>Only visits that would otherwise have happened, and are reconciled as avoided, count.</li>
+      <li><button type="button" class="term" data-term="churn">Churn</button> is left out of the core figure until there is evidence of cause and effect (D13).</li>
+      <li>The full model also adds validated savings in handling time, repeat contacts and credit leakage, then subtracts the yearly cost of the solution. Deflected calls and repeat contacts must not be counted twice.</li>
+    </ul>
+
+    <h3>How we would know it works</h3>
+    <p class="prose">Six targets come from the case study. The workshop added four safety gates, each set at zero. Missing a safety gate blocks the release (D19).</p>
+    <ul class="gates">
+      <li><b>≥ 95%</b><strong>Outages correctly detected for the customers they affect</strong><span>A customer in an outage hears about the outage and skips the restart script.</span></li>
+      <li><b>≥ 50%</b><strong>Fewer unnecessary technician visits</strong><span>Measured in simulation against today's baseline.</span></li>
+      <li><b>100%</b><strong>Credits that match the policy</strong><span>The same rule and the same amount, every time.</span></li>
+      <li><b>0</b><strong>Duplicate tickets for one node</strong><span>One outage on one node makes one repair ticket.</span></li>
+      <li><b>10×</b><strong>Contacts in 15 minutes, with the assistant still available</strong><span>It keeps answering when everyone writes in at once.</span></li>
+      <li><b>≤ 2 min</b><strong>A complaint reference for every outage contact</strong><span>Whatever else is failing at the time.</span></li>
+    </ul>
+    <ul class="gates gates--zero">
+      <li><b>0</b><strong>False all-clears on missing or stale data</strong></li>
+      <li><b>0</b><strong>Visits booked on unknown or stale status</strong></li>
+      <li><b>0</b><strong>Credits above INR 500 without approval</strong></li>
+      <li><b>0</b><strong>Unlogged overrides or duplicate writes</strong></li>
+    </ul>
+    <p class="src"><span class="tag tag--case">Case fact</span> The six targets. <span class="tag tag--ok">Approved</span> The four safety gates.</p>
+
+    <h3>Earning trust in three stages</h3>
+    <ol class="pilot">
+      <li><span class="pilot__n">Stage 1</span><strong><button type="button" class="term" data-term="backtest">Backtest</button></strong><span>Replay past, labelled outage, device and billing cases against the network events and the address mapping. Nothing touches a live customer.</span></li>
+      <li><span class="pilot__n">Stage 2</span><strong><button type="button" class="term" data-term="shadow-mode">Shadow mode</button></strong><span>The assistant makes read-only recommendations alongside the real operation. People still do the work, and the two are compared.</span></li>
+      <li><span class="pilot__n">Stage 3</span><strong>Controlled automation</strong><span>Switch on only the actions that have been validated one by one, each with an audit trail, reconciliation and a way to roll back.</span></li>
+    </ol>
+    <p class="src"><span class="tag tag--ok">Approved</span> D15. The capstone minimum is 30 offline test cases and 15 attack or edge prompts. The report recommends larger samples before claiming production accuracy.</p>
+
+    <details class="more">
+      <summary>Baselines that still have to be measured</summary>
+      <ul class="plain">
+        <li>Outage-contact volume</li>
+        <li>Repeat contacts within seven days</li>
+        <li>Average handling time</li>
+        <li>Coverage and accuracy of the address-to-node mapping</li>
+        <li>Complaint resolution time</li>
+        <li>How many customers have consented to proactive messages</li>
+        <li>Credit reconciliation</li>
+        <li>Outcomes of technician visits</li>
+      </ul>
+    </details>
+
+    <div class="stage__nav">
+      <a class="btn btn--ghost" href="#demo"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg> Demo</a>
+      <a class="btn" href="#standards">Check it against real rules <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a>
+    </div>
+  </section>
+
+  <!-- ============================== 6. STANDARDS ============================== -->
+  <section class="stage" id="standards" aria-labelledby="standards-h">
+    <header class="stage__head">
+      <p class="eyebrow">Stage 6 of 7 · Reality check</p>
+      <h2 id="standards-h" tabindex="-1">How this lines up with real-world rules</h2>
+      <p class="lead">The workshop used the case study alone. This stage sets its decisions beside how telecom is regulated in India and beside common engineering practice. Regulatory Affairs would have to confirm which rules apply before any of this is treated as a requirement.</p>
+    </header>
+
+    <div class="standards" id="standards-list"></div>
+    <p class="src"><span class="tag tag--ext">Outside source</span> Checked on 23 November 2026. Regulations change, so follow the links for the current text.</p>
+
+    <div class="stage__nav">
+      <a class="btn btn--ghost" href="#value"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg> Value</a>
+      <a class="btn" href="#next">What happens next <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a>
+    </div>
+  </section>
+
+  <!-- ============================== 7. NEXT ============================== -->
+  <section class="stage" id="next" aria-labelledby="next-h">
+    <header class="stage__head">
+      <p class="eyebrow">Stage 7 of 7 · Next steps</p>
+      <h2 id="next-h" tabindex="-1">What the workshop asks for, and what is still open</h2>
+      <p class="lead">Discovery ends with a request to the sponsor. This one asks for permission to gather evidence. It does not ask for permission to automate.</p>
+    </header>
+
+    <div class="pair pair--wide">
+      <div class="ask">
+        <p class="eyebrow">The ask to the sponsor</p>
+        <ol>
+          <li>Approve the next evidence-gathering phase.</li>
+          <li>Appoint named owners to each accountable role.</li>
+          <li>Provide the synthetic datasets and the mock API contracts.</li>
+          <li>Agree to the documented pilot gates.</li>
+        </ol>
+        <p class="src"><span class="tag tag--prop">Proposed</span> Funding, delivery dates and production rollout authority remain open.</p>
+      </div>
+      <div class="open">
+        <p class="eyebrow">Still open, and not approved</p>
+        <ul>
+          <li>Real contact volume, baseline performance and production ROI</li>
+          <li>Named participants and signatures. Only roles exist so far.</li>
+          <li>AWS or Azure, the hybrid layout and service costs</li>
+          <li>Freshness and confidence thresholds, and the policy formulas</li>
+          <li>Availability targets and the length of the pilot</li>
+          <li>Production authorisation, budget and rollout date</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Six steps from here</h3>
+    <ol class="steps-next">
+      <li><strong>Baselines and data access</strong><span>Real contact volumes, a profile of the address-to-node mapping and service-level baselines, with the assumptions reviewed.</span><em>R1 FDE Lead, with business owners</em></li>
+      <li><strong>A contract for each system</strong><span>Versioned read and write contracts with timeout and freshness rules, and at least three architecture decision records.</span><em>R2 Architect, with NOC and OSS/BSS</em></li>
+      <li><strong>Proof of knowledge and mapping</strong><span>Verified node mapping, and router and policy answers retrieved with citations.</span><em>R3 Data and RAG</em></li>
+      <li><strong>The journeys, built on mock systems</strong><span>The five scenarios, the consent-checked notification and the approval gate.</span><em>R4 Agent Engineer</em></li>
+      <li><strong>Safety and reliability evidence</strong><span>At least 30 evaluation cases, 15 attack prompts, the 10x surge and a failure drill.</span><em>R5 Platform and Trust</em></li>
+      <li><strong>Executive playback</strong><span>KPI comparison, reconciled ROI, the risk register and a go or no-go decision.</span><em>R1, with every role</em></li>
+    </ol>
+    <p class="src"><span class="tag tag--case">Case fact</span> The case study proposes submission by 29 November 2026 and a presentation on 30 November. The report treats these as case-study dates, not delivery commitments.</p>
+
+    <h3>The seven risks to watch</h3>
+    <div class="scroll-x">
+      <table class="risks">
+        <thead><tr><th scope="col">What could go wrong</th><th scope="col">How it is contained</th><th scope="col">Who answers for it</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">A customer matched to the wrong node</th><td data-label="How it is contained">A confidence gate, with a person verifying</td><td data-label="Who answers for it">OSS/BSS, R3</td></tr>
+          <tr><th scope="row">Outage status that is out of date</th><td data-label="How it is contained">A freshness threshold, the UNKNOWN state and alerts</td><td data-label="Who answers for it">NOC, R2</td></tr>
+          <tr><th scope="row">A credit or a visit carried out twice</th><td data-label="How it is contained">Repeat-safe requests and reconciliation</td><td data-label="Who answers for it">Billing, Field Ops, R4</td></tr>
+          <tr><th scope="row">The wrong policy or router guide</th><td data-label="How it is contained">Versions, effective dates and retrieval tests</td><td data-label="Who answers for it">R3</td></tr>
+          <tr><th scope="row">Someone tricks the AI, or it misuses a tool</th><td data-label="How it is contained">Input checks, typed allow-lists and least privilege</td><td data-label="Who answers for it">R5</td></tr>
+          <tr><th scope="row">The system buckles in a 10x surge</th><td data-label="How it is contained">Rate limits, queues, caching and a load drill</td><td data-label="Who answers for it">R5</td></tr>
+          <tr><th scope="row">Savings that cannot be proven</th><td data-label="How it is contained">Signed-off baselines and reconciliation against what would have happened</td><td data-label="Who answers for it">R1, Finance</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <details class="more">
+      <summary>Who owns what</summary>
+      <div class="pair pair--wide">
+        <div>
+          <h4>The delivery team</h4>
+          <dl class="owners">
+            <div><dt>R1 FDE Lead</dt><dd>Problem frame, baselines, ROI, KPI tree and stakeholder playback</dd></div>
+            <div><dt>R2 Architect</dt><dd>Event and request architecture, API contracts, hybrid cloud design and decision records</dd></div>
+            <div><dt>R3 Data and RAG</dt><dd>Node mapping profile, versioned guides and policies, retrieval evaluation</dd></div>
+            <div><dt>R4 Agent Engineer</dt><dd>State machine, typed tools, repeat-safe writes and human gates</dd></div>
+            <div><dt>R5 Platform and Trust</dt><dd>Access control, guardrails, audit, observability, load tests and runbooks</dd></div>
+          </dl>
+        </div>
+        <div>
+          <h4>The business</h4>
+          <dl class="owners">
+            <div><dt>Outcomes and funding</dt><dd>Chief Customer Officer</dd></div>
+            <div><dt>Outage truth, estimates, freshness</dt><dd>NOC Manager</dd></div>
+            <div><dt>Care workflow</dt><dd>Contact Centre Head</dd></div>
+            <div><dt>Customer, service and node mapping</dt><dd>OSS/BSS Integration Architect, with Data Governance</dd></div>
+            <div><dt>Credit policy and ledger reconciliation</dt><dd>Billing and Credit Operations</dd></div>
+            <div><dt>Dispatch rules and ticket lifecycle</dt><dd>Field Operations Lead</dd></div>
+            <div><dt>Complaint deadlines and customer rights</dt><dd>Regulatory Affairs Manager</dd></div>
+            <div><dt>Consent and proactive messages</dt><dd>Privacy and Legal, with Customer Communications</dd></div>
+            <div><dt>Release approval</dt><dd>Chief Customer Officer, with Platform and Trust sign-off</dd></div>
+          </dl>
+        </div>
+      </div>
+      <p class="aside-line">One rule crosses the teams. The agent engineer cannot make up for poor mapping, the data lead cannot set operating thresholds alone, and each business owner keeps authority over their own policy.</p>
+    </details>
+
+    <details class="more">
+      <summary>Evidence that must exist before a pilot</summary>
+      <div class="scroll-x">
+        <table class="risks">
+          <thead><tr><th scope="col">Open gap</th><th scope="col">Proof required</th><th scope="col">Evidence owner</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Outage-contact volume and seasonality</th><td data-label="Proof required">A 6 to 12 month baseline and the peak-hour pattern</td><td data-label="Evidence owner">Contact Centre, Analytics</td></tr>
+            <tr><th scope="row">Quality of the node mapping</th><td data-label="Proof required">Coverage, duplicates and verified accuracy</td><td data-label="Evidence owner">OSS/BSS, R3</td></tr>
+            <tr><th scope="row">Network status and its freshness</th><td data-label="Proof required">States, timestamps, speed, timeouts and what counts as stale</td><td data-label="Evidence owner">NOC, R2</td></tr>
+            <tr><th scope="row">Reliability of the remote test</th><td data-label="Proof required">What pass and fail mean, false results and speed</td><td data-label="Evidence owner">NOC, Broadband Ops</td></tr>
+            <tr><th scope="row">Repeat-safe complaint creation</th><td data-label="Proof required">A retry drill against the deadline</td><td data-label="Evidence owner">Incident Management, R4</td></tr>
+            <tr><th scope="row">When a credit is truly complete</th><td data-label="Proof required">A transaction ID and ledger reconciliation</td><td data-label="Evidence owner">Billing, R4</td></tr>
+            <tr><th scope="row">Duplicate handling in dispatch</th><td data-label="Proof required">A test with simultaneous retries</td><td data-label="Evidence owner">Field Ops, R4</td></tr>
+            <tr><th scope="row">Consent coverage</th><td data-label="Proof required">Consent by channel, and suppression</td><td data-label="Evidence owner">Privacy, CRM</td></tr>
+            <tr><th scope="row">Availability at 10x</th><td data-label="Proof required">A 15-minute surge test with dashboards</td><td data-label="Evidence owner">Platform, R5</td></tr>
+            <tr><th scope="row">Cost and cloud choice</th><td data-label="Proof required">An AWS or Azure decision record and a cost model</td><td data-label="Evidence owner">Architect, Finance</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details class="more" id="register-box">
+      <summary>All thirty approved decisions</summary>
+      <div class="filters" id="register-filters" role="group" aria-label="Filter by checkpoint"></div>
+      <ol class="register" id="register"></ol>
+    </details>
+
+    <div class="stage__nav">
+      <a class="btn btn--ghost" href="#standards"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg> Standards</a>
+      <a class="btn" href="#brief">Back to the start <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p><strong>Sources.</strong> The case study "Capstone Project, Case Study, Group 3: Telco: Outage-Aware Customer Care Agent" (NIIT Enterprise, 8 pages) and the Group 3 discovery workshop report of 22 November 2026. Stakeholder remarks were simulated for discovery practice. They are not quotations from real client staff.</p>
+    <p><strong>What was not done.</strong> No dataset profiling, API execution, load testing, deployment, real interviews, signed checklist or financial reconciliation took place in the workshop. Each of these remains a future evidence requirement. Outside references were added on 23 November 2026 for context.</p>
+  </div>
+</footer>
+
+<dialog class="glossary" id="glossary" aria-labelledby="glossary-h">
+  <div class="glossary__head">
+    <h2 id="glossary-h">Jargon buster</h2>
+    <button type="button" class="btn btn--ghost btn--small" id="close-glossary">Close</button>
+  </div>
+  <dl class="glossary__list" id="glossary-list"></dl>
+</dialog>
+
+<div class="pop" id="term-pop" popover tabindex="-1" role="group" aria-labelledby="term-pop-term" aria-describedby="term-pop-meaning">
+  <p class="pop__term" id="term-pop-term"></p>
+  <p class="pop__meaning" id="term-pop-meaning"></p>
+</div>
+
+<script>
+/* The arithmetic and the decision path behind the page. No DOM in this file, so every
+   number on the page can be checked on its own. */
+(function (root) {
+  'use strict';
+
+  /* Figures stated in the case study. */
+  const CASE = Object.freeze({
+    unnecessaryVisitPercent: 30,
+    visitCostInr: 650,
+    supervisorAboveInr: 500,
+  });
+
+  /* Illustration only: the capstone's placeholder credit policy for broadband.
+     SkyLink's real policy is an open item in the report. */
+  const CREDIT_POLICY = Object.freeze({
+    hoursInMonth: 720,
+    minOutageHours: 4,
+    tiers: Object.freeze([
+      Object.freeze({ fromHours: 72, multiplier: 2 }),
+      Object.freeze({ fromHours: 24, multiplier: 1.5 }),
+      Object.freeze({ fromHours: 4, multiplier: 1 }),
+    ]),
+    minimumCreditInr: 50,
+    capShareOfMonthlyFee: 1,
+  });
+
+  const NODE_ID = 'BLR-OLT-0012';
+  const SAMPLE_SEQUENCE = 42;
+  const LOG_STEP = Object.freeze({
+    kind: 'info',
+    title: 'Every step is written to the logbook',
+    text: 'What was checked, what it showed, when, and who or what acted. This is what makes a claim provable later.',
+  });
+
+  /* ---------- formatting ---------- */
+
+  function formatInr(amount, withPaise) {
+    const digits = withPaise ? 2 : 0;
+    return 'INR ' + Number(amount).toLocaleString('en-US', {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+  }
+
+  /* The report writes large sums as "INR 2.34m". */
+  function formatInrMillions(amount) {
+    return 'INR ' + (amount / 1e6).toFixed(2) + 'm';
+  }
+
+  /* The same sum the way it is usually said in India. */
+  function formatLakhCrore(amount) {
+    if (amount >= 1e7) return trimZeros((amount / 1e7).toFixed(2)) + ' crore';
+    if (amount >= 1e5) return trimZeros((amount / 1e5).toFixed(2)) + ' lakh';
+    return Number(amount).toLocaleString('en-US');
+  }
+
+  function trimZeros(text) {
+    return text.replace(/\.?0+$/, '');
+  }
+
+  function plural(count, word) {
+    return count + ' ' + word + (count === 1 ? '' : 's');
+  }
+
+  /* ---------- complaint reference ---------- */
+
+  /* Luhn check digit, the same idea as on a payment card: one mistyped digit is caught. */
+  function luhnCheckDigit(digits) {
+    let total = 0;
+    for (let i = 0; i < digits.length; i += 1) {
+      let value = Number(digits[digits.length - 1 - i]);
+      if (i % 2 === 0) {
+        value *= 2;
+        if (value > 9) value -= 9;
+      }
+      total += value;
+    }
+    return (10 - (total % 10)) % 10;
+  }
+
+  /* Reference shape used by the capstone build: SKL-YYMMDD-NNNNNN-C. */
+  function formatReference(date, sequence) {
+    const two = (n) => String(n).padStart(2, '0');
+    const dateDigits = two(date.getFullYear() % 100) + two(date.getMonth() + 1) + two(date.getDate());
+    const sequenceDigits = String(sequence).padStart(6, '0');
+    return 'SKL-' + dateDigits + '-' + sequenceDigits + '-' + luhnCheckDigit(dateDigits + sequenceDigits);
+  }
+
+  /* ---------- service credit (illustration) ---------- */
+
+  function roundToPaise(amount) {
+    return Math.round((amount + Number.EPSILON) * 100) / 100;
+  }
+
+  function creditFor(monthlyFeeInr, outageHours) {
+    const hours = Math.ceil(outageHours);
+    if (hours < CREDIT_POLICY.minOutageHours) {
+      return { eligible: false, hours, amount: 0, needsSupervisor: false };
+    }
+    const tier = CREDIT_POLICY.tiers.find((t) => hours >= t.fromHours);
+    const formulaAmount = (monthlyFeeInr * hours * tier.multiplier) / CREDIT_POLICY.hoursInMonth;
+    const cap = monthlyFeeInr * CREDIT_POLICY.capShareOfMonthlyFee;
+    const withMinimum = Math.max(formulaAmount, CREDIT_POLICY.minimumCreditInr);
+    const amount = roundToPaise(Math.min(withMinimum, cap));
+    return {
+      eligible: true,
+      hours,
+      multiplier: tier.multiplier,
+      formulaAmount: roundToPaise(formulaAmount),
+      amount,
+      minimumApplied: formulaAmount < CREDIT_POLICY.minimumCreditInr,
+      capApplied: withMinimum > cap,
+      needsSupervisor: amount > CASE.supervisorAboveInr,
+    };
+  }
+
+  function creditWorking(monthlyFeeInr, credit) {
+    const sum = formatInr(monthlyFeeInr) + ' a month × ' + plural(credit.hours, 'hour') + ' × ' +
+      credit.multiplier + ' ÷ ' + CREDIT_POLICY.hoursInMonth + ' hours in a month = ' +
+      formatInr(credit.formulaAmount, true);
+    if (credit.minimumApplied) {
+      return sum + ', raised to the policy minimum of ' + formatInr(credit.amount, true) + '.';
+    }
+    if (credit.capApplied) {
+      return sum + ', limited to one month\'s fee: ' + formatInr(credit.amount, true) + '.';
+    }
+    return sum + '.';
+  }
+
+  /* ---------- return on investment ---------- */
+
+  /* Report model: annual outage contacts × unnecessary-visit rate × reduction achieved × INR 650. */
+  function roi(contactsPerMonth, reductionPercent) {
+    const annualContacts = contactsPerMonth * 12;
+    const unnecessaryVisits = Math.round((annualContacts * CASE.unnecessaryVisitPercent) / 100);
+    const baselineWaste = unnecessaryVisits * CASE.visitCostInr;
+    const visitsAvoided = Math.round((unnecessaryVisits * reductionPercent) / 100);
+    const savings = visitsAvoided * CASE.visitCostInr;
+    return {
+      annualContacts,
+      unnecessaryVisits,
+      baselineWaste,
+      visitsAvoided,
+      savings,
+      remainingWaste: baselineWaste - savings,
+    };
+  }
+
+  /* ---------- the demo: one contact, followed through the target journey ---------- */
+
+  function runScenario(input, now) {
+    const reference = formatReference(now || new Date(), SAMPLE_SEQUENCE);
+    const steps = [];
+    const chat = [{ from: 'customer', text: 'My internet has been down since morning.', afterStep: -1 }];
+    const addStep = (step) => steps.push(step) - 1;
+    const say = (text, afterStep, extra) => chat.push(Object.assign({ from: 'care', text, afterStep }, extra));
+
+    const first = addStep({
+      kind: 'ok',
+      title: 'A complaint reference is issued first',
+      text: 'Reference ' + reference + ' goes to the customer before anything else is checked, so it never waits on another system. Gate: within 2 minutes.',
+      rules: ['D7'],
+    });
+    say('Your complaint is registered. Your reference is ' + reference + '.', first);
+
+    const base = { reference, steps, chat };
+    if (input.map === 'unsure') return unsureBranch(base, addStep, say);
+
+    addStep({
+      kind: 'ok',
+      title: 'Customer, service and network node are matched',
+      text: 'The account and its broadband service are identified. The address maps to node ' + NODE_ID + ' with high confidence.',
+      rules: ['D24'],
+    });
+
+    if (input.net === 'outage') return outageBranch(base, addStep, say, input);
+    if (input.net === 'clear') return clearBranch(base, addStep, say, input);
+    return unknownBranch(base, addStep, say);
+  }
+
+  function unsureBranch(base, addStep, say) {
+    addStep({
+      kind: 'warn',
+      title: 'The address could belong to two network nodes',
+      text: 'The records point to more than one node for this address. A wrong guess here means a wrong diagnosis later.',
+      rules: ['D24'],
+    });
+    const handover = addStep({
+      kind: 'human',
+      title: 'A person verifies the match',
+      text: 'Low-confidence matches go to a person, with a summary. Nothing is said about the network until the node is confirmed.',
+      rules: ['D11'],
+    });
+    say('Before we tell you anything about the network, we need to confirm which part of it serves your address. A member of our team is checking now.', handover);
+    addStep(LOG_STEP);
+    return Object.assign(base, {
+      path: 'verify',
+      outcome: [
+        referenceTile(),
+        { label: 'Technician visit', value: 'On hold', note: 'Nothing is booked until a person confirms the node.', tone: 'warn' },
+        { label: 'Credit', value: 'Not assessed yet', note: 'It depends on which node, and which outage, applies.', tone: 'info' },
+        { label: 'Tickets', value: 'Complaint logged', note: 'No repair ticket until the node is known.', tone: 'info' },
+        { label: 'People', value: 'A person verifies', note: 'Identity-confidence gate.', tone: 'human' },
+      ],
+      today: 'Today nothing checks how sure the match is. A wrong match tells a customer about someone else\'s outage, or about none.',
+    });
+  }
+
+  function outageBranch(base, addStep, say, input) {
+    addStep({
+      kind: 'alert',
+      title: 'The network team confirms an outage on this node',
+      text: 'Fibre cut on ' + NODE_ID + ', declared at 09:10. The reading is seconds old. The network team is the authority on outage status.',
+      rules: ['D8'],
+    });
+    const told = addStep({
+      kind: 'ok',
+      title: 'The customer is told what is actually wrong',
+      text: 'The reply explains the outage. The restart-your-router script is skipped, because it cannot repair a cut cable.',
+    });
+    say('There is a confirmed outage in your area. A fibre cable was cut at 09:10 and our engineers are repairing it. You do not need to restart your router.', told);
+    say('The network team\'s current estimate for service to return is 14:00. It is an estimate and may change.', told);
+    addStep({
+      kind: 'stop',
+      title: 'No technician is sent',
+      text: 'A visit needs three things: a fresh no-outage result, a failed line test and no visit already open. With a confirmed outage the first one fails.',
+      rules: ['D9'],
+    });
+    addStep(input.repeat ? {
+      kind: 'stop',
+      title: 'No second ticket is created',
+      text: 'This request was already made once. It is recognised and joined to the existing incident for ' + NODE_ID + '.',
+    } : {
+      kind: 'ok',
+      title: 'The complaint is linked to one shared incident',
+      text: 'Every complaint about this outage attaches to a single incident for ' + NODE_ID + '. A thousand callers still make one repair ticket.',
+    });
+
+    const credit = creditFor(input.fee, input.hours);
+    const creditStep = addStep(creditStepFor(input.fee, credit));
+    say(restoredMessage(credit), creditStep, { divider: 'Later, when the network team reports the repair is done' });
+    addStep(LOG_STEP);
+
+    return Object.assign(base, {
+      path: 'outage',
+      credit,
+      outcome: [
+        referenceTile(),
+        { label: 'Technician visit', value: 'Not sent', note: 'Today about 30% of calls like this end in a visit costing INR 650.', tone: 'ok' },
+        creditTile(credit),
+        { label: 'Tickets', value: 'One shared incident', note: input.repeat ? 'The repeat request made no second ticket.' : 'This complaint is linked to it.', tone: 'ok' },
+        credit.needsSupervisor
+          ? { label: 'People', value: 'A supervisor approves', note: 'The credit is above INR 500.', tone: 'human' }
+          : { label: 'People', value: 'No hand-off needed', note: 'The care agent stays in the conversation.', tone: 'info' },
+      ],
+      today: 'Today the agent cannot see the outage. The customer gets the restart script, and about 30% of these calls end with a technician sent for nothing, at INR 650 a visit.',
+    });
+  }
+
+  function creditStepFor(fee, credit) {
+    if (!credit.eligible) {
+      return {
+        kind: 'info',
+        title: 'No credit is due',
+        text: 'The outage lasted ' + plural(credit.hours, 'hour') + '. Under the placeholder policy, outages shorter than 4 hours earn no credit.',
+        rules: ['D10'],
+      };
+    }
+    const working = creditWorking(fee, credit);
+    if (credit.needsSupervisor) {
+      return {
+        kind: 'human',
+        title: 'A credit of ' + formatInr(credit.amount, true) + ' waits for a supervisor',
+        text: working + ' Anything above INR 500 needs a supervisor\'s approval before it is applied.',
+        rules: ['D10'],
+      };
+    }
+    return {
+      kind: 'ok',
+      title: 'A credit of ' + formatInr(credit.amount, true) + ' is worked out by fixed rule',
+      text: working + ' At or below INR 500, no supervisor is needed. The credit counts as done only when the billing ledger confirms it.',
+      rules: ['D10', 'D27'],
+    };
+  }
+
+  function restoredMessage(credit) {
+    if (!credit.eligible) return 'Your service has been restored. Tell us here if it is still not working.';
+    const amount = formatInr(credit.amount, true);
+    return credit.needsSupervisor
+      ? 'Your service has been restored. A credit of ' + amount + ' for the outage has been sent for approval. We will confirm it here.'
+      : 'Your service has been restored. A credit of ' + amount + ' for the outage will appear on your next bill.';
+  }
+
+  function clearBranch(base, addStep, say, input) {
+    addStep({
+      kind: 'ok',
+      title: 'The network team reports no outage on this node',
+      text: NODE_ID + ' is working normally. The reading is seconds old, so it can be relied on.',
+      rules: ['D8'],
+    });
+    if (input.line === 'pass') return linePassBranch(base, addStep, say);
+    return lineFailBranch(base, addStep, say, input);
+  }
+
+  function linePassBranch(base, addStep, say) {
+    addStep({
+      kind: 'ok',
+      title: 'A remote test of the customer\'s own line passes',
+      text: 'The network and the line are both healthy. The problem is most likely inside the home.',
+    });
+    const guide = addStep({
+      kind: 'ok',
+      title: 'The right router guide is looked up',
+      text: 'The steps come from the official guide for this customer\'s router model, with the guide and its version named. Nothing is invented.',
+    });
+    say('We checked the network for your address and tested your line. Both are working, so the problem is likely with the router. Here are the steps for your model, taken from its official guide (model AL-R12, section "No internet", version 1.2).', guide);
+    say('Reply here if that does not fix it, and a member of our team will take over.', guide);
+    addStep(LOG_STEP);
+    return Object.assign(base, {
+      path: 'clear-pass',
+      outcome: [
+        referenceTile(),
+        { label: 'Technician visit', value: 'Not needed yet', note: 'Router steps come first. A person takes over if they do not help.', tone: 'ok' },
+        { label: 'Credit', value: 'None', note: 'There is no outage on this node.', tone: 'info' },
+        { label: 'Tickets', value: 'Complaint logged', note: 'No repair ticket is needed.', tone: 'info' },
+        { label: 'People', value: 'On standby', note: 'A person steps in if the guide does not fix it.', tone: 'info' },
+      ],
+      today: 'Today every caller gets the same generic script, whatever router they own and whatever the network is doing.',
+    });
+  }
+
+  function lineFailBranch(base, addStep, say, input) {
+    addStep({
+      kind: 'warn',
+      title: 'A remote test of the customer\'s own line fails',
+      text: 'The network is fine, but this one line is not. This is the kind of fault a technician can actually repair.',
+    });
+    if (input.repeat) {
+      const held = addStep({
+        kind: 'stop',
+        title: 'A visit is already booked, so no second one is made',
+        text: 'The earlier request is recognised. One line gets one visit.',
+        rules: ['D9'],
+      });
+      say('The network in your area is working, but a test of your line failed. A technician visit is already booked for this line, so we have not booked a second one.', held);
+    } else {
+      const offered = addStep({
+        kind: 'ok',
+        title: 'A technician visit is offered',
+        text: 'All three conditions hold: a fresh no-outage result, a failed line test and no visit already open.',
+        rules: ['D9'],
+      });
+      say('The network in your area is working, but a test of your line failed. A technician can visit to repair it. The earliest slot is tomorrow morning. Shall we book it?', offered);
+    }
+    addStep(LOG_STEP);
+    return Object.assign(base, {
+      path: 'clear-fail',
+      outcome: [
+        referenceTile(),
+        input.repeat
+          ? { label: 'Technician visit', value: 'Already booked', note: 'No second visit for the same line.', tone: 'ok' }
+          : { label: 'Technician visit', value: 'Offered', note: 'This visit is justified: the fault is on the customer\'s own line.', tone: 'ok' },
+        { label: 'Credit', value: 'None', note: 'There is no outage on this node.', tone: 'info' },
+        { label: 'Tickets', value: 'One visit for this line', note: input.repeat ? 'The repeat request made no duplicate.' : 'Booked once the customer picks a slot.', tone: 'ok' },
+        { label: 'People', value: 'A technician', note: 'Sent only after the checks pass.', tone: 'info' },
+      ],
+      today: 'Today a visit can be booked with no line test and no check for an earlier booking.',
+    });
+  }
+
+  function unknownBranch(base, addStep, say) {
+    addStep({
+      kind: 'warn',
+      title: 'The network monitoring system does not answer',
+      text: 'There is no fresh reading. No answer is not the same as no fault, so the status is recorded as UNKNOWN.',
+      rules: ['D25'],
+    });
+    const told = addStep({
+      kind: 'ok',
+      title: 'The customer is told only what is known',
+      text: 'The reply says the status cannot be confirmed yet. It never says the network is fine.',
+      rules: ['D25'],
+    });
+    say('We cannot confirm the network status for your area right now. Your complaint is registered and we are still checking. We have not booked a technician, and a member of our team will follow up if we still cannot confirm it.', told);
+    addStep({
+      kind: 'stop',
+      title: 'Risky actions are held',
+      text: 'No technician is sent on unverified information. Any credit that depends on outage evidence waits.',
+      rules: ['D9', 'D19'],
+    });
+    addStep({
+      kind: 'human',
+      title: 'Retry a limited number of times, then hand over',
+      text: 'The check is repeated a set number of times. If there is still no answer, a person takes over with the evidence so far.',
+    });
+    addStep(LOG_STEP);
+    return Object.assign(base, {
+      path: 'unknown',
+      outcome: [
+        referenceTile(),
+        { label: 'Technician visit', value: 'On hold', note: 'Never booked on stale or missing status.', tone: 'warn' },
+        { label: 'Credit', value: 'Deferred', note: 'It waits until there is evidence of the outage.', tone: 'warn' },
+        { label: 'Tickets', value: 'Complaint logged', note: 'Linked to an incident once the status is known.', tone: 'info' },
+        { label: 'People', value: 'A person takes over', note: 'If the retries do not get an answer.', tone: 'human' },
+      ],
+      today: 'Care already works without network information every day. Software adds a new risk: silence from a broken system could be read as an all-clear. The UNKNOWN state exists to stop that.',
+    });
+  }
+
+  function referenceTile() {
+    return { label: 'Complaint reference', value: 'Issued first', note: 'Gate: within 2 minutes, whatever else is failing.', tone: 'ok' };
+  }
+
+  function creditTile(credit) {
+    if (!credit.eligible) {
+      return { label: 'Credit', value: 'None', note: 'Under 4 hours earns no credit in the placeholder policy.', tone: 'info' };
+    }
+    const amount = formatInr(credit.amount, true);
+    return credit.needsSupervisor
+      ? { label: 'Credit', value: amount, note: 'By fixed rule. Waits for a supervisor.', tone: 'human' }
+      : { label: 'Credit', value: amount, note: 'By fixed rule. No supervisor needed.', tone: 'ok' };
+  }
+
+  const api = Object.freeze({
+    CASE,
+    CREDIT_POLICY,
+    NODE_ID,
+    formatInr,
+    formatInrMillions,
+    formatLakhCrore,
+    luhnCheckDigit,
+    formatReference,
+    creditFor,
+    creditWorking,
+    roi,
+    runScenario,
+  });
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.SkyEngine = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* The words behind the interactive parts of the page. Source: the Group 3 discovery workshop
+   report (22 November 2026) and the case study. Stakeholder answers paraphrase the positions
+   recorded in the report; the roles were simulated. */
+(function (root) {
+  'use strict';
+
+  const findings = [
+    {
+      id: 'f1', askRole: 'NOC Manager',
+      plain: 'Care cannot see what the network team sees',
+      formal: 'NOC–care information gap',
+      leadsTo: 'Repeated troubleshooting and repeat calls',
+      response: 'A fresh outage lookup tied to the customer\'s network node, shown to the agent as an action card',
+    },
+    {
+      id: 'f2', askRole: 'Integration Architect',
+      plain: 'The customer is matched to the wrong piece of network',
+      formal: 'Identity or node mismatch',
+      leadsTo: 'A false diagnosis',
+      response: 'A confidence gate, with a person verifying uncertain matches',
+    },
+    {
+      id: 'f3', askRole: 'Field Operations Lead',
+      plain: 'Technicians are sent without checks',
+      formal: 'Ungated dispatch',
+      leadsTo: 'Avoidable visits at INR 650 each',
+      response: 'A visit needs a fresh no-outage result, a failed remote test and a duplicate check',
+    },
+    {
+      id: 'f4', askRole: 'Chief Customer Officer',
+      plain: 'Credits depend on who handles the call',
+      formal: 'Inconsistent credit interpretation',
+      leadsTo: 'Policy errors and money leaking out',
+      response: 'One versioned, rule-based policy engine, with approval for larger amounts',
+    },
+    {
+      id: 'f5', askRole: 'Regulatory Affairs Manager',
+      plain: 'When a system is down, silence can look like an all-clear',
+      formal: 'Dependency outage',
+      leadsTo: 'A false all-clear and unsafe actions',
+      response: 'An explicit UNKNOWN state, an early complaint reference, then retry and escalation',
+    },
+    {
+      id: 'f6', askRole: 'Contact Centre Head',
+      plain: 'Every contact starts from zero',
+      formal: 'Fragmented case state',
+      leadsTo: 'Repeat complaints and duplicate tickets',
+      response: 'Contacts linked to one incident, repeat-safe requests and an audit trail',
+    },
+  ];
+
+  const stakeholders = [
+    {
+      id: 'cco', mono: 'CCO', role: 'Chief Customer Officer', kind: 'Executive sponsor',
+      owns: 'outcomes, funding and release approval',
+      concern: 'Prove outcomes, not a chatbot demo.',
+      qa: [
+        {
+          type: 'ask', q: 'Why do credits belong in an outage project?',
+          a: 'Because today the amount depends on who takes the call. Two customers in the same outage can be treated differently. I want one fair rule, applied to everyone, every time.',
+          finding: 'f4',
+        },
+        {
+          type: 'challenge', q: 'Why not start with mobile? It has 8 million customers.',
+          a: 'Broadband comes first. A broadband line is tied to one address and one network node, so the outage link is simpler to prove, and every avoided technician visit is a saving that can be counted. Mobile stays planned as the next step.',
+          decision: 'D2',
+        },
+      ],
+    },
+    {
+      id: 'noc', mono: 'NOC', role: 'NOC Manager', kind: 'Network operations',
+      owns: 'the truth about network status',
+      concern: 'Outage authority, data freshness and repair estimates.',
+      qa: [
+        {
+          type: 'ask', q: 'When a fibre is cut, who knows, and when?',
+          a: 'We know within minutes. Care does not get that picture in a form an agent can act on. So customers are told to restart their routers while we are already repairing the cable.',
+          finding: 'f1',
+        },
+        {
+          type: 'challenge', q: 'What if our repair estimate turns out wrong?',
+          a: 'The two are kept apart. That an outage exists is a fact from the network team. The repair time is an estimate, shown as optional and clearly qualified.',
+          decision: 'D8',
+        },
+      ],
+    },
+    {
+      id: 'cc', mono: 'CC', role: 'Contact Centre Head', kind: 'Customer care',
+      owns: 'the care workflow',
+      concern: 'Agent adoption and handling time.',
+      qa: [
+        {
+          type: 'ask', q: 'What happens when the same fault is reported again and again?',
+          a: 'Each contact starts from zero. The agent cannot see that the neighbours reported the same fault, so one problem is logged many times and the customer has to explain it all over again.',
+          finding: 'f6',
+        },
+        {
+          type: 'ask', q: 'Will your agents actually use it?',
+          a: 'Only if it fits the way they work and shortens the call. So the first version assists agents in chat, or from a call transcript. It leaves the phone system alone.',
+          decision: 'D5',
+        },
+      ],
+    },
+    {
+      id: 'fo', mono: 'FO', role: 'Field Operations Lead', kind: 'Technicians',
+      owns: 'the dispatch policy',
+      concern: 'Avoid waste without blocking valid visits.',
+      qa: [
+        {
+          type: 'ask', q: 'Which technician visits are wasted?',
+          a: 'The ones booked during an outage. The fault is in our network, so there is nothing to repair at the customer\'s home. Each of those visits costs INR 650.',
+          finding: 'f3',
+        },
+        {
+          type: 'challenge', q: 'What if you block a visit the customer really needs?',
+          a: 'When the status cannot be verified it is marked UNKNOWN. That pauses the automation. The customer keeps every right they had, because a person checks and decides.',
+          decision: 'D25',
+        },
+      ],
+    },
+    {
+      id: 'ra', mono: 'RA', role: 'Regulatory Affairs Manager', kind: 'Compliance',
+      owns: 'complaint rules and customer wording',
+      concern: 'A reference within 2 minutes, and claims we can audit.',
+      qa: [
+        {
+          type: 'ask', q: 'What must happen on every outage contact, whatever else is going on?',
+          a: 'Every contact gets a complaint reference within two minutes. And anything we tell a customer has to be something we can prove afterwards.',
+          decision: 'D7',
+        },
+        {
+          type: 'challenge', q: 'What if the monitoring system itself fails?',
+          a: 'The reference is still issued within two minutes. The customer is told plainly that the status cannot be confirmed yet. Nobody hears an all-clear without proof.',
+          finding: 'f5',
+        },
+      ],
+    },
+    {
+      id: 'oss', mono: 'OSS', role: 'OSS/BSS Integration Architect', kind: 'Systems and data',
+      owns: 'the link between customers, services and nodes',
+      concern: 'Correct identity across systems, and clear API contracts.',
+      qa: [
+        {
+          type: 'ask', q: 'How do you know which network node serves a home?',
+          a: 'By joining customer, service, address and node across several systems. Nobody has measured how often that join is right. When it is wrong, we diagnose the wrong fault.',
+          finding: 'f2',
+        },
+        {
+          type: 'ask', q: 'What do you need before anything is built?',
+          a: 'A clear contract for every system we touch: what it returns, how fresh the data is, how it fails, and what happens if the same request arrives twice.',
+          decision: 'D21',
+        },
+      ],
+    },
+    {
+      id: 'more', mono: '+6', role: 'Also needed in the room', kind: 'Recommended roles', wide: true,
+      ownsLabel: 'Roles', owns: 'Billing, Finance, Privacy, Reliability, Data Governance, Communications',
+      concern: 'Each one validates the design in its own domain.',
+      qa: [
+        {
+          type: 'challenge', who: 'Finance', q: 'How will the saving be proven?',
+          a: 'Only visits that would otherwise have happened, and that are reconciled as avoided, count as savings.',
+          decision: 'D16',
+        },
+        {
+          type: 'challenge', who: 'Billing', q: 'If the billing system answers "success", is the credit done?',
+          a: 'No. A credit is complete only when the financial transaction is confirmed and reconciled in the ledger.',
+          decision: 'D27',
+        },
+      ],
+    },
+  ];
+
+  const calls = [
+    {
+      id: 'start', title: 'Where do you start?',
+      ask: 'SkyLink has 3.5 million broadband customers and 8 million mobile customers. Which do you fix first?',
+      approved: 'b',
+      options: [
+        {
+          id: 'a', label: 'Mobile first', hint: 'The larger customer base.',
+          tradeoff: 'More customers are covered. But a mobile connection is not tied to one address and one piece of equipment, so linking a customer to a fault is harder to prove, and the field-cost saving is less direct.',
+        },
+        {
+          id: 'b', label: 'Broadband first', hint: 'A fixed line at a fixed address.',
+          tradeoff: 'Each broadband line maps to one address and one network node, which keeps the outage link simple. Every avoided technician visit is a saving that can be counted. Mobile is designed in as the expansion.',
+          decisions: ['D2'],
+        },
+        {
+          id: 'c', label: 'Both at once', hint: 'Cover everyone from day one.',
+          tradeoff: 'Everyone is covered on paper. The data and integration work doubles before anything has been proven on either service.',
+        },
+      ],
+    },
+    {
+      id: 'autonomy', title: 'How much does the software do on its own?',
+      ask: 'An assistant could answer customers and act by itself, or it could help the human agent. How far do you let it go?',
+      approved: 'b',
+      options: [
+        {
+          id: 'a', label: 'Let it act alone', hint: 'It answers, credits and books by itself.',
+          tradeoff: 'The lowest cost per contact. But one wrong reading could tell a whole street the network is fine, or pay credits nobody checked. The workshop put unrestricted automation out of scope.',
+        },
+        {
+          id: 'b', label: 'Assist the agent, automate with controls', hint: 'The assistant prepares. Rules and people decide.',
+          tradeoff: 'The assistant prepares the answer and the next step for the care agent. An action runs automatically only after it has been validated separately, and each one is logged, reconciled and reversible. Correctness and safety rank above the automation rate.',
+          decisions: ['D3', 'D12'],
+        },
+        {
+          id: 'c', label: 'Show information only', hint: 'A screen of outages. Agents do the rest by hand.',
+          tradeoff: 'The simplest to build. Agents would still decide credits and visits by hand, so the uneven treatment and the unchecked visits stay.',
+        },
+      ],
+    },
+    {
+      id: 'credit', title: 'Who works out a credit?',
+      ask: 'A customer lost service and is owed something back. What decides the amount?',
+      approved: 'b',
+      options: [
+        {
+          id: 'a', label: 'The AI model', hint: 'It reads the policy and writes an amount.',
+          tradeoff: 'Flexible. But a language model can give different amounts for the same case, and nobody can audit how it got there. The workshop prohibits AI-calculated credits.',
+        },
+        {
+          id: 'b', label: 'Fixed rules, supervisor above INR 500', hint: 'Code calculates. A person approves the larger ones.',
+          tradeoff: 'The same outage always earns the same credit. Amounts above INR 500 wait for a supervisor. The policy carries a version number, so every credit can be traced to the rule behind it.',
+          decisions: ['D10'],
+        },
+        {
+          id: 'c', label: 'More for customers likely to leave', hint: 'Use a churn score to size the credit.',
+          tradeoff: 'It might keep some customers. It also treats people with the same outage differently. The workshop ruled it out: churn risk must never change what a customer is entitled to.',
+          ruledOutBy: 'D17',
+        },
+      ],
+    },
+    {
+      id: 'curveball', title: 'The monitoring system goes dark', curveball: true,
+      ask: 'This call arrived mid-project as a curveball. Network monitoring stops answering in the middle of a live outage, and customers keep writing in. What does the assistant tell them?',
+      approved: 'c',
+      options: [
+        {
+          id: 'a', label: '"Everything looks fine on our side."', hint: 'No fault came back, so report none.',
+          tradeoff: 'A false all-clear. Silence from a broken system is read as a healthy network. Customers restart routers and technicians drive into a live outage. The workshop made zero false all-clears a release gate.',
+        },
+        {
+          id: 'b', label: 'Reuse the last status we saw', hint: 'The most recent reading must be close enough.',
+          tradeoff: 'The last reading may be from before the fault began, or from before it ended. Acting on it can send a technician for nothing, or refuse one that is needed. The gate is zero visits booked on stale or unknown status.',
+        },
+        {
+          id: 'c', label: '"We cannot confirm it yet. Here is your reference."', hint: 'Say what is known, and no more.',
+          tradeoff: 'Missing, stale or conflicting data is recorded as UNKNOWN. The complaint reference is still issued within two minutes. No technician is sent, credits that depend on evidence wait, and after a limited number of retries a person takes over.',
+          decisions: ['D25'],
+        },
+      ],
+    },
+  ];
+
+  const presets = [
+    { id: 'outage', label: 'Street-wide outage', hint: 'The network team has confirmed a fibre cut', input: { map: 'sure', net: 'outage', line: 'pass', hours: 5, fee: 999, repeat: false } },
+    { id: 'line', label: 'Only this line is faulty', hint: 'No outage, but the line test fails', input: { map: 'sure', net: 'clear', line: 'fail', hours: 5, fee: 999, repeat: false } },
+    { id: 'dark', label: 'Monitoring is down', hint: 'The network system does not answer', input: { map: 'sure', net: 'unknown', line: 'pass', hours: 5, fee: 999, repeat: false } },
+    { id: 'credit', label: 'Long outage, larger credit', hint: 'Above INR 500, a supervisor decides', input: { map: 'sure', net: 'outage', line: 'pass', hours: 50, fee: 4999, repeat: false } },
+    { id: 'repeat', label: 'The same request twice', hint: 'A second ticket must not appear', input: { map: 'sure', net: 'outage', line: 'pass', hours: 5, fee: 999, repeat: true } },
+    { id: 'unsure', label: 'Unsure which node', hint: 'The address matches two nodes', input: { map: 'unsure', net: 'outage', line: 'pass', hours: 5, fee: 999, repeat: false } },
+  ];
+
+  const standards = [
+    {
+      topic: 'A reference for every complaint',
+      workshop: 'Every outage contact gets a complaint reference within 2 minutes. The rule came with the curveball and is decision D7.',
+      outside: 'Indian regulation already asks for this in principle. Under the Telecom Consumers Complaint Redressal Regulations, 2012, a complaint centre must register each complaint immediately, give it a unique docket number, and text the customer that number with the date, the time and the expected resolution time. The 2-minute limit is the case study\'s own figure.',
+      meaning: 'An early reference is normal regulated practice. The number of minutes is for Regulatory Affairs to confirm.',
+      links: [{ label: 'TRAI, Complaint Redressal Regulations 2012 (PDF)', url: 'https://www.trai.gov.in/sites/default/files/2024-09/CA_05012012.pdf' }],
+    },
+    {
+      topic: 'How fast faults must be fixed, and what customers are owed',
+      workshop: 'Credits follow one fixed company policy, with a supervisor above INR 500. The formula itself is still an open item.',
+      outside: 'TRAI\'s 2024 quality-of-service regulations, in force since 1 October 2024, set a floor for fixed-line broadband: 85% of faults repaired by the next working day and 99% within three working days. A fault that takes longer than three working days earns a proportional rent rebate, or extra validity on a prepaid plan. For mobile, an outage across a district that lasts more than 24 hours earns the same kind of rebate.',
+      meaning: 'A company credit policy sits on top of a regulatory minimum. The two should be designed together.',
+      links: [
+        { label: 'TRAI, Quality of Service Regulations 2024 (PDF)', url: 'https://www.trai.gov.in/sites/default/files/2024-09/Regulation_02082024.pdf' },
+        { label: 'TRAI, consumer grievance FAQ', url: 'https://www.trai.gov.in/faqcategory/redressal-consumer-grievances' },
+      ],
+    },
+    {
+      topic: 'Answering when everyone calls at once',
+      workshop: 'The assistant must stay available through ten times the normal contacts within 15 minutes.',
+      outside: 'The same regulations measure the contact centre itself: at least 95% of calls to a human operator answered within ninety seconds, and at least 95% accessibility of the call centre. An outage is when those figures are hardest to hold.',
+      meaning: 'A clear, early answer to outage contacts can help a regulated benchmark as well as the customer.',
+      links: [{ label: 'TRAI, Quality of Service Regulations 2024 (PDF)', url: 'https://www.trai.gov.in/sites/default/files/2024-09/Regulation_02082024.pdf' }],
+    },
+    {
+      topic: 'A shared language between systems',
+      workshop: 'Five company systems are involved: network monitoring, customer records, billing, field service and incident management. Their exact contracts are listed as evidence gaps.',
+      outside: 'The telecom industry body TM Forum publishes open API standards for these jobs. They include Alarm Management (TMF642), Service Problem Management (TMF656), Trouble Ticket (TMF621), Service Test (TMF653), Service Inventory (TMF638) and Appointment (TMF646).',
+      meaning: 'The connections need not be invented from scratch. A real integration can ask each system which of these it already supports.',
+      links: [{ label: 'TM Forum, Open API directory', url: 'https://www.tmforum.org/oda/open-apis/table' }],
+    },
+    {
+      topic: 'Texting customers before they call',
+      workshop: 'Proactive outage texts go only to customers who agreed to them. Consent and wording belong to Privacy, Legal and Customer Communications.',
+      outside: 'India\'s Digital Personal Data Protection Act, 2023 requires consent to be specific and informed, and as easy to withdraw as to give. Its Rules were notified in November 2025 and phase in over 18 months, with most duties scheduled to apply from May 2027. Bulk texts also fall under TRAI\'s commercial-communication rules, which separate promotional, service, transactional and government messages.',
+      meaning: 'Checking consent at the moment of sending is the right habit. Which legal basis covers an outage text is for Privacy and Legal to confirm.',
+      links: [
+        { label: 'MeitY, data protection framework', url: 'https://www.meity.gov.in/data-protection-framework' },
+        { label: 'TRAI, commercial communications amendment 2025 (PDF)', url: 'https://trai.gov.in/sites/default/files/2025-02/Regulation_12022025.pdf' },
+      ],
+    },
+    {
+      topic: 'Keeping the AI on a short lead',
+      workshop: 'The AI handles language. Fixed rules handle money and visits. A person approves credits above INR 500. Only one controlled layer may change company systems.',
+      outside: 'This matches the main published guidance. The OWASP Top 10 for LLM Applications (2025) lists prompt injection first and warns against excessive agency, meaning a model given more permissions or autonomy than its job needs. The NIST AI Risk Management Framework and ISO/IEC 42001 both set out how an organisation should govern AI, including who is accountable.',
+      meaning: 'The design choices in this workshop are the standard defences, applied to a telecom case.',
+      links: [
+        { label: 'OWASP, Top 10 for LLM Applications 2025', url: 'https://genai.owasp.org/llm-top-10/' },
+        { label: 'NIST, AI Risk Management Framework', url: 'https://www.nist.gov/itl/ai-risk-management-framework' },
+        { label: 'ISO/IEC 42001', url: 'https://www.iso.org/standard/42001' },
+      ],
+    },
+    {
+      topic: 'What an avoidable visit costs elsewhere',
+      workshop: 'An unnecessary visit costs INR 650, and 30% of outage calls end in one. Both are case-study figures for SkyLink.',
+      outside: 'The pattern is well known in the industry. In a Bain & Company interview on telecom field service, the partner put it as about $5 to take the call and about $100 to roll the truck, and noted that keeping the contact centre apart from the field force creates unnecessary work. It is a 2011 figure from the United States, so read it for the pattern only.',
+      meaning: 'The saving is plausible in kind. Its size has to come from SkyLink\'s own measured baseline.',
+      links: [{ label: 'Bain & Company, field service Q&A', url: 'https://www.bain.com/insights/field-service-what-utilities-can-learn-from-telcos-jeff-melton/' }],
+    },
+    {
+      topic: 'Doing a thing once, and failing safely',
+      workshop: 'Zero duplicate tickets. No action on stale data. A safe degraded mode when a system is down.',
+      outside: 'These are standard reliability practices. An idempotency key lets a system recognise a repeated request and carry it out once; an IETF working group has a draft standard for it. Google\'s site reliability engineering guidance describes graceful degradation: when a dependency fails, give a reduced but safe response instead of failing completely.',
+      meaning: 'The workshop\'s safety gates are ordinary good engineering, made explicit.',
+      links: [
+        { label: 'IETF, Idempotency-Key header draft', url: 'https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/' },
+        { label: 'Google SRE book, cascading failures', url: 'https://sre.google/sre-book/addressing-cascading-failures/' },
+      ],
+    },
+  ];
+
+  const checkpoints = [
+    { id: 1, range: 'D1–D4', theme: 'Sponsor alignment' },
+    { id: 2, range: 'D5–D12', theme: 'Journey and safety' },
+    { id: 3, range: 'D13–D20', theme: 'Value and pilot evidence' },
+    { id: 4, range: 'D21–D30', theme: 'Scope, owners and release authority' },
+  ];
+
+  /* The decision register, worded as in the report. */
+  const decisionText = [
+    'Business outcomes: dispatch, repeat contacts, resolution, credits, regulation, resilience',
+    'Broadband-first value slice, mobile expansion',
+    'Agent-assist and controlled automation',
+    'Unknown values remain gaps; scenario assumptions labelled',
+    'Chat/transcript agent-assist first',
+    'Five mandatory demonstration journeys',
+    'Early complaint-reference creation',
+    'NOC authoritative for outage status',
+    'Strict dispatch preconditions',
+    'Deterministic credits; approval above INR 500',
+    'Low-confidence mapping routed to human',
+    'Correctness and safety ahead of automation rate',
+    'Core ROI excludes speculative churn',
+    'Confidently mapped broadband pilot cohort',
+    'Backtest, then shadow, then controlled automation',
+    'Avoided truck rolls primary monetizable outcome',
+    'No churn-based differentiation of customer rights',
+    'Proactive notification demo; staged production',
+    'Safety failures are release blockers',
+    'Cross-functional baseline sign-off',
+    'Bounded capability contracts and owners',
+    'No unnecessary autonomous agents',
+    'Reactive production MVP; staged notification',
+    'Identity-confidence gate',
+    'Missing/stale/conflicting data = UNKNOWN',
+    'Business decision rights by domain',
+    'Credit completion requires financial reconciliation',
+    'R1–R5 evidence-backed handoffs',
+    'Business and Trust joint release authority',
+    'Close discovery; issue executive playback and PDF',
+  ];
+
+  const checkpointOf = (n) => (n <= 4 ? 1 : n <= 12 ? 2 : n <= 20 ? 3 : 4);
+  const decisions = decisionText.map((text, index) => ({
+    id: 'D' + (index + 1),
+    text,
+    checkpoint: checkpointOf(index + 1),
+  }));
+
+  const glossary = [
+    ['Agent-assist', 'Software that helps a human care agent do the job. It does not replace the agent.'],
+    ['Audit trail', 'A record of every step, who or what took it, and on what evidence.'],
+    ['Backtest', 'Replaying past, labelled cases through the new system to see what it would have done.'],
+    ['Churn', 'Customers leaving for another provider.'],
+    ['Complaint reference', 'The number a customer gets when a complaint is logged, used to track it later.'],
+    ['Consent', 'The customer\'s recorded agreement to receive a kind of message.'],
+    ['CRM', 'Customer relationship management. The system that holds customer records.'],
+    ['Degraded mode', 'A safe, limited way of working when a system the assistant depends on is down.'],
+    ['Deterministic rules', 'Fixed rules written in code. The same input always gives the same answer, like a calculator.'],
+    ['ETA', 'Estimated time of restoration. The network team\'s best guess for when service returns.'],
+    ['FDE', 'Forward deployed engineer. An engineer who works alongside the customer\'s own teams to frame a problem and deliver a working answer.'],
+    ['Human gate', 'A point where the software must stop and wait for a person to approve.'],
+    ['Idempotent', 'Safe to repeat. Sending the same request twice has the same effect as sending it once, like pressing a lift button twice.'],
+    ['LLM', 'Large language model. The kind of AI that reads and writes text. Here it handles conversation and never handles money.'],
+    ['ML', 'Machine learning. Software that learns patterns from past data, used here for sorting and for confidence checks.'],
+    ['NOC', 'Network operations centre. The control room that watches the network and sees faults first.'],
+    ['Node', 'A piece of network equipment that serves many homes in one area. If it fails, they all lose service.'],
+    ['OSS/BSS', 'Operations and business support systems. The telecom company\'s back-office systems for the network, customers and billing.'],
+    ['Outage', 'A fault in the network itself that cuts service for many customers at once.'],
+    ['RAG', 'Retrieval-augmented generation. The assistant looks up an approved document, such as a router guide, and quotes it with its source.'],
+    ['Release gate', 'A target that must be met before the system is allowed to go further.'],
+    ['Remote line test', 'A check of one customer\'s line, run from the office with no visit needed.'],
+    ['ROI', 'Return on investment. What the project gains compared with what it costs.'],
+    ['Shadow mode', 'The system makes recommendations alongside the real operation while people still do the work.'],
+    ['Stale data', 'Information that is too old to trust for a decision.'],
+    ['Surge', 'A sudden flood of contacts. The case tests ten times the normal volume within 15 minutes.'],
+    ['Truck roll', 'Sending a technician to a customer\'s home. The case prices an unnecessary one at INR 650.'],
+    ['UNKNOWN', 'The honest third answer, used when the network status cannot be verified, so that silence is never read as an all-clear.'],
+  ].map(([term, meaning]) => ({ term, meaning, key: term.toLowerCase().replace(/[^a-z0-9]+/g, '-') }));
+
+  root.SkyContent = Object.freeze({ findings, stakeholders, calls, presets, standards, checkpoints, decisions, glossary });
+})(window);
+</script>
+<script>
+/* Behaviour: stage routing, the stakeholder questions, the design calls, the demo and the
+   calculator. Everything is built with DOM nodes and textContent; nothing is parsed as HTML. */
+(function () {
+  'use strict';
+
+  const E = window.SkyEngine;
+  const C = window.SkyContent;
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const STEP_DELAY_MS = 420;
+  const FIRST_STEP_DELAY_MS = 200;
+  const POP_MARGIN_PX = 8;
+  const REPORT_VOLUMES = [1000, 5000, 10000, 25000, 50000];
+  const STEP_ICON = { ok: 'ok', alert: 'alert', warn: 'warn', stop: 'stop', human: 'human', info: 'info' };
+
+  const $ = (selector, root) => (root || document).querySelector(selector);
+  const $$ = (selector, root) => Array.from((root || document).querySelectorAll(selector));
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  function h(tag, attrs, ...children) {
+    const el = document.createElement(tag);
+    Object.entries(attrs || {}).forEach(([name, value]) => {
+      if (value === null || value === undefined || value === false) return;
+      if (name === 'class') el.className = value;
+      else el.setAttribute(name, value === true ? '' : value);
+    });
+    children.flat().forEach((child) => {
+      if (child === null || child === undefined || child === false) return;
+      el.append(child.nodeType ? child : document.createTextNode(String(child)));
+    });
+    return el;
+  }
+
+  function icon(name) {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'ico');
+    svg.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS(SVG_NS, 'use');
+    use.setAttribute('href', '#i-' + name);
+    svg.append(use);
+    return svg;
+  }
+
+  const tag = (kind, text) => h('span', { class: 'tag tag--' + kind }, text);
+  const decisionById = (id) => C.decisions.find((d) => d.id === id);
+
+  function ruleChip(id) {
+    const label = id + ': ' + decisionById(id).text;
+    return h('button', { type: 'button', class: 'rule', 'data-decision': id, title: label, 'aria-label': label }, id);
+  }
+
+  /* ---------- stages ---------- */
+
+  const stageLinks = $$('#route a');
+  const STAGES = stageLinks.map((a) => a.getAttribute('href').slice(1));
+  const stageLabel = (index) => $('.route__label', stageLinks[index]).textContent;
+
+  function stageInHash() {
+    const id = location.hash.slice(1);
+    return STAGES.includes(id) ? id : null;
+  }
+
+  function showStage(id, moveFocus) {
+    const index = STAGES.indexOf(id);
+    $$('.stage').forEach((section) => section.classList.toggle('is-active', section.id === id));
+    stageLinks.forEach((link, i) => {
+      link.parentElement.classList.toggle('is-done', i < index);
+      if (i === index) link.setAttribute('aria-current', 'step');
+      else link.removeAttribute('aria-current');
+    });
+    $('#route-now').textContent = 'Stage ' + (index + 1) + ' of ' + STAGES.length + ' · ' + stageLabel(index);
+    if (!moveFocus) return;
+    window.scrollTo(0, 0);
+    $('#' + id + '-h').focus({ preventScroll: true });
+  }
+
+  function initStages() {
+    showStage(stageInHash() || STAGES[0], false);
+    document.documentElement.classList.add('js');
+    window.addEventListener('hashchange', () => {
+      const id = stageInHash();
+      if (id) showStage(id, true);
+    });
+    $('.skip').addEventListener('click', (event) => {
+      event.preventDefault();
+      $('#main').focus();
+    });
+  }
+
+  /* ---------- discover: people, questions, findings ---------- */
+
+  const found = new Set();
+
+  function findingTile(finding, index) {
+    const isFound = found.has(finding.id);
+    const tile = h('li', { class: 'find' + (isFound ? ' is-found' : ''), id: 'find-' + finding.id });
+    tile.append(h('span', { class: 'find__n' }, 'Root cause ' + (index + 1)));
+    if (!isFound) {
+      tile.append(h('p', {}, 'Not uncovered yet. Ask the ' + finding.askRole + '.'));
+      return tile;
+    }
+    tile.append(
+      h('p', { class: 'find__plain' }, finding.plain),
+      h('p', { class: 'find__formal' }, 'In the report: ' + finding.formal),
+      h('dl', {},
+        h('div', {}, h('dt', {}, 'It leads to'), h('dd', {}, finding.leadsTo)),
+        h('div', {}, h('dt', {}, 'The design response'), h('dd', {}, finding.response))));
+    return tile;
+  }
+
+  function renderBoard(newId) {
+    const tiles = C.findings.map(findingTile);
+    $('#board').replaceChildren(...tiles);
+    $('#found-count').textContent = String(found.size);
+    $$('#found-pips i').forEach((pip, i) => pip.classList.toggle('is-on', i < found.size));
+    $('#reveal-all').hidden = found.size === C.findings.length;
+    if (newId) $('#find-' + newId).classList.add('is-new');
+  }
+
+  function uncover(findingId) {
+    if (found.has(findingId)) return;
+    found.add(findingId);
+    renderBoard(findingId);
+  }
+
+  function answerBlock(person, item, id) {
+    const isChallenge = item.type === 'challenge';
+    const meta = h('p', { class: 'q__meta' }, tag(isChallenge ? 'ok' : 'sim', isChallenge ? 'Workshop answer' : 'Simulated'));
+    if (item.decision) meta.append(ruleChip(item.decision));
+    const block = h('div', { class: 'q__a', id, hidden: true }, h('p', {}, item.a), meta);
+    if (item.finding) {
+      const finding = C.findings.find((f) => f.id === item.finding);
+      block.append(h('p', { class: 'q__found' }, icon('ok'), 'Root cause uncovered: ' + finding.plain + '.'));
+    }
+    return block;
+  }
+
+  function questionBlock(person, item, index) {
+    const id = 'qa-' + person.id + '-' + index;
+    const answer = answerBlock(person, item, id);
+    const kind = item.type === 'challenge' ? (item.who || 'They') + ' push back' : 'You ask';
+    const button = h('button', { type: 'button', class: 'q__btn', 'aria-expanded': 'false', 'aria-controls': id },
+      h('span', { class: 'q__kind' }, kind), h('span', {}, item.q));
+    button.addEventListener('click', () => {
+      const open = button.getAttribute('aria-expanded') !== 'true';
+      button.setAttribute('aria-expanded', String(open));
+      answer.hidden = !open;
+      if (open && item.finding) uncover(item.finding);
+    });
+    return h('div', { class: 'q' }, button, answer);
+  }
+
+  function personCard(person) {
+    const titleId = 'person-' + person.id;
+    return h('article', { class: 'person' + (person.wide ? ' person--wide' : ''), 'aria-labelledby': titleId },
+      h('div', { class: 'person__about' },
+        h('div', { class: 'person__head' },
+          h('span', { class: 'person__mono', 'aria-hidden': 'true' }, person.mono),
+          h('h3', { class: 'person__role', id: titleId }, person.role),
+          h('p', { class: 'person__kind' }, person.kind)),
+        h('p', { class: 'person__concern' }, person.concern),
+        h('p', { class: 'person__owns' }, (person.ownsLabel || 'Owns') + ': ' + person.owns)),
+      h('div', { class: 'person__qs' }, person.qa.map((item, index) => questionBlock(person, item, index))));
+  }
+
+  function initDiscover() {
+    $('#people').replaceChildren(...C.stakeholders.map(personCard));
+    $('#checkpoints').replaceChildren(...C.checkpoints.map((cp) => h('li', {},
+      h('b', {}, 'Checkpoint ' + cp.id), h('strong', {}, cp.theme), h('span', {}, cp.range))));
+    $('#reveal-all').addEventListener('click', () => {
+      const heading = $('#board-h');
+      C.findings.forEach((finding) => found.add(finding.id));
+      heading.focus({ preventScroll: true });
+      renderBoard(null);
+      heading.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'center' });
+    });
+    renderBoard(null);
+  }
+
+  /* ---------- decide: the four calls ---------- */
+
+  const plainLabel = (label) => label.replace(/^"|"$/g, '').replace(/\.$/, '');
+
+  function judge(call, chosen, card, out) {
+    const approved = call.options.find((option) => option.id === call.approved);
+    const match = chosen.id === call.approved;
+    const verdict = match
+      ? 'This is what the workshop approved.'
+      : 'The workshop approved a different option: ' + plainLabel(approved.label) + '.';
+    const meta = h('p', { class: 'q__meta' });
+    if (match) meta.append(tag('ok', 'Approved'), ...(chosen.decisions || []).map(ruleChip));
+    if (chosen.ruledOutBy) meta.append(tag('sim', 'Ruled out'), ruleChip(chosen.ruledOutBy));
+    const parts = [
+      h('p', { class: 'call__verdict ' + (match ? 'is-match' : 'is-diff') }, icon(match ? 'ok' : 'warn'), verdict),
+      h('p', { class: 'call__trade' }, chosen.tradeoff),
+      meta.childNodes.length ? meta : null,
+      match ? null : h('p', { class: 'call__why' }, h('strong', {}, 'Why the workshop chose its option. '), approved.tradeoff,
+        ' ', ...(approved.decisions || []).map(ruleChip)),
+    ];
+    out.replaceChildren(...parts.filter(Boolean));
+    $$('.option__mark', card).forEach((mark) => mark.replaceChildren());
+    $('#opt-' + call.id + '-' + call.approved + ' .option__mark', card).append(tag('ok', 'Workshop choice'));
+  }
+
+  function callCard(call, index) {
+    const headingId = 'call-' + call.id + '-h';
+    const out = h('div', { class: 'call__out', 'aria-live': 'polite' },
+      h('p', { class: 'call__wait' }, 'Choose an option to see its trade-off.'));
+    const card = h('section', { class: 'call', 'aria-labelledby': headingId });
+    const options = call.options.map((option) => {
+      const input = h('input', { type: 'radio', class: 'option__input', name: 'call-' + call.id, id: 'pick-' + call.id + '-' + option.id, value: option.id });
+      input.addEventListener('change', () => judge(call, option, card, out));
+      return h('label', { class: 'option', id: 'opt-' + call.id + '-' + option.id }, input,
+        h('span', { class: 'option__body' },
+          h('span', { class: 'option__label' }, option.label),
+          h('span', { class: 'option__hint' }, option.hint),
+          h('span', { class: 'option__mark' })));
+    });
+    card.append(
+      h('div', { class: 'call__top' },
+        h('p', { class: 'eyebrow' }, 'Call ' + (index + 1) + ' of ' + C.calls.length),
+        call.curveball ? tag('curve', 'Curveball') : null),
+      h('h3', { class: 'call__title', id: headingId }, call.title),
+      h('p', { class: 'call__ask' }, call.ask),
+      h('div', { class: 'options', role: 'radiogroup', 'aria-labelledby': headingId }, options),
+      out);
+    return card;
+  }
+
+  function initDecide() {
+    $('#calls').replaceChildren(...C.calls.map(callCard));
+  }
+
+  /* ---------- demo ---------- */
+
+  let demoInput = Object.assign({}, C.presets[0].input);
+  let playToken = 0;
+
+  function readControls() {
+    const picked = (name) => $('input[name="' + name + '"]:checked', $('#controls')).value;
+    return {
+      map: picked('map'),
+      net: picked('net'),
+      line: picked('line'),
+      hours: Number($('#hours').value),
+      fee: Number(picked('fee')),
+      repeat: $('#repeat').checked,
+    };
+  }
+
+  function writeControls(input) {
+    const pick = (name, value) => { $('input[name="' + name + '"][value="' + value + '"]', $('#controls')).checked = true; };
+    pick('map', input.map);
+    pick('net', input.net);
+    pick('line', input.line);
+    pick('fee', input.fee);
+    $('#hours').value = String(input.hours);
+    $('#repeat').checked = input.repeat;
+  }
+
+  /* Only the controls that can change the outcome are shown. */
+  function syncControls() {
+    const { map, net, line, hours } = demoInput;
+    const reached = map === 'sure';
+    $('#ctl-net').hidden = !reached;
+    $('#ctl-line').hidden = !(reached && net === 'clear');
+    $('#ctl-hours').hidden = !(reached && net === 'outage');
+    $('#ctl-fee').hidden = !(reached && net === 'outage');
+    $('#ctl-repeat').hidden = !(reached && (net === 'outage' || (net === 'clear' && line === 'fail')));
+    $('#hours-out').textContent = hours + (hours === 1 ? ' hour' : ' hours');
+    const same = (a, b) => Object.keys(a).every((key) => a[key] === b[key]);
+    $$('#presets .preset').forEach((button, i) => {
+      button.setAttribute('aria-pressed', String(same(C.presets[i].input, demoInput)));
+    });
+  }
+
+  function messageEl(message) {
+    const who = message.from === 'customer' ? 'Customer' : 'SkyLink care';
+    return h('li', { class: 'msg msg--' + message.from }, h('span', { class: 'msg__who' }, who), message.text);
+  }
+
+  function stepEl(step) {
+    return h('li', { class: 'step step--' + step.kind },
+      h('span', { class: 'step__ico' }, icon(STEP_ICON[step.kind])),
+      h('p', { class: 'step__title' }, step.title, ...(step.rules || []).map(ruleChip)),
+      h('p', { class: 'step__text' }, step.text));
+  }
+
+  function outcomeTile(item) {
+    return h('div', { class: 'tile tile--' + item.tone },
+      h('dt', {}, item.label),
+      h('dd', {}, h('span', { class: 'tile__value' }, item.value), h('span', { class: 'tile__note' }, item.note)));
+  }
+
+  function renderDemo(options) {
+    const { animate, announce } = options;
+    const run = E.runScenario(demoInput, new Date());
+    const token = ++playToken;
+    const chat = $('#chat');
+    const steps = $('#steps');
+    const result = $('.result');
+    const showChat = (afterStep) => run.chat.filter((m) => m.afterStep === afterStep).forEach((m) => {
+      if (m.divider) chat.append(h('li', { class: 'chat__divider' }, m.divider));
+      chat.append(messageEl(m));
+    });
+    const finish = () => {
+      $('#outcome').replaceChildren(...run.outcome.map(outcomeTile));
+      $('#today').textContent = run.today;
+      result.classList.remove('is-pending');
+      if (announce) $('#outcome-live').textContent = run.outcome.map((item) => item.label + ': ' + item.value).join('. ') + '.';
+    };
+
+    chat.replaceChildren();
+    steps.replaceChildren();
+    showChat(-1);
+
+    if (!animate || reducedMotion.matches) {
+      run.steps.forEach((step, i) => { steps.append(stepEl(step)); showChat(i); });
+      finish();
+      return;
+    }
+    result.classList.add('is-pending');
+    let next = 0;
+    const tick = () => {
+      if (token !== playToken) return;
+      steps.append(stepEl(run.steps[next]));
+      showChat(next);
+      next += 1;
+      if (next < run.steps.length) window.setTimeout(tick, STEP_DELAY_MS);
+      else finish();
+    };
+    window.setTimeout(tick, FIRST_STEP_DELAY_MS);
+  }
+
+  function renderSms() {
+    const box = $('#sms');
+    const agreed = $('#consent').checked;
+    box.classList.toggle('is-held', !agreed);
+    box.replaceChildren(...(agreed ? [
+      h('p', { class: 'sms__from' }, 'Text message · sent before the customer calls'),
+      h('p', {}, 'SkyLink: We know about an outage in your area. A fibre cable was cut at 09:10 and engineers are repairing it. You do not need to restart your router or call us. We will text you when service is back.'),
+    ] : [
+      h('p', { class: 'sms__from' }, 'No text is sent'),
+      h('p', {}, 'This customer has not agreed to service messages, so the notice is withheld and the decision is logged. They still get the full answer if they contact care.'),
+    ]));
+  }
+
+  function initDemo() {
+    const controls = $('#controls');
+    $('#presets').replaceChildren(...C.presets.map((preset) => {
+      const button = h('button', { type: 'button', class: 'preset', 'aria-pressed': 'false' },
+        h('b', {}, preset.label), h('span', {}, preset.hint));
+      button.addEventListener('click', () => {
+        demoInput = Object.assign({}, preset.input);
+        writeControls(demoInput);
+        syncControls();
+        renderDemo({ animate: true, announce: true });
+      });
+      return button;
+    }));
+    controls.addEventListener('submit', (event) => event.preventDefault());
+    controls.addEventListener('change', (event) => {
+      demoInput = readControls();
+      syncControls();
+      renderDemo({ animate: event.target.id !== 'hours', announce: true });
+    });
+    $('#hours').addEventListener('input', () => {
+      demoInput = readControls();
+      syncControls();
+      renderDemo({ animate: false, announce: false });
+    });
+    $('#replay').addEventListener('click', () => renderDemo({ animate: true, announce: true }));
+    $('#consent').addEventListener('change', renderSms);
+    writeControls(demoInput);
+    syncControls();
+    renderDemo({ animate: false, announce: false });
+    renderSms();
+  }
+
+  /* ---------- value: the calculator ---------- */
+
+  const count = (n) => n.toLocaleString('en-US');
+
+  function moneyLine(amount, visits, noun) {
+    const words = amount >= 1e5 ? E.formatLakhCrore(amount) + ' · ' : '';
+    return words + count(visits) + ' ' + noun;
+  }
+
+  function renderCalc() {
+    const contacts = Number($('#contacts').value);
+    const reduction = Number($('#reduction').value);
+    const r = E.roi(contacts, reduction);
+    $('#contacts-out').textContent = count(contacts);
+    $('#reduction-out').textContent = reduction + '%';
+    $('#waste').textContent = E.formatInrMillions(r.baselineWaste);
+    $('#waste-sub').textContent = moneyLine(r.baselineWaste, r.unnecessaryVisits, 'unnecessary visits a year');
+    $('#saving').textContent = E.formatInrMillions(r.savings);
+    $('#saving-sub').textContent = moneyLine(r.savings, r.visitsAvoided, 'visits avoided a year');
+    $('#bar-save').style.setProperty('--share', String(reduction / 100));
+    $('#bar').setAttribute('aria-label', 'Of ' + E.formatInrMillions(r.baselineWaste) + ' spent each year on unnecessary visits, ' +
+      E.formatInrMillions(r.savings) + ' is saved and ' + E.formatInrMillions(r.remainingWaste) + ' is still spent.');
+    $$('#quick .chip').forEach((chip) => chip.setAttribute('aria-pressed', String(Number(chip.value) === contacts)));
+  }
+
+  function initCalc() {
+    const form = $('#calc');
+    $('#quick').replaceChildren(...REPORT_VOLUMES.map((volume) => {
+      const chip = h('button', { type: 'button', class: 'chip', value: String(volume), 'aria-pressed': 'false' }, count(volume));
+      chip.addEventListener('click', () => { $('#contacts').value = String(volume); renderCalc(); });
+      return chip;
+    }));
+    form.addEventListener('submit', (event) => event.preventDefault());
+    form.addEventListener('input', renderCalc);
+    renderCalc();
+  }
+
+  /* ---------- standards ---------- */
+
+  function standardRow(item) {
+    return h('article', { class: 'std' },
+      h('div', { class: 'std__side' },
+        h('h3', {}, item.topic),
+        h('p', {}, h('span', { class: 'std__label' }, 'In the workshop'), item.workshop)),
+      h('div', { class: 'std__main' },
+        h('p', {}, h('span', { class: 'std__label' }, 'In the real world'), item.outside),
+        h('p', { class: 'std__mean' }, h('span', { class: 'std__label' }, 'What it means here'), item.meaning),
+        h('ul', { class: 'links' }, item.links.map((link) => h('li', {},
+          h('a', { href: link.url, target: '_blank', rel: 'noopener noreferrer' }, link.label, icon('out')))))));
+  }
+
+  /* ---------- next: the decision register ---------- */
+
+  function renderRegister(checkpoint) {
+    const rows = C.decisions.filter((d) => !checkpoint || d.checkpoint === checkpoint);
+    $('#register').replaceChildren(...rows.map((d) => h('li', {}, h('b', {}, d.id), h('span', {}, d.text))));
+    $$('#register-filters .chip').forEach((chip) => chip.setAttribute('aria-pressed', String(Number(chip.value) === checkpoint)));
+  }
+
+  function initRegister() {
+    const filters = [{ id: 0, label: 'All 30' }].concat(C.checkpoints.map((cp) => ({ id: cp.id, label: cp.range + ' ' + cp.theme })));
+    $('#register-filters').replaceChildren(...filters.map((filter) => {
+      const chip = h('button', { type: 'button', class: 'chip', value: String(filter.id), 'aria-pressed': 'false' }, filter.label);
+      chip.addEventListener('click', () => renderRegister(filter.id));
+      return chip;
+    }));
+    renderRegister(0);
+  }
+
+  /* ---------- jargon: the full list and the pop-up on a term ---------- */
+
+  function openGlossary(hitKey) {
+    const dialog = $('#glossary');
+    $$('.is-hit', dialog).forEach((row) => row.classList.remove('is-hit'));
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+    const hit = hitKey && $('#term-' + hitKey, dialog);
+    if (!hit) return;
+    hit.classList.add('is-hit');
+    hit.scrollIntoView({ block: 'center' });
+  }
+
+  function placePop(pop, anchor) {
+    const a = anchor.getBoundingClientRect();
+    const p = pop.getBoundingClientRect();
+    const left = Math.max(POP_MARGIN_PX, Math.min(a.left, window.innerWidth - p.width - POP_MARGIN_PX));
+    const below = a.bottom + POP_MARGIN_PX;
+    const top = below + p.height > window.innerHeight - POP_MARGIN_PX ? Math.max(POP_MARGIN_PX, a.top - p.height - POP_MARGIN_PX) : below;
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+  }
+
+  function initGlossary() {
+    const dialog = $('#glossary');
+    const pop = $('#term-pop');
+    const canPop = typeof pop.showPopover === 'function';
+    const isOpen = () => canPop && pop.matches(':popover-open');
+    if (!canPop) pop.hidden = true;
+
+    $('#glossary-list').replaceChildren(...C.glossary.map((entry) => h('div', { id: 'term-' + entry.key },
+      h('dt', {}, entry.term), h('dd', {}, entry.meaning))));
+    $('#open-glossary').addEventListener('click', () => openGlossary(null));
+    $('#close-glossary').addEventListener('click', () => dialog.close());
+    let pressedOnBackdrop = false;
+    dialog.addEventListener('pointerdown', (event) => { pressedOnBackdrop = event.target === dialog; });
+    dialog.addEventListener('click', (event) => { if (event.target === dialog && pressedOnBackdrop) dialog.close(); });
+
+    let popAnchor = null;
+    let justDismissed = null;
+    document.addEventListener('pointerdown', (event) => {
+      const anchor = event.target.closest('.term, .rule');
+      justDismissed = anchor && anchor === popAnchor && isOpen() ? anchor : null;
+    }, true);
+    const showPop = (anchor, title, meaning) => {
+      const closing = anchor === justDismissed;
+      justDismissed = null;
+      if (closing) return;
+      if (isOpen()) pop.hidePopover();
+      $('#term-pop-term').textContent = title;
+      $('#term-pop-meaning').textContent = meaning;
+      pop.showPopover();
+      placePop(pop, anchor);
+      popAnchor = anchor;
+      pop.focus({ preventScroll: true });
+    };
+    document.addEventListener('click', (event) => {
+      const term = event.target.closest('.term');
+      const rule = event.target.closest('.rule');
+      if (term) {
+        const entry = C.glossary.find((g) => g.key === term.dataset.term);
+        if (entry && canPop) showPop(term, entry.term, entry.meaning);
+        else if (entry) openGlossary(entry.key);
+      } else if (rule && canPop) {
+        const decision = decisionById(rule.dataset.decision);
+        showPop(rule, 'Decision ' + decision.id, decision.text + '. Approved at checkpoint ' + decision.checkpoint + '.');
+      }
+    });
+    window.addEventListener('scroll', () => {
+      if (!isOpen() || !popAnchor) return;
+      const box = popAnchor.getBoundingClientRect();
+      if (box.bottom < 0 || box.top > window.innerHeight) pop.hidePopover();
+      else placePop(pop, popAnchor);
+    }, { passive: true });
+  }
+
+  /* Stages go last: if anything before them fails, every stage stays visible as one long page. */
+  function start() {
+    initDiscover();
+    initDecide();
+    initDemo();
+    initCalc();
+    $('#standards-list').replaceChildren(...C.standards.map(standardRow));
+    initRegister();
+    initGlossary();
+    initStages();
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>
