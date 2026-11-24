@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>G3 Telco · Template</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* The running title of this document, top right of every page after the first. */
+  @page { @top-right { content: "Template"; } }
+  @page :first { @top-right { content: none; } }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <p class="eyebrow">Group 3 · Telco · Submission item 0 of 9</p>
+  <h1>Document title, said plainly</h1>
+  <p class="lead">One or two sentences that say what this document shows and what it rests on. Every figure in it names its source.</p>
+  <dl class="meta">
+    <div><dt>Client</dt><dd>SkyLink Telecom (fictional)</dd></div>
+    <div><dt>Owner</dt><dd>R2 Architect</dd></div>
+    <div><dt>Version</dt><dd>24 November 2026</dd></div>
+    <div><dt>Data</dt><dd>Synthetic stand-in data only</dd></div>
+  </dl>
+</header>
+
+<h2><span class="n">1</span> A numbered section</h2>
+<p>Body text. A measured figure carries a tag: <span class="tag tag--calc">Measured</span> 97.47% of affected contacts. An assumption says so: <span class="tag tag--assume">Assumption</span>. Something not built says so: <span class="tag tag--no">Not built</span>. Stand-in data: <span class="tag tag--sim">Stand-in</span>. Built: <span class="tag tag--ok">Built</span>. A person decides: <span class="tag tag--human">Human gate</span>. Code looks like <code>src/skylink_care/api/app.py</code>.</p>
+
+<div class="kpis mt">
+  <div><em>Outage detection</em><b>97.47%</b><span>of affected contacts. Target 95%.</span></div>
+  <div><em>Credits</em><b class="long">4,050 of 4,050</b><span>match an independent calculation.</span></div>
+  <div><em>Curveball</em><b>8 of 8</b><span>failure drills hold every rule.</span></div>
+  <div><em>Attack suite</em><b>58 of 58</b><span>runs pass, none critical.</span></div>
+</div>
+
+<h3>A table</h3>
+<table>
+  <thead><tr><th>Metric</th><th>Target</th><th class="num">Result</th><th>Source</th></tr></thead>
+  <tbody>
+    <tr><th>Outage detected <small>for affected customers</small></th><td>at least 95%</td><td class="num">97.47%</td><td><code>evals/reports/outage_detection.md</code></td></tr>
+    <tr><th>Credits match policy</th><td>100%</td><td class="num">4,050 of 4,050</td><td><code>evals/reports/credit_policy.md</code></td></tr>
+  </tbody>
+</table>
+<p class="src">Source line: where the figures above come from, and what they do not prove.</p>
+
+<div class="cols-2 mt">
+  <div class="note"><b>A note.</b> Used for a point the reader must not miss.</div>
+  <div class="note note--warn"><b>A limit.</b> Used for what is assumed, or not yet built.</div>
+</div>
+
+<figure class="mt">
+  <svg class="dia" viewBox="0 0 700 150" role="img" aria-label="Sample diagram: a customer asks the API, which writes to the database; the executor acts on the gateway.">
+    <rect class="zone" x="150" y="12" width="330" height="126" rx="10"/>
+    <text class="zlabel" x="162" y="30">CARE PLATFORM</text>
+    <rect class="box" x="10" y="50" width="110" height="50" rx="25"/><text class="name" x="65" y="72" text-anchor="middle">Customer</text><text class="sub" x="65" y="87" text-anchor="middle">chat or call</text>
+    <rect class="box box--key" x="170" y="50" width="120" height="50" rx="6"/><text class="name" x="230" y="72" text-anchor="middle">API</text><text class="sub" x="230" y="87" text-anchor="middle">front desk</text>
+    <rect class="box" x="340" y="50" width="120" height="50" rx="6"/><text class="name" x="400" y="72" text-anchor="middle">Executor</text><text class="sub" x="400" y="87" text-anchor="middle">the only writer</text>
+    <rect class="box box--out" x="560" y="50" width="130" height="50" rx="6"/><text class="name" x="625" y="72" text-anchor="middle">SkyLink systems</text><text class="sub" x="625" y="87" text-anchor="middle">through the gateway</text>
+    <path class="wire wire--ask" d="M120 75H161"/><path class="head--ask" d="M170 75l-9-5v10z"/>
+    <path class="wire wire--file" d="M290 75H331"/><path class="head--file" d="M340 75l-9-5v10z"/>
+    <path class="wire wire--act" d="M460 75H551"/><path class="head--act" d="M560 75l-9-5v10z"/>
+    <text class="lbl" x="505" y="66" text-anchor="middle">writes, once</text>
+  </svg>
+  <figcaption><b>Figure 1.</b> A caption states what the picture shows.</figcaption>
+</figure>
+
+<section class="adr">
+  <p class="adr__id">DECISION RECORD 1</p>
+  <h3>A decision, as a short statement</h3>
+  <dl>
+    <dt>Decision</dt><dd>What had to be decided.</dd>
+    <dt>Options</dt><dd>A. First option. B. Second option. C. Third option.</dd>
+    <dt>Choice</dt><dd>B.</dd>
+    <dt>Why</dt><dd>The reason, in a sentence or two.</dd>
+    <dt>Trade-off</dt><dd>What it costs.</dd>
+  </dl>
+</section>
+
+<h2 class="pb"><span class="n">2</span> Checklist and signatures</h2>
+<ul class="check">
+  <li><span class="box box--yes">✓</span><div><p class="item">A ticked item, in the brief's own words</p><p class="ev"><b>Evidence.</b> The test, configuration line or log that shows it.</p></div></li>
+  <li><span class="box box--part">~</span><div><p class="item">An item met in part</p><p class="ev"><b>Met.</b> What is there. <b>Not met.</b> What is missing, in one line.</p></div></li>
+  <li><span class="box"></span><div><p class="item">An unticked item</p><p class="ev"><b>Reason.</b> One line.</p></div></li>
+</ul>
+<div class="sign">
+  <div><div class="line"></div><p class="role">R1 · FDE Lead</p><p class="who">Name: <span class="blank">&nbsp;</span></p></div>
+  <div><div class="line"></div><p class="role">R2 · Architect</p><p class="who">Name: <span class="blank">&nbsp;</span></p></div>
+  <div><div class="line"></div><p class="role">R3 · Data &amp; RAG</p><p class="who">Name: <span class="blank">&nbsp;</span></p></div>
+  <div><div class="line"></div><p class="role">R4 · Agent Engineer</p><p class="who">Name: <span class="blank">&nbsp;</span></p></div>
+  <div><div class="line"></div><p class="role">R5 · Platform &amp; Trust</p><p class="who">Name: <span class="blank">&nbsp;</span></p></div>
+</div>
+
+</body>
+</html>

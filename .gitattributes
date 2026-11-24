@@ -13,3 +13,7 @@
 *.xlsx binary
 *.zip binary
 *.sqlite binary
+
+# Office files and fonts that may be added are never converted either.
+*.pptx binary
+*.ttf binary

@@ -6,6 +6,7 @@ Capstone build for **G3 Telco — Outage-Aware Customer Care Agent** (FDE progra
 - Plan, milestones and decisions still open: [`docs/EXECUTION_PLAN.md`](docs/EXECUTION_PLAN.md)
 - Contracts of the stand-in data pack and mock APIs: [`docs/contracts/`](docs/contracts/)
 - The brief's checklists (guardrails, security, compliance and responsible AI), line by line, with the evidence or the reason: [`docs/evidence_index.md`](docs/evidence_index.md). Beside it: the [threat model](docs/threat_model.md), the [data inventory](docs/data_inventory.md) and the [map from complaint rules to controls](docs/regulatory_controls.md)
+- The submission package for the presentation (deck, problem statement, architecture document, evaluation report, checklists, ROI model, contribution matrix), with what is still to do before submitting and how each file is rebuilt: [`presentation/`](presentation/README.md)
 
 ## Status
 
@@ -171,7 +172,7 @@ make test-all           # everything with coverage (needs `make up`), about nine
 
 Other targets: `make help` lists them all; `make down` stops the containers and keeps the data; `make migrate` applies the database migrations; `make profile` writes the mapping-quality profile to `reports/data_profile.md`; `./scripts/dev_stack.sh status` shows which local processes run.
 
-`make test-all` runs unit, integration (real PostgreSQL), contract (adapters against the mock gateway, in process) and end-to-end journey tests. The language model is replaced by the offline rules provider in tests; nothing else is stubbed. At the last full run (on GitLab.com, 22 Nov) all 2,662 tests passed, with 96% branch coverage of `skylink_care`.
+`make test-all` runs unit, integration (real PostgreSQL), contract (adapters against the mock gateway, in process) and end-to-end journey tests. The language model is replaced by the offline rules provider in tests; nothing else is stubbed. At the last full run (on GitLab.com, 24 Nov) all 2,689 tests passed, with 96% branch coverage of `skylink_care`.
 
 **CI** (`.github/workflows/ci.yml`, GitHub Actions; decision D6) runs on every push to `dev` and every pull request:
 
@@ -396,4 +397,4 @@ Five processes run from one image, each with only its own credentials: the API (
 
 ## AI assistance
 
-This repository was written with **Claude Code** (Anthropic), model Claude Fable 5.2; the documentation pass of 16 November (`docs/HOW_IT_WORKS.md` and the audits of the documents against the code) used Claude Opus 5.5. Claude Code produced the execution plan, the code and the tests in this repository. Within that session, sub-agents wrote the synthetic data generator and the mock gateway from written contracts, and other sub-agents reviewed the plan, the architecture and the code (Python, security and silent-failure reviews); their findings were fixed and are covered by tests. For the retrieval evaluation a sub-agent that was shown one router guide and none of the retriever wrote and labelled the independent descriptions, and other sub-agents reviewed the evaluations for whether each report claims only what was measured. The two supplied documents (the brief and the team's action plan) were written by people and are kept out of the repository.
+This repository was written with **Claude Code** (Anthropic), model Claude Fable 5.2; the documentation pass of 16 November (`docs/HOW_IT_WORKS.md` and the audits of the documents against the code) used Claude Opus 5.5. Claude Code produced the execution plan, the code and the tests in this repository. Within that session, sub-agents wrote the synthetic data generator and the mock gateway from written contracts, and other sub-agents reviewed the plan, the architecture and the code (Python, security and silent-failure reviews); their findings were fixed and are covered by tests. For the retrieval evaluation a sub-agent that was shown one router guide and none of the retriever wrote and labelled the independent descriptions, and other sub-agents reviewed the evaluations for whether each report claims only what was measured. The submission documents in `presentation/` were produced the same way on 24 November: sub-agents wrote the deck, the PDFs and the ROI workbook from this repository's reports and took the screenshots from the running local demo, and further sub-agents checked the figures in them against the repository; the contribution matrix and the signatures are left for the team to complete. The two supplied documents (the brief and the team's action plan) were written by people and are kept out of the repository.

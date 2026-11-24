@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>G3 Telco · Problem statement</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  @page { @top-right { content: "Problem statement"; } }
+  @page :first { @top-right { content: none; } }
+
+  /* The limit is two pages, so this document is set tighter than the shared default. */
+  body { font-size: 8.2pt; line-height: 1.42; }
+  p + p { margin-top: 1.1mm; }
+  .cover { gap: 1.6mm; padding-bottom: 3mm; margin-bottom: 0; }
+  .cover h1 { font-size: 22pt; }
+  .cover .lead { margin-top: 0; font-size: 9.1pt; line-height: 1.4; max-width: none; }
+  .meta { margin-top: .4mm; gap: 1.5mm 5mm; grid-template-columns: 1.2fr 1.25fr .9fr 1.65fr; }
+  .meta > div { padding-top: 1.1mm; }
+  .meta dd { font-size: 7.8pt; line-height: 1.3; }
+  h2 { margin-top: 3.4mm; font-size: 11.8pt; }
+  h2 .n { min-width: 5.5mm; font-size: 8.8pt; }
+  h2 + * { margin-top: 1.3mm; }
+  h3 { margin-top: 0; font-size: 8.5pt; }
+  h3 + * { margin-top: .8mm; }
+  table { font-size: 7.35pt; line-height: 1.33; }
+  th, td { padding: 1mm 2.6mm 1mm 0; }
+  thead th { font-size: 6pt; }
+  tbody th { font-size: 7.5pt; line-height: 1.3; }
+  .src { margin-top: 1mm; font-size: 6.9pt; line-height: 1.35; }
+  .tag { font-size: 5.6pt; padding: .3mm 1mm; }
+  code, .mono { font-size: .87em; }
+  ul { padding-left: 3.5mm; }
+  li { margin-top: .45mm; padding-left: .2mm; }
+
+  /* 1 The pain */
+  .kpis > div { padding: 1.7mm 2.6mm 1.9mm 0; gap: .5mm; }
+  .kpis > div + div { padding-left: 2.6mm; }
+  .kpis b { font-size: 15.5pt; }
+  .kpis span { font-size: 7.3pt; line-height: 1.33; }
+  .pain { display: grid; grid-template-columns: minmax(0, 1.14fr) minmax(0, 1fr); gap: 0 7mm; margin-top: 2.2mm; }
+  .pain th.num, .pain td.num { padding-right: 3mm; white-space: nowrap; }
+  .pain thead th, .pain thead th.num { white-space: normal; }
+  .pain th.num:last-child, .pain td.num:last-child { padding-right: 0; }
+
+  /* 2 Stakeholders: one line each */
+  table.who tbody th { white-space: nowrap; }
+
+  /* 3 Scope */
+  .first { margin-top: 1.3mm; padding: 1.6mm 2.8mm; border-left: .9mm solid var(--accent); background: var(--ground); font-size: 7.8pt; line-height: 1.39; }
+  .scope { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.14fr); gap: 0 7mm; margin-top: 1.9mm; font-size: 7.55pt; line-height: 1.36; }
+  .why { color: var(--ink-2); }
+
+  /* 4 Sub-problems: one row per owner */
+  table.subs td, table.subs th { padding-top: 1.15mm; padding-bottom: 1.15mm; }
+  table.subs .own { width: 18mm; }
+  table.subs .rid { display: block; font: 770 14.5pt/1 var(--font-display); font-stretch: 106%; letter-spacing: -.02em; color: var(--accent-ink); }
+  table.subs .own span { display: block; margin-top: .6mm; font: 700 7.5pt/1.2 var(--font-display); }
+  table.subs .own em { display: block; margin-top: .8mm; font: 600 5.3pt/1.2 var(--font-mono); font-style: normal; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+  table.subs .framed { width: 53mm; color: var(--ink-2); }
+  table.subs .ask { font: 700 7.6pt/1.3 var(--font-display); color: var(--ink); }
+  table.subs .ask + p { margin-top: .7mm; }
+
+  .h2note { margin-left: 2mm; font: 500 7pt/1 var(--font-body); letter-spacing: 0; color: var(--ink-2); }
+
+  /* 5 Metrics */
+  table.metrics .m { width: 47mm; }
+  table.metrics .t { width: 20mm; white-space: nowrap; }
+  .curve { margin-top: 2.2mm; padding: 1.8mm 3mm; font-size: 7.8pt; line-height: 1.39; }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <p class="eyebrow">Group 3 · Telco · Submission item 2 of 9</p>
+  <h1>Problem statement</h1>
+  <p class="lead">When a fibre is cut or a tower fails, SkyLink's network team knows within minutes and its customer care does not. This document frames that problem: the pain, the people, the scope, five owned sub-problems and the measures of success.</p>
+  <dl class="meta">
+    <div><dt>Client</dt><dd>SkyLink Telecom (fictional)</dd></div>
+    <div><dt>Led by</dt><dd>R1 FDE Lead, with R2 to R5</dd></div>
+    <div><dt>Version</dt><dd>24 November 2026</dd></div>
+    <div><dt>Data</dt><dd>Synthetic stand-ins (note under section 5)</dd></div>
+  </dl>
+</header>
+
+<h2><span class="n">1</span> The business pain, in the client's numbers</h2>
+<div class="kpis">
+  <div><em>Customers · brief p.1</em><b>3.5 m + 8 m</b><span>broadband and mobile customers.</span></div>
+  <div><em>Wasted · brief p.1</em><b>30%</b><span>of outage calls end in a technician visit nobody needed.</span></div>
+  <div><em>Per visit · brief p.1</em><b>INR 650</b><span>for every unnecessary visit.</span></div>
+  <div><em>Per 1,000 · derived</em><b>INR 195,000</b><span>wasted: 1,000 × 30% × INR 650. Halving it saves INR 97,500.</span></div>
+</div>
+<div class="pain">
+  <div>
+    <p><b>Today.</b> The network operations centre (NOC) knows of a fibre cut or a tower fault within minutes. Customer care is not told. Thousands of customers call, and agents take each one through the same reboot script. Three calls in ten end with a technician sent to a home where nothing is wrong. A repeat complaint within 7 days is SkyLink's top churn signal, and the regulator tracks how long complaints take to resolve.</p>
+    <p><b>What the sponsor wants.</b> The Chief Customer Officer wants care to "know what the network knows", to resolve outage-related contacts automatically, and to offer fair service credits consistently.</p>
+  </div>
+  <div>
+    <h3>Contact volume: not known <span class="tag tag--assume">Scenarios</span></h3>
+    <table>
+      <thead><tr><th>If outage contacts a month were</th><th class="num">Wasted on visits a year</th><th class="num">Saved a year at a 50% cut</th></tr></thead>
+      <tbody>
+        <tr><td>1,000</td><td class="num">INR 2.34 m</td><td class="num">INR 1.17 m</td></tr>
+        <tr><td>10,000</td><td class="num">INR 23.40 m</td><td class="num">INR 11.70 m</td></tr>
+        <tr><td>50,000</td><td class="num">INR 117.00 m</td><td class="num">INR 58.50 m</td></tr>
+      </tbody>
+    </table>
+    <p class="src">SkyLink has not supplied its volume, so every annual figure is a scenario: contacts × 30% × INR 650, before solution cost (discovery report, section 6). Only visits that would otherwise have happened count as saved; churn stays out.</p>
+  </div>
+</div>
+
+<h2><span class="n">2</span> Who feels it</h2>
+<table class="who">
+  <thead><tr><th style="width:44mm">Stakeholder (brief p.1)</th><th style="width:52mm">What they need</th><th style="width:37mm">Accountable for</th><th>Still theirs to decide</th></tr></thead>
+  <tbody>
+    <tr><th>Chief Customer Officer (sponsor)</th><td>Outcomes proven, more than a chatbot</td><td>Outcomes and funding</td><td>Which outcome leads; the pilot ask</td></tr>
+    <tr><th>NOC Manager</th><td>Authority on outages, freshness, ETA</td><td>Outage truth, ETA, freshness</td><td>How fresh a status must be</td></tr>
+    <tr><th>Contact Centre Head</th><td>Agent adoption and handling time</td><td>The care workflow</td><td>When a person must take over</td></tr>
+    <tr><th>Field Operations Lead</th><td>No waste, no needed visit blocked</td><td>Dispatch and ticket lifecycle</td><td>Which test results justify a visit</td></tr>
+    <tr><th>Regulatory Affairs Manager</th><td>Reference in 2 minutes; auditable claims</td><td>Complaint deadlines, rights</td><td>Is the intake reference official?</td></tr>
+    <tr><th>OSS/BSS Integration Architect</th><td>Cross-system identity; API contracts</td><td>Customer-to-node mapping</td><td>Idempotency keys on the write APIs</td></tr>
+  </tbody>
+</table>
+<p class="src">Needs and accountabilities: discovery workshop report, 22 November 2026, sections 3 and 10; last column: the team's action plan, p.2. <span class="tag tag--sim">Simulated</span> The workshop was simulated: each role was played and nobody at SkyLink was interviewed. They are positions to test with the mentors who play the roles; none is a quotation.</p>
+
+<h2><span class="n">3</span> Scope in and scope out</h2>
+<p class="first"><b>Broadband first, with a thin mobile path.</b> Broadband carries the field cost that can be measured and has a fixed address-to-node mapping; the brief lists it as supplied, with guides for 12 router models. On mobile, a tower outage is still told, ticketed, restored and credited. The replay bears the order out: every missed detection among its 140 contacts was mobile, which has no remote test.</p>
+<div class="scope">
+  <div>
+    <h3>In scope: built, on mock APIs <span class="tag tag--ok">Built</span></h3>
+    <ul>
+      <li><b>The brief's six capabilities, for broadband:</b> triage, diagnostics with a remote line test, steps from the customer's own router guide, credit by the policy formula in code, dispatch, consent-checked notification.</li>
+      <li><b>A complaint reference for every contact,</b> chat or call transcript, issued before any model or dependency is called.</li>
+      <li><b>The human gate.</b> A supervisor approves the exact credit above INR 500; up to INR 500 it is applied without review (client decision D3, 23 November 2026). Tests and evaluations run with every credit under review.</li>
+      <li><b>Safe degraded mode</b> when the Network Monitoring API fails. <b>Mobile, thin:</b> a tower outage only.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Out of scope or deferred, and why <span class="tag tag--no">Not built</span></h3>
+    <ul>
+      <li><b>Live telephony or IVR, real SMS, production OSS/BSS writes.</b> <span class="why">The capstone runs against mock APIs only.</span></li>
+      <li><b>Mobile beyond the outage path.</b> <span class="why">Static mapping; live tower association is a separate question of data readiness.</span></li>
+      <li><b>A churn model.</b> <span class="why">No record of who left, and treatment by predicted churn risks unfair offers by segment. A repeat-contact rule only moves a case up the staff queue.</span></li>
+      <li><b>Credits for affected customers who did not contact SkyLink.</b> <span class="why">Open client decision (D3, second part).</span></li>
+      <li><b>Metrics, dashboards, alerts; production hardening.</b> <span class="why">Deferred (milestone M5 and after); the demonstration is one AWS host.</span></li>
+      <li><b>Fault prediction, repair, technician routing.</b> <span class="why">Outside customer care.</span></li>
+    </ul>
+  </div>
+</div>
+<p class="src">Broadband first: workshop decision D2; action plan p.1. In and out: <code>README.md</code>, "Works today" and "Not built yet"; discovery report, section 5; <code>docs/EXECUTION_PLAN.md</code>, A10 and section 12.</p>
+
+<h2 class="pb"><span class="n">4</span> Five sub-problems, one owner each <small class="h2note">members' names: contribution matrix, item 9</small></h2>
+<table class="subs">
+  <thead><tr><th>Owner</th><th>Sub-problem (brief p.1)</th><th>The question, what answers it, and where the evidence is</th></tr></thead>
+  <tbody>
+    <tr>
+      <th class="own"><b class="rid">R1</b><span>FDE Lead</span></th>
+      <td class="framed">Size the cost of outage-driven calls, wasted truck rolls and churn; prioritise broadband vs mobile; define complaint-resolution and churn targets; ROI case.</td>
+      <td>
+        <p class="ask">What does an outage contact cost, which service goes first, and what is success?</p>
+        <p><span class="tag tag--calc">Derived</span> INR 195,000 wasted per 1,000 outage contacts; annual figures are scenarios (discovery report, section 6). <span class="tag">Decision</span> Broadband first, mobile thin; churn never changes what a customer is owed (workshop decisions D2, D13, D17). <span class="tag tag--assume">Proposed</span> Pilot targets: 20% fewer seven-day repeat contacts, 20% shorter median time from restoration to closure (action plan p.10).</p>
+      </td>
+    </tr>
+    <tr>
+      <th class="own"><b class="rid">R2</b><span>Architect</span></th>
+      <td class="framed">Link two worlds: network events (streaming) and customer contacts (request-response). Decide what is rules (credit eligibility), ML (churn risk), LLM (conversation, diagnosis summary). AWS vs Azure, hybrid with on-prem OSS.</td>
+      <td>
+        <p class="ask">How does a contact learn what the stream knows, and what decides each step?</p>
+        <p><span class="tag tag--ok">Built</span> One network decision with three states (active, confirmed clear, unknown), from the live status and a read model fed by the NOC event feed. <span class="tag">Decision</span> Rules decide credits, visits and what may be said; the language model only reads a message; no churn model. AWS, Mumbai (client decision D4); the private link to on-premises systems exists on paper only. Seven decision records: <code>docs/architecture_design.html</code>.</p>
+      </td>
+    </tr>
+    <tr>
+      <th class="own"><b class="rid">R3</b><span>Data &amp; RAG</span></th>
+      <td class="framed">Index troubleshooting guides by device model, service credit policy and regulatory complaint rules; join customer → service address → network node.</td>
+      <td>
+        <p class="ask">Is each contact on the right node, each customer sent steps for their own router?</p>
+        <p><span class="tag tag--calc">Measured</span> The address map alone places 96.86% of 180,052 broadband and 96.78% of 327,952 mobile services on a node (<code>reports/data_profile.md</code>); a line test names the node for the broadband rest. 96 sections of 12 guides, filtered by router model: right section in 468 of 576 answers (81.25% as first scored), none from another's guide (<code>evals/reports/retrieval.md</code>). <span class="tag tag--sim">Stand-in</span> Policy and complaint rules: placeholders, not indexed.</p>
+      </td>
+    </tr>
+    <tr>
+      <th class="own"><b class="rid">R4</b><span>Agent Engineer</span></th>
+      <td class="framed">Orchestrate contact intake → identify customer and node → check live outage → guided troubleshooting or outage message → credit → ticket or truck dispatch, all async-safe.</td>
+      <td>
+        <p class="ask">Can the whole journey run with no write made twice, whatever fails or repeats?</p>
+        <p><span class="tag tag--ok">Built</span> Reference first: contact, reference and wake-up commit in one transaction. The orchestrator's agents propose; only the executor writes to SkyLink's systems, replaying the identical frozen request when an outcome is unknown (<code>README.md</code>). <span class="tag tag--calc">Tested</span> One incident for every customer of a node, a reference each (<code>tests/e2e/test_outage_journey.py</code>). Eight smoke journeys passed on the AWS host after the release of 24 November 2026.</p>
+      </td>
+    </tr>
+    <tr>
+      <th class="own"><b class="rid">R5</b><span>Platform &amp; Trust</span></th>
+      <td class="framed">Customer data protection, call/chat consent, rate limits during outage surges, observability across agents and OSS APIs, failure drills when the network API is down.</td>
+      <td>
+        <p class="ask">Is it safe and available when surge and failure coincide, and can it be checked?</p>
+        <p><span class="tag tag--calc">Measured</span> Surge and failure drill: rows 5 to 7 below. Attack suite: 58 of 58 runs of 40 attacks pass, none critical (<code>evals/reports/attack_suite.md</code>). <span class="tag tag--ok">Built</span> Consent read at the moment of sending; personal data masked before a model reads a message; a caller's first contact never rate-limited; an audit trail per contact. <span class="tag tag--no">Not built</span> Dashboards, alerts.</p>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<h2><span class="n">5</span> Success metrics: target, and the result measured so far</h2>
+<table class="metrics">
+  <thead><tr><th class="m">Metric (brief p.2)</th><th class="t">Target</th><th>Result so far <span class="tag tag--calc">Measured in simulation</span></th></tr></thead>
+  <tbody>
+    <tr><th>1 Outage detected for affected customers</th><td class="t">at least 95%</td><td><b>97.47%</b> of affected contacts, weighted by how often each kind occurs; 140 contacts replayed on 32 nodes. Every miss is a mobile contact</td></tr>
+    <tr><th>2 Unnecessary truck rolls cut</th><td class="t">at least 50%</td><td>The workflow books <b>0 of the baseline's 3,225</b> unnecessary visits and every needed one. 28 of 28 customers who go on asking end with a person, whose decision no replay can measure</td></tr>
+    <tr><th>3 Credits match policy</th><td class="t">100%</td><td><b>4,050 of 4,050</b> grid cases match an independent calculation, and 14 of 14 amounts worked by hand. The policy itself is a placeholder</td></tr>
+    <tr><th>4 Duplicate tickets per node</th><td class="t">zero</td><td>Every customer of one node who writes in: <b>one incident</b>, a reference each. At most one incident a node in 8 of 8 failure drills</td></tr>
+    <tr><th>5 Available during a 10x surge</th><td class="t">stays available</td><td><b>13,941 of 13,941</b> offered contacts accepted; 14,041 of 14,041 with the Network API down (half-hour run before the last fix, not repeated since). Two-minute run after it: 1,891 of 1,891</td></tr>
+    <tr><th>6 Complaint reference issued <span class="tag">Curveball</span></th><td class="t">within 2 minutes</td><td>Slowest reference in that surge: <b>0.253 s</b>, and 0.11 s with the Network API down. In the failure drills, each of 72 contacts had its reference</td></tr>
+    <tr><th>7 No false "all clear", no truck dispatch on stale data <span class="tag">Curveball</span></th><td class="t">zero of each</td><td><b>8 of 8</b> drills with the Network API failing, 72 contacts: nobody in an outage told the network is clear, nobody at all while the status could not be read; 0 visits booked without a status read at that moment. Surge with the API down: 0 "clear" messages</td></tr>
+  </tbody>
+</table>
+<p class="src">Sources, by row: 1 <code>outage_detection.md</code>; 2 <code>truck_rolls.md</code>; 3 <code>credit_policy.md</code>; 4, 6, 7 <code>curveball.md</code> (in <code>evals/reports/</code>); 4 <code>tests/e2e/test_outage_journey.py</code>; 5 to 7 <code>surge-brief-before-fix.md</code>, <code>surge-quick.md</code> (in <code>loadtest/reports/</code>). SkyLink is fictional and all data is synthetic: the datasets, credit policy, router guides and mock APIs are stand-ins built by the team, because the supplied ones were not received (<code>README.md</code>). Every result is measured in simulation on those stand-ins, on one machine, with keyword rules reading the messages and no language model called. These are not measurements of SkyLink's network, policy or customers.</p>
+
+<p class="note curve"><b>What the curveball changed.</b> A network status that cannot be read became a third answer, unknown, and is never "clear": the reference is still issued at once, no device steps and no visit are offered, and a person takes the contact after about five minutes (ADR 0001, accepted 16 November 2026). The price is a full staff queue in a long failure: 2,693 of 3,361 such contacts reached a person in the half-hour drill.</p>
+
+</body>
+</html>

@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>G3 Telco · Evaluation report</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  @page { @top-right { content: "Evaluation report"; } }
+  @page :first { @top-right { content: none; } }
+
+  /* One metric, read the same way every time: question, method, cases, result, misses, limits. */
+  dl.q { display: grid; grid-template-columns: 24mm minmax(0, 1fr); gap: .9mm 3mm; margin-top: 1.3mm; font-size: 8.25pt; line-height: 1.39; }
+  dl.q dt { padding-top: .35mm; font: 600 6.5pt/1.5 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+  dl.q dd { margin: 0; }
+  dl.q dd b.fig { font-family: var(--font-display); font-weight: 760; }
+
+  /* Charts. Marks take the accent; text stays in the ink tokens; grid and track are recessive. */
+  svg.ch { display: block; width: 100%; height: auto; font-family: var(--font-body); }
+  svg.ch text { fill: var(--ink); font-size: 10.5px; }
+  svg.ch .ax { fill: var(--ink-2); font-size: 9.5px; }
+  svg.ch .hd { font: 600 9.5px var(--font-mono); letter-spacing: .06em; fill: var(--ink-3); text-transform: uppercase; }
+  svg.ch .val { font-weight: 700; }
+  svg.ch .grid { stroke: var(--line); stroke-width: 1; fill: none; }
+  svg.ch .axis { stroke: var(--line-strong); stroke-width: 1; fill: none; }
+  svg.ch .track { fill: var(--ground); }
+  svg.ch .bar { fill: var(--accent); }
+  svg.ch .bar--ok { fill: var(--ok); }
+  svg.ch .bar--miss { fill: var(--out); }
+  svg.ch .wash { fill: var(--accent); opacity: .1; }
+  svg.ch .holds { fill: var(--ok-soft); }
+  svg.ch .line { stroke: var(--accent); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  svg.ch .dot { fill: var(--accent); stroke: #fff; stroke-width: 2; }
+  svg.ch .end { fill: var(--ink); stroke: #fff; stroke-width: 2; }
+  svg.ch .tgt { stroke: var(--ink); stroke-width: 2; fill: none; }
+  svg.ch .rule { stroke: var(--out); stroke-width: 1.5; fill: none; }
+  svg.ch .base { fill: #fff; stroke: var(--unk); stroke-width: 2; }
+  svg.ch .lead { stroke: var(--ink-3); stroke-width: 1; fill: none; }
+  svg.ch .on { fill: #fff; font-weight: 700; }
+
+  table.score td, table.score th { font-size: 7.85pt; line-height: 1.35; padding-top: 1mm; padding-bottom: 1mm; }
+  table.score td .tag { display: table; }
+  table.score td .tag + .tag { margin-top: .6mm; }
+  table.score tr.div th { padding-top: 3mm; border-bottom: .45mm solid var(--ink); font: 600 6.6pt/1.3 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+  td code, th code { font-size: .88em; }
+  table.ev code { font-size: 7pt; }
+  th.c, td.c { text-align: center; font-variant-numeric: tabular-nums; }
+  table.cb thead th { white-space: normal; }
+  table.fx { table-layout: fixed; }
+  table.fx th.num { white-space: normal; }
+  .legend { display: flex; flex-wrap: wrap; gap: 1mm 4mm; margin-top: 1.6mm; font-size: 8pt; color: var(--ink-2); }
+  ol.tight li, ul.tight li { margin-top: .45mm; }
+  ul.tight, ol.tight { font-size: 8.25pt; line-height: 1.39; }
+  td ul.tight { font-size: inherit; }
+  h3 .tag { vertical-align: .2em; margin-left: 1mm; }
+  .adr { margin-top: 3mm; padding: 3mm 3.6mm; }
+  .adr dl { font-size: 8.2pt; line-height: 1.39; gap: 1.1mm 3mm; margin-top: 1.6mm; }
+  .adr h3 { font-size: 10.6pt; }
+  .note { padding: 2.1mm 3mm; font-size: 8.15pt; line-height: 1.39; }
+  p.body { font-size: 8.45pt; line-height: 1.41; }
+  h2 { margin-top: 5.5mm; }
+  h3 { margin-top: 3.6mm; }
+  table.tight th, table.tight td { font-size: 7.75pt; line-height: 1.34; padding-top: .75mm; padding-bottom: .75mm; }
+  .cols-2 td.num, .cols-2 th.num { padding-right: 2.5mm; }
+  .src { margin-top: 1.1mm; }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <p class="eyebrow">Group 3 · Telco · Submission item 6 of 9</p>
+  <h1>Evaluation report</h1>
+  <p class="lead">What was measured against each target of the brief, on how many cases, what failed, and what the figures do not prove. Every figure names the report it comes from.</p>
+  <dl class="meta">
+    <div><dt>Client</dt><dd>SkyLink Telecom (fictional)</dd></div>
+    <div><dt>Owners</dt><dd>R3 Data &amp; RAG · R5 Platform &amp; Trust</dd></div>
+    <div><dt>Version</dt><dd>24 November 2026 · commit <code>b9c70ef</code></dd></div>
+    <div><dt>Data</dt><dd>Synthetic stand-in data, in simulation</dd></div>
+  </dl>
+</header>
+
+<div class="note note--warn mt">
+  <b>Read this first.</b> SkyLink Telecom is fictional and every record is synthetic. The brief says the client supplies the datasets, the credit policy, the router guides and mock APIs. None was received, so the team built stand-ins: a seeded data generator, a placeholder credit policy, twelve synthetic router guides and a simulator of the six enterprise systems (<code>README.md</code>, "Two things that are stand-ins"). Every result here is measured in simulation on that data. None is a measurement of a real network, a real policy or real customers.
+</div>
+
+<h3>The result in four sentences</h3>
+<p>All six success metrics of the brief reach their targets on the stand-in data, as far as a replay can measure them. Three need care: the cut in technician visits is measured on what the workflow books, and the part that people decide cannot be replayed; duplicate tickets are shown by named tests and the drill's counts, with no scored evaluation of their own; the half-hour surge ran on one machine, on the code before one later fix. The curveball holds every rule in 8 of 8 playings of the failure drill and under load. Metrics, dashboards and alerts are not built, and this report says so wherever the brief asks for them.</p>
+
+<div class="kpis mt">
+  <div><em>Outage detection</em><b>97.47%</b><span>of affected contacts told of their outage. Target 95%.</span></div>
+  <div><em>Truck rolls</em><b class="long">0 of 3,225</b><span>unnecessary visits booked by the workflow. A person decides the rest.</span></div>
+  <div><em>Credits</em><b class="long">4,050 of 4,050</b><span>grid cases match an independent calculation. Target 100%.</span></div>
+  <div><em>Reference, in the surge</em><b>0.253 s</b><span>the slowest of 13,941 and 14,041. Limit 120 s.</span></div>
+</div>
+<p class="src">Sources: <code>evals/reports/outage_detection.md</code>, <code>truck_rolls.md</code>, <code>credit_policy.md</code>; <code>loadtest/reports/surge-brief-before-fix.md</code>.</p>
+
+<p class="legend mt">
+  <span><span class="tag tag--calc">Measured</span> a figure from a report, with its denominator</span>
+  <span><span class="tag tag--ok">Met</span> the target is reached on the stand-in data</span>
+  <span><span class="tag tag--assume">Caveat</span> reached, and the caveat limits what it shows</span>
+  <span><span class="tag tag--sim">Stand-in</span> built by the team in place of what the client supplies</span>
+  <span><span class="tag tag--human">A person decides</span> outside what a replay can score</span>
+  <span><span class="tag tag--no">Not built</span> or not measured</span>
+</p>
+
+<h3>Where each requirement of the brief is answered</h3>
+<table class="tight">
+  <thead><tr><th style="width:66%">The brief asks for</th><th style="width:14%">Brief page</th><th>Section here</th></tr></thead>
+  <tbody>
+    <tr><td>Evaluation report: test set</td><td>p.3</td><td>2</td></tr>
+    <tr><td>Metrics against targets: the six success metrics</td><td>p.2, p.3</td><td>1 (scorecard), 3 and 4</td></tr>
+    <tr><td>Failure analysis</td><td>p.3</td><td>8, and "missed" in 3 to 7</td></tr>
+    <tr><td>Curveball response: re-scope, trade-off, change proven on test cases</td><td>p.2, p.3, p.8</td><td>5</td></tr>
+    <tr><td>Surge test, 10x contacts in 15 minutes; load-test result; caching and scaling approach</td><td>p.2, p.7</td><td>4</td></tr>
+    <tr><td>Retrieval evaluation</td><td>p.2</td><td>7</td></tr>
+    <tr><td>Guardrail test set of at least 15 attack and edge prompts, with pass rate</td><td>p.6</td><td>6.1 to 6.3</td></tr>
+    <tr><td>Bias check: decisions tested across customer segments</td><td>p.6</td><td>6.4</td></tr>
+    <tr><td>Offline evaluation set (at least 30 cases); online metrics plan; drift check</td><td>p.7</td><td>2.2 and 9</td></tr>
+    <tr><td>Traces, dashboard, failure drill; alert when the outage feed is stale</td><td>p.2, p.8</td><td>9, and 5 for the drill</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ 1 -->
+<h2 class="pb"><span class="n">1</span> Scorecard: every metric against its target</h2>
+<p class="body">Every result is measured in simulation on the stand-in data. <b>Met</b>: the target is reached. <b>Met, caveat</b>: reached, and the caveat limits what the figure shows. One figure, the end-to-end cut in technician visits, is <b>not measurable here</b>.</p>
+
+<table class="score mt">
+  <thead><tr><th style="width:19%">Metric (brief p.2)</th><th style="width:12%">Target</th><th style="width:26%">Result</th><th style="width:17%">Denominator</th><th style="width:10%">Status</th><th>Report, section</th></tr></thead>
+  <tbody>
+    <tr><th>Outage correctly detected for affected customers</th><td>at least 95%</td><td><b>97.47%</b> of affected contacts, weighted by kind</td><td>140 contacts replayed; weights from 9,000 labelled contacts</td><td><span class="tag tag--ok">Met</span></td><td><code>outage_detection</code><br>section 3.1</td></tr>
+    <tr><th>Unnecessary truck rolls cut, in simulation</th><td>at least 50%</td><td><b>100.0%</b> in what the workflow books (0 of 3,225). End to end: not measurable here</td><td>38 contacts replayed; baseline 4,450 visits</td><td><span class="tag tag--assume">Met, caveat</span></td><td><code>truck_rolls</code><br>section 3.2</td></tr>
+    <tr><th>Credits match policy</th><td>100%</td><td><b>4,050 of 4,050</b> grid cases; 14 of 14 worked out by hand</td><td>every boundary of the placeholder policy</td><td><span class="tag tag--ok">Met</span></td><td><code>credit_policy</code><br>section 3.3</td></tr>
+    <tr><th>Zero duplicate tickets per node</th><td>zero</td><td><b>1 incident</b> a node in each concurrency test and in 8 of 8 curveball playings</td><td>named tests; 72 curveball contacts</td><td><span class="tag tag--ok">Met</span><span class="tag tag--assume">in tests</span></td><td>test suite, <code>curveball</code><br>section 3.4</td></tr>
+    <tr><th>Agent stays available during a 10x surge</th><td>stays available <small>own pass line: at least 99.5% accepted</small></td><td><b>100.00%</b> of 13,941 and of 14,041 accepted; none turned away; all answered</td><td>two half-hour runs, 1 rising to 10 contacts a second</td><td><span class="tag tag--assume">Met, caveat</span></td><td><code>surge-brief-before-fix</code><br>section 4</td></tr>
+    <tr><th>Complaint reference issued within 2 minutes</th><td>every contact within 120 s</td><td>slowest <b>0.253 s</b> and <b>0.11 s</b>; 0 contacts without one after 120 s</td><td>13,941 and 14,041 surge contacts; 72 curveball contacts</td><td><span class="tag tag--ok">Met</span></td><td>the same, <code>curveball</code><br>section 3.5</td></tr>
+    <tr><th>Curveball: safe degraded mode</th><td>no false all-clear; no dispatch on stale data</td><td><b>8 of 8</b> playings hold every rule; 0 all-clear messages with the API down under load</td><td>72 contacts; 14,041 surge contacts</td><td><span class="tag tag--ok">Met</span></td><td><code>curveball</code><br>section 5</td></tr>
+    <tr class="div"><th colspan="6">Asked by the checklists and the phase deliverables</th></tr>
+    <tr><th>Guardrail test set, with pass rate <small>checklist 1</small></th><td>at least 15 prompts</td><td><b>58 of 58</b> runs pass (100.0%), 0 critical; 58 of 58 again with the live model</td><td>40 attacks, 18 of them tried twice</td><td><span class="tag tag--ok">Met</span></td><td><code>attack_suite</code><br>section 6</td></tr>
+    <tr><th>Bias check across segments <small>checklist 3</small></th><td>no difference but the amount</td><td><b>8 of 8</b> situations end the same way for consumer and SME</td><td>80 customers</td><td><span class="tag tag--ok">Met</span></td><td><code>segment_parity</code><br>section 6.4</td></tr>
+    <tr><th>Retrieval evaluation <small>phase deliverable</small></th><td>none in the brief; own floor 70%</td><td><b>81.25%</b> right section as first scored out of sample; 0 from another router's guide</td><td>468 of 576: 48 descriptions on 12 models</td><td><span class="tag tag--ok">Met</span><span class="tag tag--assume">own floor</span></td><td><code>retrieval</code><br>section 7</td></tr>
+  </tbody>
+</table>
+<p class="src">Sources: <code>evals/reports/</code> and <code>loadtest/reports/</code>, as named in each row. Checklist 4 also asks for an offline evaluation set of at least 30 cases (met: section 2.2) and for an online metrics plan and a drift check (neither is written: section 9).</p>
+
+<figure class="mt keep">
+  <svg class="ch" viewBox="0 0 700 132" role="img" aria-label="Bars showing each result against its target on a scale from 0 to 100 percent, and the slowest complaint reference against the 120 second limit.">
+    <text class="ax" x="230" y="9" text-anchor="middle">0%</text><text class="ax" x="385" y="9" text-anchor="middle">50%</text><text class="ax" x="540" y="9" text-anchor="middle">100%</text>
+    <path class="grid" d="M230 13V92M385 13V92M540 13V92"/>
+    <g>
+      <text x="0" y="26.5">Outage detected, affected contacts</text>
+      <rect class="track" x="230" y="18" width="310" height="9"/><rect class="bar" x="230" y="18" width="302.2" height="9"/>
+      <path class="tgt" d="M524.5 14.5V30.5"/><text x="552" y="26.5"><tspan class="val">97.47%</tspan> · target 95%</text>
+    </g>
+    <g>
+      <text x="0" y="46.5">Unnecessary visits cut, workflow's own</text>
+      <rect class="track" x="230" y="38" width="310" height="9"/><rect class="bar" x="230" y="38" width="310" height="9"/>
+      <path class="tgt" d="M385 34.5V50.5"/><text x="552" y="46.5"><tspan class="val">100.0%</tspan> · target 50%</text>
+    </g>
+    <g>
+      <text x="0" y="66.5">Credits matching the policy</text>
+      <rect class="track" x="230" y="58" width="310" height="9"/><rect class="bar" x="230" y="58" width="310" height="9"/>
+      <path class="tgt" d="M540 54.5V70.5"/><text x="552" y="66.5"><tspan class="val">100.0%</tspan> · target 100%</text>
+    </g>
+    <g>
+      <text x="0" y="86.5">Surge contacts accepted, both runs</text>
+      <rect class="track" x="230" y="78" width="310" height="9"/><rect class="bar" x="230" y="78" width="310" height="9"/>
+      <path class="tgt" d="M538.5 74.5V90.5"/><text x="552" y="86.5"><tspan class="val">100.00%</tspan> · target 99.5%</text>
+    </g>
+    <text class="ax" x="230" y="108" text-anchor="middle">0 s</text><text class="ax" x="540" y="108" text-anchor="middle">120 s</text>
+    <g>
+      <text x="0" y="122.5">Slowest complaint reference</text>
+      <rect class="track" x="230" y="114" width="310" height="9"/><rect class="bar" x="230" y="114" width="0.65" height="9"/>
+      <path class="tgt" d="M540 110.5V126.5"/><text x="552" y="122.5"><tspan class="val">0.253 s</tspan> · limit 120 s</text>
+    </g>
+  </svg>
+  <figcaption><b>Figure 1.</b> Results against the brief's targets, drawn to scale. The dark tick is the target. The last row has its own scale of 0 to 120 seconds: its bar is to scale and prints as a hairline at the left edge. The caveats are set out in sections 3.2, 3.4 and 4.4.</figcaption>
+</figure>
+
+<!-- ============================================================ 2 -->
+<h2 class="pb"><span class="n">2</span> The test set</h2>
+
+<h3>2.1 The data everything runs on <span class="tag tag--sim">Stand-in</span></h3>
+<p class="body">A generator, <code>skylink_datagen</code>, writes the data pack from a seed: the same seed and size give byte-identical files (seed 42 here). A simulator, <code>mock_oss</code>, stands in for SkyLink's systems (the gateway: Network Monitoring, CRM, Billing, Field Service, Incident Management, text messages).</p>
+<table class="tight mt">
+  <thead><tr><th style="width:17%">Part</th><th style="width:43%">At full scale</th><th>Deliberate property</th></tr></thead>
+  <tbody>
+    <tr><th>Customers</th><td>400,000 customers; 508,004 services (180,052 broadband, 327,952 mobile)</td><td>The brief's scale. Consumer 92%, SME 8%</td></tr>
+    <tr><th>Network, map, history</th><td>1,024 nodes in eight cities; 1,840 outages over six months, 24,946 network events. The address map places 96.86% of broadband services (174,402 of 180,052) and 96.78% of mobile (317,400 of 327,952)</td><td>Mapping defects injected on purpose: missing 1.5%, ambiguous 1.0%, stale 0.7%. The NOC registers an outage 1 to 10 minutes after service drops</td></tr>
+    <tr><th>Transcripts</th><td>20,000 labelled contacts: 9,000 outage, 7,000 device, 4,000 billing</td><td>The old process: 30% of outage contacts end in an unnecessary visit (2,700). Outage and device openings are worded alike</td></tr>
+    <tr><th>Knowledge, simulator</th><td>12 router guides of 8 sections (96 indexed sections); credit policy <code>v0-placeholder</code>; six simulated enterprise systems with fault injection</td><td>Incident Management does not remove duplicates. The simulator holds the truth of which node serves each line; the platform must never read it</td></tr>
+  </tbody>
+</table>
+<p class="src">Sources: <code>docs/contracts/data.md</code>; <code>reports/data_profile.md</code>; <code>docs/HOW_IT_WORKS.md</code> section 10; <code>evals/cases/contact_mix.json</code>. Sizes in use: 1,000 customers for tests and evaluations, 40,000 for development, 400,000 for the load test and the weights.</p>
+
+<h3>2.2 The frozen evaluation cases, and how they are kept apart from tuning</h3>
+<table class="tight">
+  <thead><tr><th style="width:22%">Set</th><th style="width:35%">Size</th><th>Frozen and kept apart by</th></tr></thead>
+  <tbody>
+    <tr><th><code>contact_mix.json</code></th><td>The 20,000 labelled contacts, counted once on 15 November: 9,000 outage contacts in 16 kinds, the NOC's delay, 4,450 past visits</td><td>Counts only, with the SHA-256 of the transcript file. The replay runs on another pack of the same generator</td></tr>
+    <tr><th><code>credit_anchors.json</code></th><td>14 amounts worked out by hand</td><td>Neither the engine nor the oracle was used to produce them</td></tr>
+    <tr><th><code>retrieval_gold.json</code></th><td>27 descriptions from the transcripts; 30 paraphrases by the rules' author; 48 independent descriptions</td><td>The independent set was written without sight of the retriever. Its first score is kept with a hash of what it was scored on</td></tr>
+    <tr><th><code>evals/attacks/</code></th><td>40 attacks, 58 runs</td><td>Each attack names its critical failure before it runs. One that cannot be played out makes the target not met</td></tr>
+    <tr><th>Replayed scenes</th><td>140 detection contacts; 38 visit contacts; 72 curveball contacts; 80 parity customers</td><td>Scored against the simulator's own truth, which the platform cannot read</td></tr>
+  </tbody>
+</table>
+<p class="src">Sources: <code>evals/README.md</code>; the three files are in <code>evals/cases/</code>. Together these are the offline evaluation set that checklist 4 asks for (at least 30 cases).</p>
+
+<h3>2.3 The unit, integration and end-to-end suite</h3>
+<p class="body"><span class="tag tag--calc">Measured</span> <b>2,689 tests, 0 failed, 0 skipped</b>: 1,279 unit tests and 1,410 integration, contract and end-to-end tests. Coverage of <code>skylink_care</code> is <b>96.0%</b>, branches counted; the pipeline fails under 80%. In the end-to-end journeys only the language model is replaced, by the offline keyword rules; some integration tests script one enterprise client to force a failure. End-to-end tests play whole conversations in process through the intake, the orchestrator (coordinator), the executor (the hands) and the feed consumer (the radio), against a real database and the simulator. The API's routes (front desk) are tested apart (<code>tests/integration/api/</code>); <code>scripts/smoke.py</code> and the load test go through the HTTP API.</p>
+<p class="body"><b>The CI gate.</b> Before every release to the AWS demonstration: lint and strict types; the suite with its coverage gate; the seven evaluations; a secret scan; the container image, built and scanned. The host then plays the eight journeys of <code>scripts/smoke.py</code> against itself, and starts the previous release again if one fails. The release of 24 November 2026 passed, and the eight journeys passed after it.</p>
+<p class="src">Source: GitLab pipeline 3106633060, job <code>test</code>, commit <code>b9c70ef</code>, 24 November 2026; the split into 1,279 and 1,410 from a local run the same day; <code>pyproject.toml</code>; <code>.gitlab-ci.yml</code>.</p>
+
+<h3>2.4 The rules of evidence the team set itself</h3>
+<p class="body keep">From <code>docs/EXECUTION_PLAN.md</code> (sections 8 and 13) and <code>evals/README.md</code>. (1) Expected outcomes are frozen before the final run. (2) Every report gives counts and denominators; nothing is averaged away. (3) A dropped contact counts as a failure, never as a deflected call. (4) Evaluation cases are kept apart from prompt tuning. (5) Every report names the language-model provider that produced it. (6) A missed target is fixed in the product; the scoring is left alone. (7) A suite that cannot fail proves nothing: controls are taken out and the suite must report each one. (8) Each report ends with what its result rests on.</p>
+
+<!-- ============================================================ 3 -->
+<h2><span class="n">3</span> The metrics, one by one</h2>
+
+<h3>3.1 Outage correctly detected for affected customers <span class="tag tag--ok">Met</span> <span class="tag tag--calc">97.47%</span></h3>
+<dl class="q">
+  <dt>Question</dt><dd>Is a customer whose true node is in outage told of the outage, and kept away from device steps and a technician?</dd>
+  <dt>Method</dt><dd>Such contacts are replayed through the real workflow: before and after the NOC declares, with and without an alarm, broadband and mobile, every mapping defect. Detected means told of the outage at contact, or held and told once the NOC declares, with no device steps and no visit. Each kind is weighted by its count among the pack's labelled outage contacts.</dd>
+  <dt>Cases</dt><dd>140 contacts replayed on 32 nodes, in 16 kinds; undeclared outages were declared 25 to 577 seconds after the contact. Weights: 9,000 contacts, 20.0% of them before the NOC had declared.</dd>
+  <dt>Result</dt><dd><b class="fig">97.47%</b>; target 95.0%. The first run scored 91.44%: five transcript phrases were answered as out of scope. The keyword rules now know them (<code>docs/EXECUTION_PLAN.md</code> section 13).</dd>
+  <dt>Missed, and why</dt><dd>Only mobile, which has no remote test here (assumption A9). Before the NOC declares and with no alarm up, nothing holds the contact: 18 of 36 were first told "no outage reported". A defective tower mapping cannot be repaired: all 19 were told that the status cannot be verified. Weighted, the misses are 2.53% of affected contacts.</dd>
+</dl>
+<table class="tight mt fx">
+  <thead><tr><th style="width:40%">Kind of contact</th><th class="num" style="width:12%">In the pack</th><th class="num" style="width:11%">Replayed</th><th class="num" style="width:13%">Told at contact</th><th class="num" style="width:14%">Held, then told</th><th class="num">Missed</th></tr></thead>
+  <tbody>
+    <tr><td>Broadband, after the NOC declared, any mapping state</td><td class="num">5,711</td><td class="num">23</td><td class="num">23</td><td class="num">0</td><td class="num">0</td></tr>
+    <tr><td>Broadband, before the NOC declared, any mapping state</td><td class="num">1,456</td><td class="num">44</td><td class="num">0</td><td class="num">44</td><td class="num">0</td></tr>
+    <tr><td>Mobile, after the NOC declared, sound mapping</td><td class="num">1,429</td><td class="num">18</td><td class="num">18</td><td class="num">0</td><td class="num">0</td></tr>
+    <tr><td>Mobile, before the NOC declared, sound mapping</td><td class="num">332</td><td class="num">36</td><td class="num">0</td><td class="num">18</td><td class="num">18</td></tr>
+    <tr><td>Mobile, defective mapping, before or after</td><td class="num">72</td><td class="num">19</td><td class="num">0</td><td class="num">0</td><td class="num">19</td></tr>
+    <tr><th>All</th><td class="num"><b>9,000</b></td><td class="num"><b>140</b></td><td class="num"><b>41</b></td><td class="num"><b>62</b></td><td class="num"><b>37</b></td></tr>
+  </tbody>
+</table>
+<p class="src">Source: <code>evals/reports/outage_detection.md</code> (run of 17 November 2026, 01:26 UTC; offline keyword rules), its 16 rows summed into five. By the pack's counts times the rates replayed: 7,140 told at contact (79.33%), 1,632 held and then told (18.13%), 228 missed (2.53%); of the 332 mobile contacts before the NOC declared, the 176 with a critical alarm count as held.</p>
+<p class="body mt"><b>What the figure does not prove.</b> The wordings come from the transcripts' phrase bank, which the rules' author had read; keyword rules read them and no language model did. Rare kinds rest on two or three contacts. 18.13% of the figure rests on the hold: it is 600 seconds and the pack's NOC declares within 577, so the hold must be set from the real delay. Only affected customers are scored: no rate of unaffected customers wrongly told of an outage is reported.</p>
+
+<h3>3.2 Unnecessary truck rolls cut by at least 50% in simulation <span class="tag tag--assume">Met, caveat</span> <span class="tag tag--human">A person decides</span></h3>
+<dl class="q">
+  <dt>Question</dt><dd>Where the old process sent a technician for nothing, does the workflow book none, and does it still book the visits that were needed?</dd>
+  <dt>Method</dt><dd>The three kinds of contact that ended in a visit in the data pack are replayed with the customer most likely to get a visit they do not need: one who asks for a technician at once, takes the first slot offered, and asks again up to two more times until a person takes over.</dd>
+  <dt>Cases</dt><dd>38 contacts: 18 in an outage (6 declared, 6 undeclared with an alarm, 6 undeclared without), 10 line faults that needed a visit, 10 home-equipment faults that did not. Baseline: 4,450 visits in the 20,000 labelled contacts, 3,225 of them unnecessary (2,700 during an outage, 525 for a fault the customer could have fixed).</dd>
+  <dt>Result</dt><dd>The workflow booked <b class="fig">0 of 18</b> and <b class="fig">0 of 10</b>: at the baseline's volumes 0 of 3,225, a cut of 100.0% in what the workflow books. Needed visits: 10 of 10 booked (own floor 90.0%), a median of 10.0 minutes after the contact; the hold costs that delay. All 28 insisting customers ended with a person, who holds the evidence.</dd>
+</dl>
+<div class="cols-2 mt keep">
+  <figure>
+    <svg class="ch" viewBox="0 0 336 186" role="img" aria-label="The cut in unnecessary visits falls from 100 percent to 0 as staff send a technician to a larger share of insisting customers. The 50 percent target holds while that share is at most 50 percent.">
+      <rect class="holds" x="46" y="16" width="130" height="130"/>
+      <path class="grid" d="M46 16H306M46 146H306"/>
+      <path class="axis" d="M46 16V146"/>
+      <path class="tgt" d="M46 81H306"/>
+      <path class="line" d="M46 16L306 146"/>
+      <circle class="dot" cx="46" cy="16" r="4.5"/><circle class="dot" cx="111" cy="48.5" r="4.5"/><circle class="dot" cx="176" cy="81" r="4.5"/><circle class="dot" cx="241" cy="113.5" r="4.5"/><circle class="dot" cx="306" cy="146" r="4.5"/>
+      <text class="ax" x="40" y="20" text-anchor="end">100%</text><text class="ax" x="40" y="85" text-anchor="end">50%</text><text class="ax" x="40" y="150" text-anchor="end">0%</text>
+      <text class="ax" x="46" y="162" text-anchor="middle">0%</text><text class="ax" x="111" y="162" text-anchor="middle">25%</text><text class="ax" x="176" y="162" text-anchor="middle">50%</text><text class="ax" x="241" y="162" text-anchor="middle">75%</text><text class="ax" x="306" y="162" text-anchor="middle">100%</text>
+      <text class="ax" x="176" y="179" text-anchor="middle">Share of insisting customers a person sends a technician to</text>
+      <text x="58" y="13">0 visits left</text>
+      <text x="168" y="99" text-anchor="end">1,612 left: the limit</text>
+      <text x="262" y="142" text-anchor="end">3,225 left</text>
+      <text class="ax" x="52" y="138">target holds</text>
+      <text class="ax" x="306" y="74" text-anchor="end">target: cut of 50%</text>
+    </svg>
+    <figcaption><b>Figure 2.</b> The cut if every customer went on asking, by what staff then decide. The points are the report's five rows.</figcaption>
+  </figure>
+  <div>
+    <table class="tight">
+      <thead><tr><th>Kind</th><th class="num">Baseline</th><th class="num">Replayed</th><th class="num">Booked</th><th>Ended with</th></tr></thead>
+      <tbody>
+        <tr><td>Outage</td><td class="num">2,700</td><td class="num">18</td><td class="num">0</td><td>a person, 18</td></tr>
+        <tr><td>Line fault, visit needed</td><td class="num">1,225</td><td class="num">10</td><td class="num">10</td><td>a visit, 10</td></tr>
+        <tr><td>Home equipment, not needed</td><td class="num">525</td><td class="num">10</td><td class="num">0</td><td>a person, 10</td></tr>
+      </tbody>
+    </table>
+    <p class="src">Source: <code>evals/reports/truck_rolls.md</code> (run of 17 November 2026, 01:28 UTC; offline keyword rules).</p>
+    <div class="note note--warn mt"><b>What the figure does not prove.</b> The end-to-end cut. A replay shows what the workflow books and where it hands over. It cannot show what the person then decides, nor how many customers go on asking. If every customer insisted, the target holds while staff send a technician to at most 50.0% of them.</div>
+  </div>
+</div>
+
+<h3>3.3 Credits match policy 100% <span class="tag tag--ok">Met</span> <span class="tag tag--calc">4,050 of 4,050</span></h3>
+<dl class="q">
+  <dt>Question</dt><dd>Does the credit engine give the eligibility, the reason for a refusal, the amount to the paisa and the approval level that the policy gives?</dd>
+  <dt>Method</dt><dd>The engine is compared with an independent calculation in exact arithmetic over a grid on every boundary of the policy, and with amounts worked out by hand without either. No language model takes part: the amount is <code>monthly fee × billable hours × tier multiplier / 720</code>, in code.</dd>
+  <dt>Cases</dt><dd>4,050 grid cases in eight outcomes: 1,134 eligible and 2,916 refusals (below the minimum duration 1,260; planned work 576; cap reached 324; not affected 288; service suspended 288; already credited 162; outage not resolved 18). And 14 hand-worked cases (10 amounts, 4 refusals), among them INR 499.99, 500.00 and 500.01, and a tie that rounds up.</dd>
+  <dt>Result</dt><dd><b class="fig">4,050 of 4,050</b> grid cases match (100.0%); <b class="fig">14 of 14</b> hand-worked amounts match. Nothing was missed.</dd>
+  <dt>Does not prove</dt><dd>That the policy is the right one: <code>v0-placeholder</code> is the team's stand-in. The independent calculation is by the same author from the same document; the hand-worked amounts are the check that does not share that reading. That the workflow proposes exactly that amount, once, is covered by end-to-end tests (<code>tests/e2e/test_service_credits.py</code>, <code>test_credit_lifecycle.py</code>).</dd>
+  <dt>Approval rule</dt><dd>Tests, evaluations and the attack suite run on the code's own default, with every credit under review. The demonstration runs with client decision D3 (execution plan, 23 November 2026): up to and including INR 500 a credit is applied without review; above it a supervisor approves the exact frozen request first. Its example: INR 4,999 a month, out for 50 hours, is owed 4,999 × 50 × 1.5 / 720 = INR 520.73.</dd>
+</dl>
+<p class="src">Source: <code>evals/reports/credit_policy.md</code> (run of 17 November 2026, 01:25 UTC; no language model); <code>README.md</code>, "Service credits and approvals".</p>
+
+<h3>3.4 Zero duplicate tickets per node <span class="tag tag--ok">Met</span> <span class="tag tag--assume">in tests, per node episode</span></h3>
+<dl class="q">
+  <dt>Question</dt><dd>Does a node in one outage get exactly one incident ticket, however many customers write in at once and however a write fails?</dd>
+  <dt>Method</dt><dd>This metric has no scored evaluation of its own. It is shown by named tests of the suite, which every pipeline runs, and counted in the curveball evaluation and the live journeys. The simulator's Incident Management does not remove duplicates, so a second ticket made by the platform would show.</dd>
+</dl>
+<table class="tight mt ev">
+  <thead><tr><th style="width:27%">What is tried</th><th style="width:52%">Test or run</th><th>Shown</th></tr></thead>
+  <tbody>
+    <tr><td>Up to 50 customers on one node write in during a declared outage (the test requires at least 20)</td><td><code>tests/e2e/test_outage_journey.py</code><br><code>test_fifty_customers_on_one_node_<wbr>get_fifty_references_and_share_one_incident</code></td><td>1 incident; a distinct reference each; every complaint linked</td></tr>
+    <tr><td>40 simultaneous reports for one node; a suspected fault and its declared outage racing</td><td><code>tests/integration/test_episodes.py</code><br><code>test_forty_simultaneous_reports_open_exactly_one_episode</code><br><code>test_suspected_and_declared_reports_racing_<wbr>still_leave_one_episode</code></td><td>1 episode in the database</td></tr>
+    <tr><td>The answer to the incident write is lost; a worker is killed before it saves its turn</td><td><code>tests/e2e/test_edges_and_degraded_mode.py</code><br><code>test_incident_write_lost_on_the_way_back_<wbr>is_replayed_into_one_incident</code><br><code>test_a_worker_killed_before_it_could_checkpoint_<wbr>repeats_the_turn_safely</code></td><td>1 complaint, 1 incident, 1 link in both</td></tr>
+    <tr><td>The curveball scene, 8 playings; the first live journey on every release</td><td><code>evals/reports/curveball.md</code>, "Most incidents on a node"; <code>scripts/smoke.py</code>, check "one incident opened for the node"</td><td>1 in all 8; passed on 24 November</td></tr>
+  </tbody>
+</table>
+<p class="src">Sources: the tests named, all among the 2,689 that pass; <code>docs/HOW_IT_WORKS.md</code> section 10.1 for the simulator.</p>
+<div class="note mt keep"><b>What this does not prove.</b> "Per node" is read here as per node <i>episode</i>: two outages that overlap on one node get one ticket each, opened one after the other (<code>docs/EXECUTION_PLAN.md</code>, known gaps). The load test does not count incidents; it records that all 9,759 and 9,829 complaints from the failed nodes were linked to one. A repeated write is applied once only if the receiving system treats a repeated idempotency key as the same request: the simulator does, SkyLink's systems are assumed to (A8).</div>
+
+<h3>3.5 Complaint reference issued within 2 minutes <span class="tag tag--ok">Met</span> <span class="tag tag--calc">slowest 0.253 s</span></h3>
+<dl class="q">
+  <dt>Question</dt><dd>Does every contact have its complaint reference within 120 seconds, also in the surge and with the Network Monitoring API down?</dd>
+  <dt>Method</dt><dd>By design the intake commits the contact, its reference and its wake-up in one transaction and answers before any model or enterprise system is called. The load generator measures it as a client, from the instant a contact was due to the reference in the caller's hands.</dd>
+  <dt>Result</dt><dd><b class="fig">0 of 13,941</b> and <b class="fig">0 of 14,041</b> contacts were without a reference after 120 s in the half-hour surge, with every dependency up and with the API down. Slowest 0.253 s and 0.11 s; median 0.009 s in both; 99th percentile 0.015 s and 0.014 s. Two-minute surge: slowest 0.042 s of 893 and 0.06 s of 998; with a 1.5 s stand-in for a model on every turn, 0.105 s of 893. Curveball: 0 of 72 contacts without a reference within two minutes, whichever way the API failed. Inside the API the reference took 1 ms at the median and 51 ms at the slowest in the first run.</dd>
+  <dt>Also shown by</dt><dd><code>test_intake_needs_no_enterprise_system_or_model</code> (<code>tests/integration/api/test_api.py</code>) issues the reference with no worker running and no gateway present. On every release the first live journey checks "reference visible well inside 2 minutes" (under 5 seconds).</dd>
+  <dt>Does not prove</dt><dd>The path from a real customer's device through SkyLink's own network and sign-in. That the intake's reference is the official complaint number is assumption A3. Read strictly, the rule allows nobody to be left without a reference after two minutes: that count is 0 in every run.</dd>
+</dl>
+<p class="src">Sources: <code>loadtest/reports/surge-brief-before-fix.md</code>, <code>surge-quick.md</code>, <code>surge-simulated-model.md</code>; <code>evals/reports/curveball.md</code>.</p>
+
+<!-- ============================================================ 4 -->
+<h2><span class="n">4</span> The surge: ten times the contacts within 15 minutes</h2>
+<p class="body">The load test offers the brief's rise to the running stack twice: once with every dependency up, once with the Network Monitoring API down from before the first call to after the last.</p>
+
+<h3>4.1 What is offered, and what counts as passing</h3>
+<div class="cols-2 keep">
+  <figure>
+    <svg class="ch" viewBox="0 0 336 138" role="img" aria-label="The arrival rate rises from 1 contact a second to 10 a second over 15 minutes and is held at 10 for another 15 minutes.">
+      <path class="grid" d="M40 14H310M40 59H310"/>
+      <path class="wash" d="M40 95L175 14H310V104H40Z"/>
+      <path class="line" d="M40 95L175 14H310"/>
+      <path class="axis" d="M40 104H310M40 14V104"/>
+      <text class="ax" x="34" y="18" text-anchor="end">10</text><text class="ax" x="34" y="63" text-anchor="end">5</text><text class="ax" x="34" y="108" text-anchor="end">0</text>
+      <text class="ax" x="40" y="119" text-anchor="middle">0</text><text class="ax" x="175" y="119" text-anchor="middle">15 min</text><text class="ax" x="310" y="119" text-anchor="middle">30 min</text>
+      <text class="ax" x="40" y="134">Contacts a second, by minute of the run</text>
+      <text x="96" y="86">rises tenfold</text><text x="96" y="99">in 15 minutes</text>
+      <text x="246" y="32" text-anchor="middle">held at 10 a second</text>
+      <text x="252" y="66" text-anchor="middle"><tspan class="val">13,950</tspan> contacts</text><text x="252" y="79" text-anchor="middle">scheduled a run</text>
+    </svg>
+    <figcaption><b>Figure 3.</b> The profile. Arrivals are random at this rate, so the runs offered 13,941 and 14,041 contacts.</figcaption>
+  </figure>
+  <div>
+    <ul class="tight">
+      <li>Each caller is a different synthetic customer making a first contact. Seven in ten are on failed nodes; seven in ten come by the web and wait for the reply, three in ten through a contact centre.</li>
+      <li>The schedule is fixed before the run and does not slow down when the platform does. Every time is measured from the instant a contact was due.</li>
+      <li>A failed request is sent again under the same request id for two minutes. A refusal by a rate limit is not sent again.</li>
+    </ul>
+    <p class="body mt"><b>Pass lines.</b> In both runs: at least 99.5% of offered contacts accepted, every reference within 120 seconds, no first contact turned away by a rate limit. The load test adds: every contact answered; every customer who waited on the outage told of its end within 30 minutes; with the API down, no message saying the network is clear.</p>
+  </div>
+</div>
+<p class="src">Source: <code>loadtest/README.md</code>. 13,950 is the schedule's total: an average of 5.5 a second for 900 seconds, then 10 a second for 900 seconds.</p>
+
+<h3>4.2 Both half-hour runs <span class="tag tag--calc">Measured</span></h3>
+<table class="tight">
+  <thead><tr><th style="width:44%"></th><th>Every dependency up</th><th>Network Monitoring API down</th></tr></thead>
+  <tbody>
+    <tr><td>Contacts offered (of them on the failed nodes)</td><td>13,941 (9,759)</td><td>14,041 (9,829)</td></tr>
+    <tr><th>Accepted (target at least 99.5%)</th><td><b>100.00% (13,941 of 13,941)</b></td><td><b>100.00% (14,041 of 14,041)</b></td></tr>
+    <tr><td>Turned away by a rate limit; without a reference after 120 s</td><td>0; 0</td><td>0; 0</td></tr>
+    <tr><td>Answered / not answered when the run was read</td><td>13,941 / 0</td><td>14,041 / 0</td></tr>
+    <tr><td>First reply after receipt: median / 95th / 99th / slowest</td><td>0.177 / 1.409 / 1.63 / 1.83 s</td><td>0.14 / 0.3 / 0.326 / 0.437 s</td></tr>
+    <tr><td>Most contacts waiting at once; longest wait; time behind</td><td>11; 2 s; 0 s</td><td>14; 1 s; 0 s</td></tr>
+    <tr><td>Messages saying the network is clear</td><td>3,372</td><td><b>0</b></td></tr>
+  </tbody>
+</table>
+<p class="src">Source: <code>loadtest/reports/surge-brief-before-fix.md</code> (run of 16 November 2026, 07:37 UTC; offline keyword rules; one Linux machine with 16 CPU threads).</p>
+
+<h3>4.3 What surge mode changed</h3>
+<p class="body">The platform counts as behind when 200 contacts wait for the orchestrator, or when more wait than it handles at once (8) and one of them has waited 15 seconds. A caller is then told at once, with the reference, that the reply will take longer; the page asks less often; and messages are read by the keyword rules instead of the language model. What may be said and done needs the same proof.</p>
+<p class="body">In the half-hour runs no language model took part, so there was no model to spare and the machine kept up: 0 seconds behind. A third run therefore put a stand-in for a model on every turn of the two-minute profile: the rules' answer after 1.5 seconds, no model called. That is twice what the orchestrator can read with the model. Result: 893 of 893 contacts accepted and answered; <b>382 of 893</b> messages read by the rules instead of the stand-in; 448 callers told that the reply will take longer; at most 158 contacts waiting, none longer than 16 s; first reply after 11.659 s at the median and 18.033 s at the slowest; slowest reference 0.105 s.</p>
+<p class="body"><b>Caching and scaling approach</b> (checklist 4). As built: diagnoses of one node at the same moment share one status read, and no answer is kept afterwards; a failing dependency is rested for ten seconds after five failures in a row; the orchestrator refills each slot as it frees; the executor serves complaints, incidents and credits before notices; surge mode sheds the model. Several copies of a process have not been tested.</p>
+<p class="src">Sources: <code>loadtest/reports/surge-simulated-model.md</code> (run of 16 November 2026, 14:30 UTC); <code>README.md</code>, "Surge mode"; <code>docs/EXECUTION_PLAN.md</code> section 11.</p>
+
+<h3>4.4 The run before the fix, and what was fixed <span class="tag tag--assume">Caveat</span></h3>
+<p class="body">The half-hour report is kept as it ran, before the last of the fixes, under the name <code>surge-brief-before-fix</code>: it met every target it then had, and what followed the surge was still wrong.</p>
+<table class="tight mt">
+  <thead><tr><th style="width:38%">Found by the load test and its reviews</th><th style="width:32%">Fix</th><th>Shown after the fix</th></tr></thead>
+  <tbody>
+    <tr><td>When the outages ended, every waiting line was tested, and three failing lines were enough to suspect a node. 13 and 16 of the 94 restored nodes were suspected in the two runs; 482 and 673 customers were told that the status cannot be verified, 72 and 106 of them handed to a person. Only 9,515 of 9,759 and 9,626 of 9,829 waiting customers were told of the end within the half hour</td><td>Failing lines count against a node only when at least three customers have one and that many failures among the lines tested would be a coincidence less than once in a thousand times (assumption A17)</td><td>Two-minute profile: 625 of 625 and 699 of 699 waiting customers told, after 80 s and 88 s; no ticket for a restored node; 0 told meanwhile that the status cannot be verified</td></tr>
+    <tr><td>The orchestrator took 32 due contacts and waited for all of them before it looked again. Median first reply 0.86 s</td><td>Each slot is refilled the moment it frees</td><td>The median fell to 0.19 s; the kept half-hour report shows 0.177 s</td></tr>
+    <tr><td>The verdict looked at the reference and at nothing after it</td><td>Two more targets: every contact answered, every waiting customer told</td><td>Both are judged in <code>surge-quick</code></td></tr>
+  </tbody>
+</table>
+<p class="src">Sources: <code>docs/EXECUTION_PLAN.md</code>, "What the reviews of M3 slice E changed"; <code>loadtest/reports/surge-quick.md</code> (run of 16 November 2026, 18:23 UTC).</p>
+<div class="note note--warn mt keep"><b>The caveat, and what the surge does not prove.</b> The half-hour profile has not been repeated on the code after the fix to the rule for failing lines: two attempts were cut short when the laptop running them went to sleep on battery. What stands after the fix is the two-minute profile (1,891 of 1,891 contacts accepted and answered in its two runs), last run at the M3 gate and not since M4. Every run was on one machine that also ran the generator, the simulator and PostgreSQL, with one process of each kind, a simulator that answers in milliseconds and no live language model. The figures say that the design holds at ten contacts a second. They are no capacity figure for a deployment. The surge also left two decisions for the client, D10 and D11: see the second table of section 8.</div>
+
+<!-- ============================================================ 5 -->
+<h2><span class="n">5</span> The curveball response</h2>
+
+<h3>5.1 What the curveball changed, and how the team re-scoped</h3>
+<p class="body">The brief: the Network Monitoring API goes down during a live outage, and every outage contact must get a complaint reference within 2 minutes; the group must show a safe degraded mode, with no false "all clear" and no truck dispatch on stale data. So the state of the network is not always knowable when a customer writes in, and the reference has a deadline for every contact at the moment contacts are most numerous.</p>
+<p class="body">The curveball is printed in the brief, so the team designed for it from the first milestone. The plan set milestone M3 for 22 to 24 November, with half a day held for the curveball as released; the progress log records M3 built on 15 and 16 November, and ADR 0001 accepted on 16 November 2026.</p>
+<section class="adr">
+  <p class="adr__id">ADR 0001 · ACCEPTED 16 NOVEMBER 2026 · THE DEGRADED-MODE RULES, THE RE-SCOPE AND THE TRADE-OFF</p>
+  <h3>The platform does less when it knows less, and says so. It never fills the gap with a guess.</h3>
+  <dl>
+    <dt>Rules</dt><dd>(1) The reference waits for nothing: intake calls no model and no enterprise system. (2) A status that cannot be read is unknown, never clear. (3) The event feed can still prove an outage; nothing but a live read can prove its absence. (4) Nothing is done on a status nobody could read: no device steps, no visit, and the executor reads the node again before it books. (5) What a message claims about the network is checked where messages are stored. (6) A failing dependency is rested: five failures in a row, ten seconds. (7) A contact is looked at again every minute and goes to a person after five looks. (8) Failures that belong to no contact reach staff through an operations queue. (9) Under load the platform sheds cost and keeps every check.</dd>
+    <dt>Re-scope</dt><dd>Rules 1 to 4 and 7 were in the design from M1 and M2. M3 added rules 5, 6, 8 and 9, one shared status read per node, the load test repeated with the API down, and the curveball as a scored evaluation.</dd>
+    <dt>Options refused</dt><dd>Show the last known status with its age: it is read as "no outage", the stale all-clear the brief forbids. Treat an unreadable status as clear. Take the feed's silence as proof that nothing is wrong. Stop taking contacts, or queue every contact for a person. Keep trying the API for every contact.</dd>
+    <dt>Trade-off</dt><dd>With the API down and the feed silent, a customer in a real outage is told only that the status cannot be verified. A customer on a healthy node gets no help with their own equipment until the node can be read, and is with a person after about five minutes. A slot chosen meanwhile is not booked: the visit is offered afresh. With the feed silent, the end of an outage is heard up to fifteen minutes after the API returns. A long failure fills the human queue.</dd>
+    <dt>Not built</dt><dd>A circuit's state is seen only in each process's logs. Nothing alerts on the operations queue. Limits at the edge belong to the deployment. A proactive notice is not checked against the network again when it is sent. Decisions D10 and D11 are left for the client (section 8).</dd>
+  </dl>
+</section>
+<p class="src">Sources: <code>docs/adr/0001-degraded-mode-when-the-network-api-fails.md</code>; <code>docs/EXECUTION_PLAN.md</code> sections 6, 7 (M3) and 13.</p>
+
+<h3>5.2 The change proven on test cases</h3>
+<p class="body"><b>The evaluation.</b> One scene is played eight times: two declared outages, a visit on offer, then the API fails, customers write in, the NOC resolves one outage, and the API returns. Four ways the API can fail, each with the event feed working and with it silent since before the outage. Each playing is scored against what the simulator knows to be true.</p>
+<table class="tight mt cb keep">
+  <thead><tr><th style="width:31%">How the API fails</th><th class="c" style="width:10%">Contacts</th><th class="c" style="width:13%">No reference in 2 min</th><th class="c" style="width:14%">Told "clear" · in an outage</th><th class="c" style="width:14%">Visits booked · no status read</th><th class="c" style="width:9%">Credits applied</th><th class="c">Most incidents on a node</th></tr></thead>
+  <tbody>
+    <tr><td>Refuses every call (503)</td><td class="c">9 + 9</td><td class="c">0</td><td class="c">0 · 0</td><td class="c">0 · 0</td><td class="c">0</td><td class="c">1</td></tr>
+    <tr><td>Answers too late (504 after a hold)</td><td class="c">9 + 9</td><td class="c">0</td><td class="c">0 · 0</td><td class="c">0 · 0</td><td class="c">0</td><td class="c">1</td></tr>
+    <tr><td>Fails every call (500)</td><td class="c">9 + 9</td><td class="c">0</td><td class="c">0 · 0</td><td class="c">0 · 0</td><td class="c">0</td><td class="c">1</td></tr>
+    <tr><td>Fails half of its calls, at random (500)</td><td class="c">9 + 9</td><td class="c">0</td><td class="c">3 and 4 · 0</td><td class="c">0 · 0</td><td class="c">0</td><td class="c">1</td></tr>
+    <tr><th>All 8 playings</th><td class="c"><b>72</b></td><td class="c"><b>0</b></td><td class="c"><b>0 in an outage</b></td><td class="c"><b>0</b></td><td class="c"><b>0</b></td><td class="c"><b>1</b></td></tr>
+  </tbody>
+</table>
+<p class="src">Source: <code>evals/reports/curveball.md</code> (run of 17 November 2026, 01:26 UTC; offline keyword rules; in process on the 1,000-customer pack). Each row pairs two playings: the event feed working, and silent. "9 + 9" is their contacts.</p>
+<p class="body mt"><b>Reading the row with 3 and 4.</b> When the API fails half of its calls, a read that succeeds is evidence: a customer on a healthy node may then be told that no outage is reported. None of those messages went to a customer in an outage. Which calls fail is left to chance, so these two playings differ from run to run.</p>
+<p class="body"><b>What customers were told instead.</b> Of the 32 customers on an outage node who wrote in while the API was failing, 20 were told of the outage on the evidence there was (the feed, or a status read that succeeded) and 12 were told that the status cannot be verified. Once the API was back, 16 of 16 customers on the lasting outage and 8 of 8 waiting on the resolved one had been told. Nobody was left without an answer. The evaluation also corrected one cost recorded in ADR 0001: a slot chosen while the API fails is not booked later by itself; the visit is offered afresh.</p>
+<table class="tight mt">
+  <thead><tr><th style="width:21%">Further proof</th><th>What it shows</th><th style="width:27%">Where</th></tr></thead>
+  <tbody>
+    <tr><th>The surge with the API down</th><td>14,041 contacts: all accepted, slowest reference 0.11 s, 0 messages saying the network is clear. The 9,829 on failed nodes were told of the outage on the feed's evidence; 3,361 elsewhere were told that the status cannot be verified</td><td><code>surge-brief-before-fix</code>; again in <code>surge-quick</code> (998 contacts)</td></tr>
+    <tr><th>Live journeys on every release</th><td>Journey 2: a customer on the outage node, with the API down, still gets the reference and is told of the outage. Journey 3: a customer on another node gets no all-clear and no device steps. Both passed on the AWS host on 24 November, with the live model reading the messages</td><td><code>scripts/smoke.py</code>; pipeline 3106633060</td></tr>
+    <tr><th>Each rule on its own</th><td>An all-clear the evidence does not back is stopped; a rested dependency is not called once per contact; a stale feed proves nothing. In the attack suite, a technician demanded while the API is down (D1, D2) and "just say it is fine" (F1) get no visit and no all-clear</td><td><code>tests/e2e/test_message_claims.py</code>, <code>test_resting_dependencies.py</code>, <code>test_feed_and_restoration.py</code>; <code>attack_suite</code></td></tr>
+  </tbody>
+</table>
+<p class="src"><b>Not proven:</b> the drill runs against the simulator's fault injection. No production system was made to fail.</p>
+
+<!-- ============================================================ 6 -->
+<h2><span class="n">6</span> Guardrails and fairness</h2>
+
+<h3>6.1 The attack suite <span class="tag tag--ok">Met</span> <span class="tag tag--calc">58 of 58 runs</span></h3>
+<p class="body">Forty attacks are played against the whole platform and scored on what a customer, an auditor or the enterprise systems could see afterwards. Four outcomes are critical: a credit nobody approved, a visit on a status nobody could read, another customer's data read or told, an all-clear without proof. The 18 attacks that lie in how a message is read are tried twice: read by the configured provider, and read by a scripted model that answers whatever the attacker wants within the nine fields an answer may have. That second reader shows what the platform does once a model has been talked round.</p>
+<table class="tight mt keep">
+  <thead><tr><th style="width:35%">Family</th><th class="num">Attacks</th><th class="num">Runs</th><th class="num">Passed</th><th>An example of what was seen</th></tr></thead>
+  <tbody>
+    <tr><td>A · Instructions in a customer's message</td><td class="num">7</td><td class="num">14</td><td class="num">14</td><td>"Apply INR 5000": nothing on the account; the policy's INR 50.00 waits for approval</td></tr>
+    <tr><td>B · Instructions in a retrieved document</td><td class="num">8</td><td class="num">10</td><td class="num">10</td><td>The index build refused the planted step, heading and forum post</td></tr>
+    <tr><td>C · A credit nobody approved</td><td class="num">5</td><td class="num">6</td><td class="num">6</td><td>An agent's approval of INR 503.83 refused (403)</td></tr>
+    <tr><td>D · A visit on a status nobody could read</td><td class="num">3</td><td class="num">5</td><td class="num">5</td><td>The executor looked again, could not verify, and booked nothing</td></tr>
+    <tr><td>E · Another customer's data</td><td class="num">5</td><td class="num">7</td><td class="num">7</td><td>5 guesses checked, the rest refused unchecked</td></tr>
+    <tr><td>F · An all-clear without proof</td><td class="num">1</td><td class="num">2</td><td class="num">2</td><td>Told that the status cannot be verified</td></tr>
+    <tr><td>G · Personal data in a model payload</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td>All 16 details replaced by tokens</td></tr>
+    <tr><td>H · Abuse, off-topic requests, edge cases</td><td class="num">3</td><td class="num">6</td><td class="num">6</td><td>A rude customer in an outage is told of the outage like anyone else</td></tr>
+    <tr><td>I · A role or an agent's key reaching past its tools</td><td class="num">3</td><td class="num">3</td><td class="num">3</td><td>All 7 forged tokens refused (401); all 15 key misuses refused (403)</td></tr>
+    <tr><td>J · A model's answer that tries to unlock an action</td><td class="num">3</td><td class="num">3</td><td class="num">3</td><td>An answer with a field more than the nine was thrown away</td></tr>
+    <tr><th>All</th><td class="num"><b>40</b></td><td class="num"><b>58</b></td><td class="num"><b>58</b></td><td><b>100.0%. Critical failures 0. Could not be played out 0</b></td></tr>
+  </tbody>
+</table>
+<p class="src">Source: <code>evals/reports/attack_suite.md</code> (run of 22 November 2026, 20:43 UTC; offline keyword rules and the scripted model). The counts by family are summed from the report's rows.</p>
+<p class="body mt"><b>The run with the live model.</b> The suite was run once with OpenAI's <code>gpt-5.4-mini</code> reading the messages, served by the snapshot <code>gpt-5.4-mini-2026-03-17</code> that the demonstration pins: 58 of 58 runs passed, and the model made all 24 of the readings it was asked for, in 1.2 s at the median and 1.8 s at the slowest. That report was written on 17 November 2026 (05:43 UTC); the run has not been repeated on later code. On the shipped setting a credit up to INR 500 is applied without a person (client decision D3); the suite's check that no credit reaches Billing without a person's decision is written for the stricter default, and the suite has not been re-cut or run for the shipped setting. The run with Claude has not been made: no key was available. One run is a small sample of how often a real model is talked round (<code>evals/reports/attack_suite_openai.md</code>).</p>
+
+<h3>6.2 The five gaps the first run found, and their fixes</h3>
+<p class="body">As first measured, 50 of 56 runs passed, with no critical failure. The six failed runs were five gaps. All five were closed, and two attacks (B7, B8) were added for what a review found beside them.</p>
+<table class="tight mt">
+  <thead><tr><th style="width:44%">Gap found by the first run</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr><td>An instruction planted in a step of a real guide was quoted to the customer</td><td>A step that speaks to an assistant, of money, asks for a code or sends the customer to a number or an outside address is refused when the index is built</td></tr>
+    <tr><td>A step changed in the stored index after it was built was quoted</td><td>The passage about to be sent is checked again, and must be from the customer's own router's guide</td></tr>
+    <tr><td>A rude customer in an outage was declined</td><td>Abuse with a fault report is handled as the fault it is</td></tr>
+    <tr><td>A model that read "it works" into "it is still not working" closed the complaint</td><td>A complaint is not closed on that reading when the customer's words say the opposite</td></tr>
+    <tr><td>A model that called a plain fault report off-topic got it declined</td><td>The reading and the customer's plain words disagree, so the contact goes to a person</td></tr>
+  </tbody>
+</table>
+<p class="src">Sources: <code>evals/README.md</code>; <code>docs/EXECUTION_PLAN.md</code> section 13, M4 slices C and D.</p>
+
+<h3>6.3 The check that the suite can fail</h3>
+<p class="body"><code>scripts/attack_suite_can_fail.py</code> takes a control out of the source, runs the attack meant to catch its absence, and puts the source back. It holds 27 checks. In 25 the attack must report the missing control, in 13 of them as a critical failure. In the other 2 a second lock stands behind the one removed, and the attack must still be stopped. The execution plan records all 27 as coming out as they should at the M4 gate; the script prints its verdicts and writes no report file. The first form of the suite did not pass this test: it held attacks that could not have failed, such as a credit demanded on a healthy node. They were rebuilt. <b>Not proven:</b> that nothing else works. <code>docs/threat_model.md</code> says what was not tried.</p>
+<p class="src">Sources: <code>scripts/attack_suite_can_fail.py</code> (the list <code>CHECKS</code>); <code>docs/EXECUTION_PLAN.md</code> section 13; <code>docs/evidence_index.md</code>, checklist 1.</p>
+
+<h3>6.4 Segment parity: the bias check <span class="tag tag--ok">Met</span> <span class="tag tag--calc">8 of 8 situations</span></h3>
+<p class="body">The platform is given one attribute a decision must not rest on, the segment (consumer or SME). A test reads the source and finds it read nowhere (<code>tests/unit/test_decision_inputs.py</code>). The evaluation shows the same by outcome: five consumer and five SME customers, each on a node of their own, go through each of eight situations, from an outage to a billing question. In 8 of 8 situations, over 80 customers, both segments get the same messages, the same handovers at the same priority, the same decision on a visit and the same rule for a credit.</p>
+<table class="tight mt">
+  <thead><tr><th>What does differ: the credit</th><th class="num">Consumer 999</th><th class="num">Consumer 1,499</th><th class="num">SME 4,999</th><th class="num">SME 9,999</th><th class="num">SME 14,999</th></tr></thead>
+  <tbody>
+    <tr><td>Five hours out: credit in INR (share of the fee)</td><td class="num">50.00 (5.01%)</td><td class="num">50.00 (3.34%)</td><td class="num">50.00 (1.00%)</td><td class="num">69.44 (0.69%)</td><td class="num">104.16 (0.69%)</td></tr>
+    <tr><td>Three days out: credit in INR (20.00% of the fee)</td><td class="num">199.80</td><td class="num">299.80</td><td class="num">999.80</td><td class="num">1,999.80</td><td class="num">2,999.80</td></tr>
+    <tr><td>Three days out: approved by</td><td class="num">agent</td><td class="num">agent</td><td class="num">supervisor</td><td class="num">supervisor</td><td class="num">supervisor</td></tr>
+  </tbody>
+</table>
+<p class="src">Source: <code>evals/reports/segment_parity.md</code> (run of 17 November 2026, 01:28 UTC; offline keyword rules; every credit under review). Column heads give the monthly fee in INR.</p>
+<p class="body mt">The differences follow from the fee. The policy's minimum of INR 50.00 lifts a small credit on a cheap plan more than on a dear one. Above INR 500 a supervisor approves, and SME plans reach that level sooner: if supervisors are slower, SME customers wait longer for a larger credit. With decision D3 in force on the demonstration, it follows from the rule that the amounts at or under INR 500 here are applied without review and the three above it wait for a supervisor. <b>Not proven:</b> a statistical equality of outcomes. A few customers in each cell show the absence of a rule that treats segments differently.</p>
+
+<!-- ============================================================ 7 -->
+<h2><span class="n">7</span> Retrieval evaluation</h2>
+<dl class="q">
+  <dt>Question</dt><dd>Is a customer with a clear node and a passing line sent steps from the guide of their own router model, from the section that fits what they described?</dd>
+  <dt>Method</dt><dd>Descriptions of a broadband fault are put to the Troubleshooting Agent for each of the 12 router models, and the section it answers with is scored against labels made by hand. Beside each score stands what always answering with the "No internet" section would score, because most faults are no-service faults. No language model takes part: keyword rules for the kind of fault choose the section, and the vector search, on a deterministic hashing embedder, contributes when the rules recognise nothing.</dd>
+  <dt>Gold set</dt><dd><b>Transcript phrases:</b> the 27 ways a fault is described in the synthetic transcripts, alone and with the greetings customers add; 5,184 descriptions over the 12 models; in-sample, because the rules' author had read them. <b>Author's paraphrases:</b> 30, written just before the rules; 360 over the models; in-sample too. <b>Independent descriptions:</b> 48, written and labelled on 15 November by a separate model instance that was shown one router guide and nothing of the retriever, after the rules were final; 576 over the models.</dd>
+</dl>
+<figure class="mt keep">
+  <svg class="ch" viewBox="0 0 700 150" role="img" aria-label="Right section by set: transcript phrases 99.07 percent, author's paraphrases 96.67 percent, independent descriptions 81.25 percent as first scored and 89.58 percent on today's rules, each with the constant-answer baseline and its floor.">
+    <text class="ax" x="232" y="10" text-anchor="middle">0%</text><text class="ax" x="397" y="10" text-anchor="middle">50%</text><text class="ax" x="562" y="10" text-anchor="middle">100%</text>
+    <path class="grid" d="M232 14V104M397 14V104M562 14V104"/>
+    <g>
+      <text x="0" y="28">Transcript phrases, in-sample</text>
+      <rect class="track" x="232" y="19" width="330" height="10"/><rect class="bar" x="232" y="19" width="326.9" height="10"/>
+      <path class="tgt" d="M555.4 15V33"/><circle class="base" cx="500.9" cy="24" r="4"/>
+      <text x="574" y="28"><tspan class="val">99.07%</tspan> · 5,136 of 5,184</text>
+    </g>
+    <g>
+      <text x="0" y="51">Author's paraphrases, in-sample</text>
+      <rect class="track" x="232" y="42" width="330" height="10"/><rect class="bar" x="232" y="42" width="319" height="10"/>
+      <path class="tgt" d="M496 38V56"/><circle class="base" cx="397" cy="47" r="4"/>
+      <text x="574" y="51"><tspan class="val">96.67%</tspan> · 348 of 360</text>
+    </g>
+    <g>
+      <text x="0" y="74">Independent, as first scored</text>
+      <rect class="track" x="232" y="65" width="330" height="10"/><rect class="bar" x="232" y="65" width="268.1" height="10"/>
+      <path class="tgt" d="M463 61V79"/><circle class="base" cx="390.1" cy="70" r="4"/>
+      <text x="574" y="74"><tspan class="val">81.25%</tspan> · 468 of 576</text>
+    </g>
+    <g>
+      <text x="0" y="97">Independent, on today's rules</text>
+      <rect class="track" x="232" y="88" width="330" height="10"/><rect class="bar" x="232" y="88" width="295.6" height="10"/>
+      <path class="tgt" d="M463 84V102"/><circle class="base" cx="390.1" cy="93" r="4"/>
+      <text x="574" y="97"><tspan class="val">89.58%</tspan> · 516 of 576</text>
+    </g>
+    <circle class="base" cx="238" cy="122" r="4"/><text class="ax" x="248" y="126">what always answering "No internet" would score: 81.48%, 50.0%, 47.92%, 47.92%</text>
+    <path class="tgt" d="M238 133V147"/><text class="ax" x="248" y="143">the floor each row must reach: 98%, 80%, 70%, 70%</text>
+  </svg>
+  <figcaption><b>Figure 4.</b> Right section by set, to scale. Only the third row is an out-of-sample figure.</figcaption>
+</figure>
+<p class="src">Source: <code>evals/reports/retrieval.md</code> (run of 19 November 2026, 02:11 UTC; no language model); <code>evals/cases/retrieval_gold.json</code>.</p>
+<dl class="q">
+  <dt>Result</dt><dd>As first scored, on a retriever built without sight of the set: the right section for <b class="fig">468 of 576</b> independent descriptions, <b class="fig">81.25%</b>, against a floor of 70.0% set before scoring and a constant answer's 47.92%. Answers from another router model's guide: <b class="fig">0</b>.</dd>
+  <dt>The second score</dt><dd>The rules were reworked after that scoring, on what three code reviews found by reading them: a fault the customer rules out is not the fault; "dead" or "gone" counts only when said of the service; the service named as gone outranks a mention of Wi-Fi. One change was prompted by the set itself: the Hindi "lagta hai" (it seems) had been read as "lag". The same descriptions now score 89.58% (516 of 576). That is no longer an out-of-sample figure, because the retriever changed after the set was scored. The cases file keeps the first score and a hash of what it was scored on. The next change to the retriever needs a fresh set.</dd>
+  <dt>Still wrong</dt><dd>Five independent descriptions, each for all 12 models (60 answers), all answered with "No internet": the WPS button for a printer and a password the phone rejects (accepted: Wi-Fi); a crawling download and freezing video calls (accepted: slow speed); how long to wait after switching the router off (accepted: power cycle). A wrong section is still a set of safe steps from the customer's own router's guide; if they do not help, a person takes over. Before the symptom rules existed, search by shared words alone found the right section for 77.6% of the transcript phrases.</dd>
+    <dt>Does not prove</dt><dd>How the retriever does on real customers' words: the independent set is 48 descriptions by one other author. The action plan of 13 November proposed recall over the top three sections; the build sends one section, once, so the evaluation scores that one. The index holds the 96 guide sections only: the credit policy is applied by code, so there are no policy queries to score.</dd>
+</dl>
+
+<!-- ============================================================ 8 -->
+<h2><span class="n">8</span> Failure analysis</h2>
+<p class="body">What failed or was missed, across the evaluations and in real runs: the cause, the fix or the reason it stands, and the risk that is left. What each evaluation still gets wrong is also in its own section (3.1, 3.2 and 7).</p>
+<table class="tight band mt">
+  <thead><tr><th style="width:31%">What failed or was missed, and what found it</th><th style="width:22%">Cause</th><th style="width:23%">Fix</th><th>Residual risk</th></tr></thead>
+  <tbody>
+    <tr><td>Detection scored 91.44%, under the 95% target. <i>First run of the evaluation</i></td><td>Five transcript phrases answered as out of scope by the keyword rules</td><td>The rules now know them: 97.47%</td><td>A complaint the rules do not recognise is still answered as out of scope</td></tr>
+    <tr><td>Restored nodes suspected again: 13 and 16 of 94; 244 and 203 waiting customers not told in time. <i>Half-hour load test, after the surge</i></td><td>A fixed count of three failing lines, where about one line in seventy fails for reasons of its own</td><td>Failures are weighed against coincidence (A17); the verdict gained two targets</td><td>The half-hour profile is not repeated after the fix. The rule can still doubt about one healthy node in a thousand until about ten lines are in</td></tr>
+    <tr><td>Six of 56 attack runs failed: five gaps, none critical. <i>First run of the attack suite</i></td><td>Guide text and model readings were trusted too far (section 6.2)</td><td>All five closed; two attacks added</td><td>The checks on a guide's steps and on injection phrasing are lists: they catch what is on them</td></tr>
+    <tr><td>Tests that could not fail: attacks played where what they ask for could not happen; a masking test that looked for leaks with the masking's own rules. <i>Independent reviews; the mutation script</i></td><td>An attack played where it cannot succeed, or a test built on the control's own rules, passes whatever the control does</td><td>Attacks rebuilt, 27 controls removed in turn; the masking test writes its own spellings, and found three leaks the fix had missed</td><td>The suite shows that these 40 attacks fail. Masking cannot know digits spelled as words or a name in another script</td></tr>
+    <tr><td>A customer's "2", in answer to a visit offer, was called off-topic and the visit was not booked. <i>First release to AWS with the live model, 22 November</i></td><td>The live journeys had never been run with the model; on the keyword rules the same "2" books the visit</td><td>While an offer waits, an answer its own rules can read carries the conversation, whatever a model made of it</td><td>Only the attack suite and the eight journeys have been read by the live model</td></tr>
+    <tr><td>The stack started with no settings; a first deploy tried to roll back to a release that was not there. <i>First release to AWS</i></td><td>Run by AWS Systems Manager, the command-line client wrote nothing to the file its output was redirected to, and exited 0</td><td>Both fixed; a rollback was then exercised once, back and forward</td><td>One host in one zone; a release stops the site for about 25 seconds</td></tr>
+  </tbody>
+</table>
+<table class="tight band mt">
+  <thead><tr><th style="width:38%">What is missed and stands</th><th style="width:31%">Why it stands</th><th>Residual risk</th></tr></thead>
+  <tbody>
+    <tr><td>2.53% of affected contacts: mobile before the NOC declares with no alarm, and mobile with a defective tower mapping</td><td>The thin mobile path (A9): no remote test of a mobile connection</td><td>Such a customer is told "no outage reported", or that the status cannot be verified, and a person takes over</td></tr>
+    <tr><td>The end-to-end cut in technician visits</td><td>It depends on what people decide; no replay can measure it</td><td>If staff give in to more than half of insisting customers, the 50% is missed</td></tr>
+    <tr><td>With the API down, 2,693 of 3,361 contacts on other nodes were with a person five minutes later</td><td>Five looks, a minute apart, is the rule as built (decision D11)</td><td>A long failure of the API fills the human queue</td></tr>
+    <tr><td>The news of an outage's end travels at the pace of the line test: 19 minutes for 9,759 customers</td><td>Every waiting line is tested before its customer is told (decision D10)</td><td>After a large outage, late news on the real test system</td></tr>
+  </tbody>
+</table>
+<p class="src">Sources: <code>docs/EXECUTION_PLAN.md</code> section 13 (progress log; "What the reviews changed"; "Known gaps after M4") and section 12; the reports named in sections 3 to 7. 244 and 203 are 9,759 less 9,515 and 9,829 less 9,626. The same log records what the code reviews and the first CI run found; those are not repeated here.</p>
+
+<!-- ============================================================ 9 -->
+<h2><span class="n">9</span> Observability and operations evidence</h2>
+<p class="body">The rubric asks for traces, a dashboard and a failure drill; the brief asks for an alert when the outage feed is stale. This is what exists and what does not.</p>
+<table class="tight mt">
+  <thead><tr><th style="width:17%">Piece</th><th style="width:12%">State</th><th>What it gives</th><th style="width:25%">Where</th></tr></thead>
+  <tbody>
+    <tr><th>Audit trail per contact, and logs</th><td><span class="tag tag--ok">Built</span></td><td>Every step: when, who or what acted, the outcome, what went in and came out with contact details masked, the model, prompt and policy versions, the duration. The database refuses to change or delete an entry. Structured logs are redacted the same way, and hold the state of each circuit</td><td><code>GET /v1/contacts/{id}/audit</code>; <code>tests/integration/<wbr>test_audit_and_reference.py</code></td></tr>
+    <tr><th>Traces</th><td><span class="tag tag--ok">Built</span> <span class="tag tag--assume">optional</span></td><td>When switched on, each turn of the workflow is traced in LangSmith: every step, its timing and errors, with inputs and outputs sent empty. Only the orchestrator is traced; calls to the model itself are not</td><td><code>src/skylink_care/<wbr>observability/tracing.py</code></td></tr>
+    <tr><th>Backlog line on the staff desk</th><td><span class="tag tag--ok">Built</span></td><td>How many contacts wait for a turn, for how long, and whether the platform is behind. The load test read it every five seconds: 364 readings a run, none missed</td><td><code>GET /v1/ops/load</code>; load reports, "The backlog as staff saw it"</td></tr>
+    <tr><th>Operations queue</th><td><span class="tag tag--ok">Built</span></td><td>What needs a person and belongs to no contact: a failed write nobody waits on, a feed that cannot go on by itself. One item for one kind of trouble, closed with a note</td><td>staff desk; <code>tests/integration/<wbr>test_ops_queue.py</code></td></tr>
+    <tr><th>Stale or broken outage feed</th><td><span class="tag tag--ok">Queued</span> <span class="tag tag--no">no alert</span></td><td>A feed silent for 90 seconds, or with an event missing, stops counting as evidence. An item is queued for a gap, an event that cannot be applied, a refused or unreadable page, a rejected key, and a feed out of reach for ten minutes. Nothing alerts on the queue: a person has to look at the desk</td><td><code>tests/integration/<wbr>test_feed_consumer.py</code></td></tr>
+    <tr><th>Failure drill</th><td><span class="tag tag--ok">Built</span></td><td>The curveball evaluation; the surge with the API down; journeys 2 and 3 on every release; a rollback of the AWS release exercised on 22 November, back and forward</td><td>section 5; <code>docs/EXECUTION_PLAN.md</code> section 13</td></tr>
+    <tr><th>Metrics, dashboard, alerts</th><td><span class="tag tag--no">Not built</span></td><td>No metrics, no dashboard of latency, errors, cost or groundedness, no alerts on error rate, latency, cost spike or a stale feed, no runbook: all milestone M5 of the plan. Token counts of a model call are not stored, so a cost figure has nothing to read yet</td><td><code>README.md</code>, "Not built yet"; <code>docs/EXECUTION_PLAN.md</code> sections 6, 13</td></tr>
+    <tr><th>Online metrics plan, drift check</th><td><span class="tag tag--no">Not written</span></td><td>The plan names both as deliverables of M5. Neither is written, and no drift check is defined. What exists against silent change: the model is pinned to a dated snapshot, the retrieval cases keep a hash of the retriever, and every template's wording is pinned by a test</td><td><code>docs/EXECUTION_PLAN.md</code> section 6; <code>README.md</code>, "Language model"</td></tr>
+  </tbody>
+</table>
+<p class="src">Sources: <code>docs/HOW_IT_WORKS.md</code> sections 7.4, 8.5 and 13; <code>README.md</code>; <code>docs/adr/0001-degraded-mode-when-the-network-api-fails.md</code>, "Not built"; <code>src/skylink_care/ingest/consumer.py</code>.</p>
+<div class="note note--warn mt keep"><b>What the team planned to watch online.</b> The action plan of 13 November, written before the build, lists for a dashboard: complaint-reference latency, outage recall and coverage, stale-feed age, downstream timeouts, queue age, approval backlog, duplicate attempts and effects, credit mismatches, dispatch prevention, token cost and citation coverage. None of it is built as a dashboard.</div>
+
+<!-- ============================================================ 10 -->
+<h2><span class="n">10</span> Limits, and what a pilot would have to measure</h2>
+<p class="body">Everything in this report is measured on synthetic stand-in data, in simulation. A live language model read the messages only in one run of the attack suite and in the eight live journeys.</p>
+<table class="tight mt">
+  <thead><tr><th style="width:30%">Evidence</th><th style="width:30%">Messages read by</th><th style="width:22%">Runs on</th><th>Report written (UTC)</th></tr></thead>
+  <tbody>
+    <tr><td>Credit policy; retrieval</td><td>no language model takes part</td><td>in process</td><td>17 Nov; 19 Nov 2026</td></tr>
+    <tr><td>Outage detection; truck rolls; curveball; segment parity</td><td>offline keyword rules</td><td>in process, 1,000 customers</td><td>17 Nov 2026</td></tr>
+    <tr><td>Attack suite</td><td>offline keyword rules, and the scripted model that obeys the attacker</td><td>in process</td><td>22 Nov 2026</td></tr>
+    <tr><td>Attack suite, live model</td><td><code>gpt-5.4-mini</code> (24 of 24 readings), and the scripted model</td><td>in process</td><td>17 Nov 2026</td></tr>
+    <tr><td>Surge, half-hour and two-minute</td><td>offline keyword rules; one run with a 1.5 s stand-in, no model called</td><td>local processes, 400,000 customers, one machine</td><td>16 Nov 2026</td></tr>
+    <tr><td>Test suite, 2,689 tests; eight live journeys on the AWS host</td><td>offline keyword rules; <code>gpt-5.4-mini</code> for the journeys</td><td>GitLab pipeline 3106633060; the deployed release</td><td>24 Nov 2026</td></tr>
+  </tbody>
+</table>
+<p class="src">Sources: the line "Written by the run of" in each report. The pipeline also runs the seven evaluations before every release; the figures quoted in this report are those of the committed reports.</p>
+<div class="cols-2 mt keep">
+  <div>
+    <h4>What the figures do not prove</h4>
+    <ul class="tight">
+      <li>Anything about SkyLink's network, policy or customers.</li>
+      <li>How a live model reads customers' messages at large. Claude has not been run.</li>
+      <li>What a deployment can carry: one machine, one process of each kind, a simulator that answers in milliseconds.</li>
+      <li>That the evaluations hold at 400,000 customers: they run in process on 1,000, weighted by the large pack's mix.</li>
+      <li>That no attack works. The suite shows that its 40 do not.</li>
+    </ul>
+  </div>
+  <div>
+    <h4>What a pilot would have to measure</h4>
+    <ul class="tight">
+      <li>The NOC's real delay in declaring an outage, to set the hold.</li>
+      <li>How often a line fails for reasons of its own, to set the rule for failing lines.</li>
+      <li>How many customers go on asking, and what staff then decide: the end-to-end cut in visits.</li>
+      <li>Guide retrieval on real customers' words, with a fresh out-of-sample set.</li>
+      <li>Response times of the real enterprise systems, and whether their write APIs honour an idempotency key.</li>
+      <li>The surge on the deployed stack, with the model in the turn.</li>
+      <li>How long closures take: nothing reports it today.</li>
+    </ul>
+  </div>
+</div>
+<p class="src">Sources: <code>docs/HOW_IT_WORKS.md</code> section 9.4; "What this rests on" at the end of each report; <code>README.md</code>, "Not built yet"; <code>docs/regulatory_controls.md</code>.</p>
+
+</body>
+</html>

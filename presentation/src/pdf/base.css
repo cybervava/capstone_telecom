@@ -1,0 +1,197 @@
+/* The print stylesheet shared by every PDF of the submission.
+   Layout: A4 pages with a quiet running head and foot. Text sits on white paper; a tinted band or a
+   hairline box is used only where something is a separate object (a table head, a callout, a
+   decision record). The colours and typefaces are those of the project's interactive pages
+   (docs/architecture_design.html), so the set reads as one piece of work.
+   Each document sets its own running title:  @page { @top-right { content: "Architecture"; } } */
+
+@font-face { font-family: "Archivo"; src: url("../fonts/Archivo-VF.ttf") format("truetype"); font-weight: 100 900; font-stretch: 62% 125%; }
+@font-face { font-family: "Atkinson Next"; src: url("../fonts/AtkinsonNext-VF.ttf") format("truetype"); font-weight: 200 800; font-style: normal; }
+@font-face { font-family: "Atkinson Next"; src: url("../fonts/AtkinsonNext-Italic-VF.ttf") format("truetype"); font-weight: 200 800; font-style: italic; }
+@font-face { font-family: "Atkinson Mono"; src: url("../fonts/AtkinsonMono-VF.ttf") format("truetype"); font-weight: 200 800; }
+
+:root {
+  --ink: #12233A;
+  --ink-2: #43556B;
+  --ink-3: #5A6B7E;
+  --line: #CCD6DF;
+  --line-strong: #A3B2C0;
+  --ground: #EDF1F4;
+  --sunken: #E2E8ED;
+  --accent: #0B7A83;
+  --accent-ink: #086169;
+  --accent-soft: #D7EEF0;
+  --ok: #1E8752;   --ok-ink: #14633B;   --ok-soft: #DAF1E4;
+  --unk: #B06D00;  --unk-ink: #7F4D00;  --unk-soft: #FBECCF;
+  --out: #BE362D;  --out-ink: #9A2720;  --out-soft: #FBE3E0;
+  --hum: #5B45B0;  --hum-ink: #4A3796;  --hum-soft: #E8E3F8;
+  /* The three kinds of traffic, as on the architecture map. */
+  --s-ask: #2F6FD6;
+  --s-event: #D65F18;
+  --s-act: #128A6B;
+  --font-display: "Archivo", "Arial Nova", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Atkinson Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Atkinson Mono", ui-monospace, Consolas, "Liberation Mono", monospace;
+}
+
+/* ---------- the page ---------- */
+@page {
+  size: A4;
+  margin: 19mm 17mm 18mm 17mm;
+  @top-left { content: "SkyLink Telecom · Outage-aware customer care"; font: 600 7pt "Atkinson Mono", monospace; letter-spacing: .06em; text-transform: uppercase; color: #5A6B7E; vertical-align: bottom; padding-bottom: 4mm; }
+  @top-right { font: 600 7pt "Atkinson Mono", monospace; letter-spacing: .06em; text-transform: uppercase; color: #5A6B7E; vertical-align: bottom; padding-bottom: 4mm; }
+  @bottom-left { content: "Group 3 · Telco · Capstone submission · synthetic data"; font: 500 7pt "Atkinson Mono", monospace; letter-spacing: .04em; color: #5A6B7E; vertical-align: top; padding-top: 4mm; }
+  @bottom-right { content: counter(page) " / " counter(pages); font: 600 7.5pt "Atkinson Mono", monospace; color: #12233A; vertical-align: top; padding-top: 4mm; }
+}
+/* A document that opens with a .cover gives its first page no running head. The document's own
+   @page rule for the title comes later in the cascade, so it repeats the :first rule after it:
+     @page { @top-right { content: "Architecture"; } }
+     @page :first { @top-right { content: none; } } */
+@page :first { @top-left { content: none; } @top-right { content: none; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  margin: 0; color: var(--ink); background: #fff;
+  font: 400 9.4pt/1.5 var(--font-body);
+  font-variant-numeric: tabular-nums;
+  hyphens: manual;
+}
+p, figure, blockquote, dl, dd { margin: 0; }
+p + p { margin-top: 1.6mm; }
+a { color: var(--accent-ink); text-decoration: none; }
+strong, b { font-weight: 700; }
+code, .mono { font: 500 .9em/1.3 var(--font-mono); overflow-wrap: anywhere; }
+small, .small { font-size: 8.2pt; line-height: 1.42; }
+
+/* ---------- headings ---------- */
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); color: var(--ink); text-wrap: balance; break-after: avoid; }
+h1 { font-size: 27pt; font-weight: 770; font-stretch: 110%; line-height: 1.04; letter-spacing: -.02em; }
+h2 { margin-top: 7mm; font-size: 14.5pt; font-weight: 740; font-stretch: 106%; line-height: 1.15; letter-spacing: -.01em; }
+h3 { margin-top: 4.5mm; font-size: 10.8pt; font-weight: 720; font-stretch: 104%; line-height: 1.25; }
+h4 { margin-top: 3mm; font-size: 9.4pt; font-weight: 720; }
+h2 + *, h3 + *, h4 + * { margin-top: 1.8mm; }
+/* A numbered section: <h2><span class="n">3</span> Data flow</h2> */
+h2 .n { display: inline-block; min-width: 7mm; color: var(--accent-ink); font-weight: 600; font-family: var(--font-mono); font-size: 10pt; letter-spacing: 0; vertical-align: .12em; }
+.eyebrow { font: 600 7.2pt/1.3 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--accent-ink); }
+.lead { font-size: 11pt; line-height: 1.45; color: var(--ink-2); max-width: 150mm; }
+.muted { color: var(--ink-2); }
+
+/* ---------- cover block (top of page 1) ---------- */
+.cover { display: grid; gap: 4mm; padding-bottom: 6mm; margin-bottom: 2mm; border-bottom: .6mm solid var(--ink); }
+.cover h1 { max-width: 165mm; }
+.cover .lead { margin-top: 1mm; }
+.meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2mm 6mm; margin-top: 2mm; }
+.meta > div { display: grid; gap: .6mm; align-content: start; padding-top: 1.6mm; border-top: .25mm solid var(--line-strong); }
+.meta dt { font: 600 6.6pt/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.meta dd { font-size: 8.6pt; line-height: 1.35; }
+
+/* ---------- layout helpers ---------- */
+.cols-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm 7mm; }
+.cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4mm 6mm; }
+.cols-2 > *, .cols-3 > * { min-width: 0; }
+.stack { display: grid; gap: 2.5mm; }
+.keep { break-inside: avoid; }
+.pb { break-before: page; }
+.mt { margin-top: 4mm; }
+ul, ol { margin: 0; padding-left: 4.6mm; }
+li { margin-top: .8mm; padding-left: .6mm; }
+li::marker { color: var(--accent-ink); font-weight: 700; }
+ul.plain { list-style: none; padding-left: 0; }
+ul.plain li { padding-left: 0; }
+
+/* ---------- evidence tags: how firm is the claim ---------- */
+.tag {
+  display: inline-block; padding: .5mm 1.3mm; border: .25mm solid var(--line-strong); border-radius: .8mm;
+  font: 600 6.3pt/1.25 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-2); white-space: nowrap; vertical-align: .1em;
+}
+.tag--ok { border-color: transparent; background: var(--ok-soft); color: var(--ok-ink); }          /* met, built, measured and passing */
+.tag--calc { border-color: transparent; background: var(--accent-soft); color: var(--accent-ink); } /* measured figure */
+.tag--sim { border-style: dashed; }                                                                 /* stand-in, synthetic */
+.tag--assume { border-color: transparent; background: var(--unk-soft); color: var(--unk-ink); }     /* assumption, open decision */
+.tag--no { border-color: transparent; background: var(--out-soft); color: var(--out-ink); }         /* not built, not met */
+.tag--human { border-color: transparent; background: var(--hum-soft); color: var(--hum-ink); }      /* a person decides */
+
+/* ---------- tables ---------- */
+table { width: 100%; border-collapse: collapse; font-size: 8.6pt; line-height: 1.4; }
+th, td { padding: 1.6mm 2.4mm 1.6mm 0; text-align: left; vertical-align: top; border-bottom: .2mm solid var(--line); }
+th:last-child, td:last-child { padding-right: 0; }
+thead th { border-bottom: .45mm solid var(--ink); font: 600 6.6pt/1.3 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); vertical-align: bottom; }
+thead { display: table-header-group; }
+tbody th { font: 700 8.8pt/1.3 var(--font-display); }
+tbody th small, td small { display: block; margin-top: .5mm; font: 400 7.6pt/1.35 var(--font-body); color: var(--ink-2); }
+tr { break-inside: avoid; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding-right: 5mm; }
+table.tight th, table.tight td { padding-top: 1mm; padding-bottom: 1mm; font-size: 8.2pt; }
+table.band tbody tr:nth-child(even) td, table.band tbody tr:nth-child(even) th { background: #F6F8FA; }
+
+/* ---------- big figures ---------- */
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: .25mm solid var(--line-strong); }
+.kpis.k3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kpis > div { display: grid; gap: 1mm; align-content: start; padding: 3mm 3mm 3mm 0; }
+.kpis > div + div { padding-left: 3mm; border-left: .2mm solid var(--line); }
+.kpis b { font: 770 17pt/1.05 var(--font-display); font-stretch: 106%; letter-spacing: -.02em; color: var(--ink); white-space: nowrap; }
+/* A figure longer than about nine characters: <b class="long">4,050 of 4,050</b> */
+.kpis b.long { font-size: 12.5pt; line-height: 1.3; }
+.kpis span { font-size: 8pt; line-height: 1.35; color: var(--ink-2); }
+.kpis em { font: 600 6.4pt/1.3 var(--font-mono); font-style: normal; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+
+/* ---------- callouts ---------- */
+.note { padding: 3mm 3.5mm; border-radius: 1.6mm; background: var(--ground); font-size: 8.8pt; break-inside: avoid; }
+.note > b:first-child, .note > strong:first-child { font-family: var(--font-display); }
+.note--warn { background: var(--unk-soft); }
+.note--stop { background: var(--out-soft); }
+.note--ok { background: var(--ok-soft); }
+.src { margin-top: 1.5mm; font-size: 7.6pt; line-height: 1.4; color: var(--ink-2); }
+
+/* ---------- figures and diagrams ---------- */
+figure { break-inside: avoid; }
+figure svg, figure img { display: block; width: 100%; height: auto; }
+figcaption { margin-top: 1.5mm; font-size: 8pt; line-height: 1.4; color: var(--ink-2); }
+figcaption b { color: var(--ink); }
+/* Inline SVG diagrams use these classes, so every drawing in the set looks alike. */
+svg.dia { font-family: var(--font-display); }
+svg.dia text { fill: var(--ink); font-size: 11px; }
+svg.dia .box { fill: #fff; stroke: var(--line-strong); stroke-width: 1.2; }
+svg.dia .box--key { stroke: var(--ink); stroke-width: 2; }
+svg.dia .box--out { stroke-dasharray: 5 4; }
+svg.dia .zone { fill: var(--ground); stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 6 5; }
+svg.dia .zlabel { font: 600 9.5px var(--font-mono); letter-spacing: .08em; fill: var(--ink-2); }
+svg.dia .name { font-size: 12.5px; font-weight: 700; }
+svg.dia .sub { font-size: 10px; font-weight: 500; fill: var(--ink-2); }
+svg.dia .wire { fill: none; stroke-width: 2; }
+svg.dia .wire--ask { stroke: var(--s-ask); }
+svg.dia .wire--event { stroke: var(--s-event); stroke-dasharray: 7 5; }
+svg.dia .wire--act { stroke: var(--s-act); stroke-width: 3.2; }
+svg.dia .wire--file { stroke: var(--ink-3); stroke-dasharray: 1.5 5; stroke-linecap: round; }
+svg.dia .head--ask { fill: var(--s-ask); } svg.dia .head--event { fill: var(--s-event); }
+svg.dia .head--act { fill: var(--s-act); } svg.dia .head--file { fill: var(--ink-3); }
+svg.dia .lbl { font: 500 9.5px var(--font-body); fill: var(--ink-2); }
+
+/* ---------- decision records ---------- */
+.adr { margin-top: 4mm; padding: 3.5mm 4mm; border: .25mm solid var(--line-strong); border-radius: 2mm; break-inside: avoid; }
+.adr__id { font: 600 7pt/1.3 var(--font-mono); letter-spacing: .08em; color: var(--accent-ink); }
+.adr h3 { margin-top: .8mm; font-size: 11.5pt; }
+.adr dl { display: grid; grid-template-columns: 24mm minmax(0, 1fr); gap: 1.4mm 3mm; margin-top: 2.2mm; font-size: 8.6pt; }
+.adr dt { font: 600 6.6pt/1.5 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+.adr dd { margin: 0; }
+
+/* ---------- checklists ---------- */
+.check { list-style: none; margin: 0; padding: 0; }
+.check > li { display: grid; grid-template-columns: 5.5mm minmax(0, 1fr); gap: 0 2.5mm; margin: 0; padding: 2.2mm 0; border-bottom: .2mm solid var(--line); break-inside: avoid; }
+.check .box { inline-size: 3.8mm; block-size: 3.8mm; margin-top: .5mm; border: .35mm solid var(--ink); border-radius: .6mm; display: grid; place-items: center; font: 800 8pt/1 var(--font-display); }
+.check .box--yes { background: var(--ink); color: #fff; }
+.check .box--part { background: var(--unk-soft); border-color: var(--unk); color: var(--unk-ink); }
+.check .item { font: 700 8.9pt/1.35 var(--font-display); }
+.check .ev { margin-top: .8mm; font-size: 8.3pt; line-height: 1.42; color: var(--ink-2); }
+.check .ev b { color: var(--ink); font-weight: 600; }
+
+/* ---------- signatures ---------- */
+.sign { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5mm; margin-top: 5mm; break-inside: avoid; }
+.sign > div { display: grid; gap: 1mm; }
+.sign .line { block-size: 14mm; border-bottom: .3mm solid var(--ink); }
+.sign .role { font: 700 8.4pt/1.3 var(--font-display); }
+.sign .who { font-size: 7.6pt; color: var(--ink-2); }
+/* A blank to be written in by hand or typed before signing. */
+.blank { display: inline-block; min-width: 32mm; border-bottom: .25mm solid var(--ink-3); }

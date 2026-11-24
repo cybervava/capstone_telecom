@@ -1,0 +1,2 @@
+# The capture script's own record of the customers it has already used on this machine.
+src/.capture_screens_history.json

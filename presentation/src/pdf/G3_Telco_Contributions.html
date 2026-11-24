@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>G3 Telco · Contribution matrix</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  @page { @top-right { content: "Contribution matrix"; } }
+  @page :first { @top-right { content: none; } }
+
+  body { font-size: 8.4pt; line-height: 1.42; }
+  .cover { gap: 1.8mm; padding-bottom: 3.2mm; margin-bottom: 0; }
+  .cover h1 { font-size: 22pt; }
+  .cover .lead { margin-top: 0; font-size: 9.3pt; line-height: 1.4; max-width: none; }
+  .meta { margin-top: .4mm; }
+  .meta > div { padding-top: 1.1mm; }
+  .meta dd { font-size: 7.9pt; line-height: 1.3; }
+  h2 { margin-top: 3.5mm; font-size: 12pt; }
+  h2 .n { min-width: 5.6mm; font-size: 8.9pt; }
+  h2 + * { margin-top: 1.4mm; }
+  h3 { margin-top: 0; font-size: 8.9pt; }
+  table { font-size: 7.7pt; line-height: 1.35; }
+  thead th { font-size: 6.2pt; }
+  .src { margin-top: 1.2mm; font-size: 7.1pt; line-height: 1.36; }
+  code, .mono { font-size: .86em; }
+  .todo { margin-top: 2.6mm; padding: 2mm 3.2mm; font-size: 8.3pt; line-height: 1.4; }
+
+  /* 1 The brief's assignment */
+  table.matrix th, table.matrix td { padding: .78mm 2mm .78mm 0; vertical-align: middle; }
+  table.matrix .no { width: 6mm; font: 600 7.2pt/1.3 var(--font-mono); color: var(--ink-3); }
+  table.matrix .file { width: 47mm; color: var(--ink-2); white-space: nowrap; }
+  table.matrix .r { width: 12.4mm; padding-right: 0; text-align: center; }
+  table.matrix thead th { padding-bottom: 1.2mm; }
+  table.matrix thead .r { font: 700 8.2pt/1.2 var(--font-display); letter-spacing: 0; text-transform: none; color: var(--ink); }
+  table.matrix thead .r small { display: block; font: 500 5.7pt/1.25 var(--font-body); color: var(--ink-2); }
+  table.matrix tbody th { font: 600 7.8pt/1.3 var(--font-body); white-space: nowrap; }
+  table.matrix tr.group th { padding-top: 1.7mm; padding-bottom: .7mm; border-bottom: .3mm solid var(--line-strong); font: 600 6.2pt/1.3 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--accent-ink); white-space: normal; }
+  .mk { display: inline-grid; place-items: center; inline-size: 5.4mm; block-size: 4mm; border-radius: .8mm; font: 700 7.1pt/1 var(--font-display); }
+  .mk--l { background: var(--ink); color: #fff; }
+  .mk--c { border: .3mm solid var(--ink-2); color: var(--ink); }
+  .mk--s { border: .3mm dashed var(--ink-2); color: var(--ink); }
+  .mk--p { background: var(--accent-soft); color: var(--accent-ink); }
+  .legend { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: .9mm 6mm; margin-top: 1.8mm; font-size: 7.3pt; line-height: 1.35; color: var(--ink-2); }
+  .legend > span { display: flex; align-items: center; gap: 1.8mm; }
+  .legend .mk { flex: none; }
+  .after { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.42fr); gap: 0 6mm; margin-top: 2.4mm; align-items: start; }
+  .steps { margin-top: 1mm; padding-left: 4.2mm; font-size: 8pt; line-height: 1.4; }
+  .steps li { margin-top: .8mm; }
+  .ai { padding: 2.4mm 3.2mm; font-size: 7.9pt; line-height: 1.4; }
+  .ai q { quotes: '"' '"'; }
+
+  /* 3 By role */
+  table.roles { font-size: 7.35pt; line-height: 1.33; }
+  table.roles th, table.roles td { padding: 1.25mm 3mm 1.3mm 0; }
+  table.roles td:last-child, table.roles th:last-child { padding-right: 0; }
+  table.roles .who { width: 26mm; }
+  table.roles .rid { display: inline-block; margin-right: 1.2mm; font: 770 14pt/1 var(--font-display); font-stretch: 106%; letter-spacing: -.02em; color: var(--accent-ink); }
+  table.roles .rname { display: block; margin-top: .5mm; font: 700 7.9pt/1.2 var(--font-display); }
+  .fill { display: block; margin-top: 1.6mm; font: 600 5.6pt/1.2 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+  .rule { display: block; block-size: 4.3mm; border-bottom: .25mm solid var(--ink-3); }
+  table.roles .own { width: 36mm; }
+  table.roles .own .rule { block-size: 5.6mm; }
+  table.roles .sub { color: var(--ink-2); }
+  table.roles ul { margin-top: .8mm; padding-left: 3.4mm; }
+  table.roles li { margin-top: .35mm; padding-left: .2mm; }
+
+  /* 4 Signatures */
+  .declare { font: 600 8.8pt/1.4 var(--font-body); }
+  .sign { margin-top: 0; gap: 4.5mm; }
+  .sign .line { block-size: 12mm; }
+  .intro { font-size: 8pt; color: var(--ink-2); }
+  .sign .blank { min-width: 19mm; }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <p class="eyebrow">Group 3 · Telco · Submission item 9 of 9</p>
+  <h1>Contribution matrix</h1>
+  <p class="lead">Who leads and who contributes to each item of the package, as the brief assigns it, and what was delivered in each role's area. The five members complete it and sign it.</p>
+  <dl class="meta">
+    <div><dt>Client</dt><dd>SkyLink Telecom (fictional)</dd></div>
+    <div><dt>Owner</dt><dd>All five members</dd></div>
+    <div><dt>Version</dt><dd>24 November 2026</dd></div>
+    <div><dt>Status</dt><dd>Form, not yet signed</dd></div>
+  </dl>
+</header>
+
+<p class="note note--warn todo"><b>To be completed and signed by the five members before submission.</b> The members' names, the entries in their own words, the segment each presents, the signatures and the dates are blank. Nothing in this form is filled in or signed on anyone's behalf.</p>
+
+<h2><span class="n">1</span> Who leads what: the brief's assignment</h2>
+<table class="matrix">
+  <thead>
+    <tr><th class="no"></th><th>Item or segment</th><th class="file">File, or time</th>
+      <th class="r">R1<small>FDE Lead</small></th><th class="r">R2<small>Architect</small></th><th class="r">R3<small>Data &amp; RAG</small></th><th class="r">R4<small>Agent Eng.</small></th><th class="r">R5<small>Platform</small></th></tr>
+  </thead>
+  <tbody>
+    <tr class="group"><th colspan="8">The nine submission items (brief p.3, column "Owner (lead)")</th></tr>
+    <tr><td class="no">1</td><th>Presentation deck (max 18 slides + appendix)</th><td class="file"><code>G3_Telco_Presentation.pptx</code></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"><span class="mk mk--c">C</span></td><td class="r"><span class="mk mk--c">C</span></td><td class="r"><span class="mk mk--c">C</span></td><td class="r"><span class="mk mk--c">C</span></td></tr>
+    <tr><td class="no">2</td><th>Problem statement (1 to 2 pages)</th><td class="file"><code>G3_Telco_Problem_Statement.pdf</code></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"><span class="mk mk--c">C</span></td><td class="r"><span class="mk mk--c">C</span></td><td class="r"><span class="mk mk--c">C</span></td><td class="r"><span class="mk mk--c">C</span></td></tr>
+    <tr><td class="no">3</td><th>Architecture document</th><td class="file"><code>G3_Telco_Architecture.pdf</code></td><td class="r"></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"></td><td class="r"></td><td class="r"></td></tr>
+    <tr><td class="no">4</td><th>Code repository with README</th><td class="file">Git link, branch <code>dev</code></td><td class="r"></td><td class="r"></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"></td></tr>
+    <tr><td class="no">5</td><th>Working demo (live) and 5-minute backup video</th><td class="file"><code>G3_Telco_Demo_Backup.mp4</code></td><td class="r"></td><td class="r"></td><td class="r"></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"></td></tr>
+    <tr><td class="no">6</td><th>Evaluation report</th><td class="file"><code>G3_Telco_Evaluation.pdf</code></td><td class="r"></td><td class="r"></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"></td><td class="r"><span class="mk mk--l">L</span></td></tr>
+    <tr><td class="no">7</td><th>Signed checklists (the brief's four)</th><td class="file"><code>G3_Telco_Checklists.pdf</code></td><td class="r"><span class="mk mk--s">S</span></td><td class="r"><span class="mk mk--s">S</span></td><td class="r"><span class="mk mk--s">S</span></td><td class="r"><span class="mk mk--s">S</span></td><td class="r"><span class="mk mk--l">L</span></td></tr>
+    <tr><td class="no">8</td><th>ROI model with stated assumptions</th><td class="file"><code>G3_Telco_ROI.xlsx</code></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"></td><td class="r"></td><td class="r"></td><td class="r"></td></tr>
+    <tr><td class="no">9</td><th>Contribution matrix, signed by all five</th><td class="file"><code>G3_Telco_Contributions.pdf</code></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"><span class="mk mk--l">L</span></td><td class="r"><span class="mk mk--l">L</span></td></tr>
+    <tr class="group"><th colspan="8">The presentation, 30 minutes on 30 November 2026 (brief pp.3-4, column "Presenter")</th></tr>
+    <tr><td class="no">A</td><th>Client problem and value</th><td class="file">3 minutes</td><td class="r"><span class="mk mk--p">P</span></td><td class="r"></td><td class="r"></td><td class="r"></td><td class="r"></td></tr>
+    <tr><td class="no">B</td><th>Approach and architecture</th><td class="file">4 minutes</td><td class="r"></td><td class="r"><span class="mk mk--p">P</span></td><td class="r"></td><td class="r"></td><td class="r"></td></tr>
+    <tr><td class="no">C</td><th>Data and knowledge</th><td class="file">3 minutes</td><td class="r"></td><td class="r"></td><td class="r"><span class="mk mk--p">P</span></td><td class="r"></td><td class="r"></td></tr>
+    <tr><td class="no">D</td><th>Live demo</th><td class="file">6 minutes</td><td class="r"></td><td class="r"></td><td class="r"></td><td class="r"><span class="mk mk--p">P</span></td><td class="r"></td></tr>
+    <tr><td class="no">E</td><th>Trust and operations</th><td class="file">3 minutes</td><td class="r"></td><td class="r"></td><td class="r"></td><td class="r"></td><td class="r"><span class="mk mk--p">P</span></td></tr>
+    <tr><td class="no">F</td><th>Curveball and ROI close</th><td class="file">1 minute</td><td class="r"><span class="mk mk--p">P</span></td><td class="r"></td><td class="r"></td><td class="r"></td><td class="r"></td></tr>
+    <tr><td class="no">G</td><th>Panel questions and answers</th><td class="file">10 minutes</td><td class="r"><span class="mk mk--p">P</span></td><td class="r"><span class="mk mk--p">P</span></td><td class="r"><span class="mk mk--p">P</span></td><td class="r"><span class="mk mk--p">P</span></td><td class="r"><span class="mk mk--p">P</span></td></tr>
+  </tbody>
+</table>
+<div class="legend">
+  <span><span class="mk mk--l">L</span><span>leads: named in the brief's "Owner (lead)" column; item 9 names "All"</span></span>
+  <span><span class="mk mk--c">C</span><span>contributes: item 1, "all contribute"; item 2, "each member writes their sub-problem"</span></span>
+  <span><span class="mk mk--s">S</span><span>signs: "R5 owns these, but the whole group signs them" (brief p.5)</span></span>
+  <span><span class="mk mk--p">P</span><span>presents: the brief's "Presenter" column</span></span>
+</div>
+<p class="src">This is the brief's assignment, copied as it stands. It says who leads an item. It does not say who did the work: that is section 3, which the members confirm and add to. File names: the team's action plan, p.12. SkyLink is fictional and all data is synthetic: the datasets, credit policy, router guides and mock APIs are stand-ins built by the team, because the supplied ones were not received (<code>README.md</code>).</p>
+
+<div class="after">
+  <div>
+    <h3>How to complete this form</h3>
+    <ol class="steps">
+      <li>Each member writes their name against their role in section 3, and the segment they present. The brief: "Every member presents. A member who does not present loses individual marks."</li>
+      <li>Each member reads what is listed for their role's area, strikes out anything they do not stand behind, and adds their own contributions in their own words.</li>
+      <li>All five sign and date section 4. The brief asks for a matrix "signed by all 5".</li>
+    </ol>
+  </div>
+  <div class="note ai">
+    <b>2 · The AI coding assistant, as declared.</b> The brief's rule: "Any AI coding assistant used must be declared in the README." The declaration is in <code>README.md</code>, section "AI assistance" (line 399): "This repository was written with Claude Code (Anthropic), model Claude Fable 5.2; the documentation pass of 16 November (docs/HOW_IT_WORKS.md and the audits of the documents against the code) used Claude Opus 5.5. Claude Code produced the execution plan, the code and the tests in this repository." The same section says that the brief and the team's action plan were written by people. This form was drafted with the same assistant, from the repository's documents, so section 3 lists what exists in each role's area and each member states their own part.
+  </div>
+</div>
+
+<h2 class="pb"><span class="n">3</span> By role: the sub-problem, and what was delivered in its area</h2>
+<p class="intro">The middle column lists what exists in each role's area and where it is. It does not record who typed it: the member confirms it and adds to it.</p>
+<table class="roles">
+  <thead><tr><th>Role and member</th><th>Sub-problem (brief p.1), then what was delivered in this role's area</th><th>Other contributions, in own words</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="who"><b class="rid">R1</b><span class="rname">FDE Lead</span><span class="fill">Member</span><span class="rule"></span><span class="fill">I present</span><span class="rule"></span></td>
+      <td>
+        <p class="sub">Size the cost of outage-driven calls, wasted truck rolls and churn; prioritise broadband vs mobile; define complaint-resolution and churn targets; ROI case.</p>
+        <ul>
+          <li>The team's action plan, 13 November 2026: scope, discovery questions for the six stakeholders, value case (<code>G3_Telco_FDE_Action_Plan.pdf</code>).</li>
+          <li>The discovery workshop report, 22 November 2026 (a simulated workshop): stakeholder positions, scope, cost model, decisions D1 to D30 (<code>discovery-samples/</code>); its interactive page (<code>docs/discovery_workshop.html</code>).</li>
+          <li>Eleven client decisions and their defaults (<code>docs/EXECUTION_PLAN.md</code>, section 12).</li>
+        </ul>
+      </td>
+      <td class="own"><span class="rule"></span><span class="rule"></span><span class="rule"></span></td>
+    </tr>
+    <tr>
+      <td class="who"><b class="rid">R2</b><span class="rname">Architect</span><span class="fill">Member</span><span class="rule"></span><span class="fill">I present</span><span class="rule"></span></td>
+      <td>
+        <p class="sub">Link two worlds: network events (streaming) and customer contacts (request-response). Decide what is rules (credit eligibility), ML (churn risk), LLM (conversation, diagnosis summary). AWS vs Azure, hybrid with on-prem OSS.</p>
+        <ul>
+          <li>The architecture as built: an event path and a request path that meet in one network decision of three states (<code>docs/EXECUTION_PLAN.md</code>, section 3).</li>
+          <li>Seven decision records (<code>docs/architecture_design.html</code>); one is ADR 0001 (<code>docs/adr/</code>).</li>
+          <li>Contracts of the stand-in data pack and mock APIs (<code>docs/contracts/</code>).</li>
+          <li>The demonstration on AWS in Mumbai: one host, one managed database, in Terraform (<code>deploy/aws/terraform/</code>).</li>
+        </ul>
+      </td>
+      <td class="own"><span class="rule"></span><span class="rule"></span><span class="rule"></span></td>
+    </tr>
+    <tr>
+      <td class="who"><b class="rid">R3</b><span class="rname">Data &amp; RAG</span><span class="fill">Member</span><span class="rule"></span><span class="fill">I present</span><span class="rule"></span></td>
+      <td>
+        <p class="sub">Index troubleshooting guides by device model, service credit policy and regulatory complaint rules; join customer → service address → network node.</p>
+        <ul>
+          <li>A synthetic data pack at the brief's scale, 400,000 customers, with deliberate mapping defects (<code>src/skylink_datagen/</code>).</li>
+          <li>The mapping-quality profile: 96.86% of broadband and 96.78% of mobile services resolve from the address map (<code>reports/data_profile.md</code>).</li>
+          <li>The guide index: 96 sections of 12 guides, one pgvector table (<code>src/skylink_care/rag/</code>).</li>
+          <li>Retrieval: right section in 468 of 576 answers, 81.25% as first scored (<code>evals/reports/retrieval.md</code>).</li>
+        </ul>
+      </td>
+      <td class="own"><span class="rule"></span><span class="rule"></span><span class="rule"></span></td>
+    </tr>
+    <tr>
+      <td class="who"><b class="rid">R4</b><span class="rname">Agent Engineer</span><span class="fill">Member</span><span class="rule"></span><span class="fill">I present</span><span class="rule"></span></td>
+      <td>
+        <p class="sub">Orchestrate contact intake → identify customer and node → check live outage → guided troubleshooting or outage message → credit → ticket or truck dispatch, all async-safe.</p>
+        <ul>
+          <li>The orchestrator, its specialist agents, and the executor, the only process that writes to SkyLink's systems (<code>src/skylink_care/orchestrator/</code>, <code>agents/</code>, <code>executor/</code>).</li>
+          <li>The mock OSS/BSS gateway with fault injection, and typed adapters to it (<code>src/mock_oss/</code>, <code>src/skylink_care/adapters/</code>).</li>
+          <li>The customer desk, the staff desk, a demo console of seven scenes (<code>src/skylink_care/web/</code>, <code>src/mock_oss/console/</code>).</li>
+          <li>End-to-end journey tests and eight smoke journeys (<code>tests/e2e/</code>, <code>scripts/smoke.py</code>).</li>
+        </ul>
+      </td>
+      <td class="own"><span class="rule"></span><span class="rule"></span><span class="rule"></span></td>
+    </tr>
+    <tr>
+      <td class="who"><b class="rid">R5</b><span class="rname">Platform &amp; Trust</span><span class="fill">Member</span><span class="rule"></span><span class="fill">I present</span><span class="rule"></span></td>
+      <td>
+        <p class="sub">Customer data protection, call/chat consent, rate limits during outage surges, observability across agents and OSS APIs, failure drills when the network API is down.</p>
+        <ul>
+          <li>Guardrails (<code>src/skylink_care/guardrails/</code>) and the attack suite: 58 of 58 runs of 40 attacks pass (<code>evals/reports/attack_suite.md</code>).</li>
+          <li>The failure drill, 8 of 8 playings holding every rule (<code>evals/reports/curveball.md</code>), and the surge load test (<code>loadtest/reports/</code>).</li>
+          <li>Threat model, data inventory, regulatory controls map, evidence index (<code>docs/</code>).</li>
+          <li>CI and release pipelines (<code>.github/workflows/ci.yml</code>, <code>.gitlab-ci.yml</code>): 2,689 tests, none failed, on 24 November 2026. Not built: metrics, dashboards, alerts.</li>
+        </ul>
+      </td>
+      <td class="own"><span class="rule"></span><span class="rule"></span><span class="rule"></span></td>
+    </tr>
+  </tbody>
+</table>
+<p class="src">Areas follow the brief's sub-problems (p.1) and the owner column of the milestones in <code>docs/EXECUTION_PLAN.md</code>, section 6. Every figure is measured in simulation, on the synthetic stand-in data.</p>
+
+<h2><span class="n">4</span> Declaration and signatures</h2>
+<p class="declare">I confirm the contributions listed against my role, as I have completed them above, and the segment I present.</p>
+<div class="sign">
+  <div><div class="line"></div><p class="role">R1 · FDE Lead</p><p class="who">Name: <span class="blank">&nbsp;</span></p><p class="who">Date: <span class="blank">&nbsp;</span></p></div>
+  <div><div class="line"></div><p class="role">R2 · Architect</p><p class="who">Name: <span class="blank">&nbsp;</span></p><p class="who">Date: <span class="blank">&nbsp;</span></p></div>
+  <div><div class="line"></div><p class="role">R3 · Data &amp; RAG</p><p class="who">Name: <span class="blank">&nbsp;</span></p><p class="who">Date: <span class="blank">&nbsp;</span></p></div>
+  <div><div class="line"></div><p class="role">R4 · Agent Engineer</p><p class="who">Name: <span class="blank">&nbsp;</span></p><p class="who">Date: <span class="blank">&nbsp;</span></p></div>
+  <div><div class="line"></div><p class="role">R5 · Platform &amp; Trust</p><p class="who">Name: <span class="blank">&nbsp;</span></p><p class="who">Date: <span class="blank">&nbsp;</span></p></div>
+</div>
+
+</body>
+</html>

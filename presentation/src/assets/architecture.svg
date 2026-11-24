@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Exported from presentation/src/pdf/G3_Telco_Architecture.html by export_architecture.mjs. Edit the diagram there. -->
+<svg viewBox="0 0 920 548" role="img" aria-label="Architecture of the care platform. Customers, a contact centre and staff on the left reach the API and the staff desk. Both write to one PostgreSQL database in the middle of the care platform, which runs in the cloud. The orchestrator with its five specialist agents reads SkyLink's systems through a gateway with read-only keys and asks a language model provider outside the platform. The feed consumer receives numbered events from Network Monitoring. The executor is the only writer. A human gate stands before a credit above INR 500. SkyLink's six systems are on-premises behind one API gateway." xmlns="http://www.w3.org/2000/svg" width="920" height="548">
+    <rect x="0" y="0" width="920" height="548" fill="rgb(255, 255, 255)" stroke="none"/>
+    <!-- zones -->
+    <rect x="114" y="56" width="502" height="452" rx="10" fill="rgb(237, 241, 244)" stroke="rgb(163, 178, 192)" stroke-width="1" stroke-dasharray="6, 5" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="126" y="72" font-family="'Atkinson Mono', ui-monospace, Consolas, 'Liberation Mono', monospace" font-size="9.5" font-weight="600" letter-spacing="0.76" fill="rgb(67, 85, 107)">CARE PLATFORM · CLOUD (AWS, MUMBAI)</text>
+    <rect x="694" y="56" width="222" height="452" rx="10" fill="rgb(237, 241, 244)" stroke="rgb(163, 178, 192)" stroke-width="1" stroke-dasharray="6, 5" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="702" y="71" font-family="'Atkinson Mono', ui-monospace, Consolas, 'Liberation Mono', monospace" font-size="9.5" font-weight="600" letter-spacing="0.76" fill="rgb(67, 85, 107)">SKYLINK · ON-PREMISES</text>
+    <text x="908" y="71" text-anchor="end" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">stand-in here</text>
+    <text x="655" y="262" text-anchor="middle" font-family="'Atkinson Mono', ui-monospace, Consolas, 'Liberation Mono', monospace" font-size="9.5" font-weight="600" letter-spacing="0.76" fill="rgb(67, 85, 107)">HYBRID</text>
+    <text x="655" y="274" text-anchor="middle" font-family="'Atkinson Mono', ui-monospace, Consolas, 'Liberation Mono', monospace" font-size="9.5" font-weight="600" letter-spacing="0.76" fill="rgb(67, 85, 107)">BOUNDARY</text>
+    <text x="655" y="292" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">a private link</text>
+    <text x="655" y="303" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">in a pilot</text>
+
+    <!-- wires: notes in the database -->
+    <path d="M222 198V253" fill="none" stroke="rgb(90, 107, 126)" stroke-width="2" stroke-dasharray="1.5, 5" stroke-linecap="round" stroke-linejoin="miter"/><path d="M222 262l-5-9h10z" fill="rgb(90, 107, 126)" stroke="none"/>
+    <path d="M188 262V207" fill="none" stroke="rgb(90, 107, 126)" stroke-width="2" stroke-dasharray="1.5, 5" stroke-linecap="round" stroke-linejoin="miter"/><path d="M188 198l-5 9h10z" fill="rgb(90, 107, 126)" stroke="none"/>
+    <path d="M420 262V225" fill="none" stroke="rgb(90, 107, 126)" stroke-width="2" stroke-dasharray="1.5, 5" stroke-linecap="round" stroke-linejoin="miter"/><path d="M420 216l-5 9h10z" fill="rgb(90, 107, 126)" stroke="none"/>
+    <path d="M450 216V253" fill="none" stroke="rgb(90, 107, 126)" stroke-width="2" stroke-dasharray="1.5, 5" stroke-linecap="round" stroke-linejoin="miter"/><path d="M450 262l-5-9h10z" fill="rgb(90, 107, 126)" stroke="none"/>
+    <path d="M196 360V331" fill="none" stroke="rgb(90, 107, 126)" stroke-width="2" stroke-dasharray="1.5, 5" stroke-linecap="round" stroke-linejoin="miter"/><path d="M196 322l-5 9h10z" fill="rgb(90, 107, 126)" stroke="none"/>
+    <path d="M330 322V351" fill="none" stroke="rgb(90, 107, 126)" stroke-width="2" stroke-dasharray="1.5, 5" stroke-linecap="round" stroke-linejoin="miter"/><path d="M330 360l-5-9h10z" fill="rgb(90, 107, 126)" stroke="none"/>
+    <path d="M574 360V331" fill="none" stroke="rgb(90, 107, 126)" stroke-width="2" stroke-dasharray="1.5, 5" stroke-linecap="round" stroke-linejoin="miter"/><path d="M574 322l-5 9h10z" fill="rgb(90, 107, 126)" stroke="none"/>
+    <text x="230" y="226" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">one transaction:</text>
+    <text x="230" y="238" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">case, reference,</text>
+    <text x="230" y="250" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">note, job</text>
+    <text x="182" y="232" text-anchor="end" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">reply,</text>
+    <text x="182" y="244" text-anchor="end" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">fetched</text>
+    <text x="412" y="243" text-anchor="end" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">notes wake a case</text>
+    <text x="458" y="243" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">replies, proposals, timers</text>
+    <text x="204" y="338" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">decisions,</text>
+    <text x="204" y="350" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">audited</text>
+    <text x="322" y="338" text-anchor="end" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">frozen</text>
+    <text x="322" y="350" text-anchor="end" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">proposals</text>
+    <text x="566" y="338" text-anchor="end" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">outage record,</text>
+    <text x="566" y="350" text-anchor="end" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">wake-ups, texts</text>
+
+    <!-- wires: asks and answers -->
+    <path d="M113 122H147" fill="none" stroke="rgb(47, 111, 214)" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M104 122l9-5v10z" fill="rgb(47, 111, 214)" stroke="none"/><path d="M156 122l-9-5v10z" fill="rgb(47, 111, 214)" stroke="none"/>
+    <path d="M113 176H147" fill="none" stroke="rgb(47, 111, 214)" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M104 176l9-5v10z" fill="rgb(47, 111, 214)" stroke="none"/><path d="M156 176l-9-5v10z" fill="rgb(47, 111, 214)" stroke="none"/>
+    <path d="M113 404H147" fill="none" stroke="rgb(47, 111, 214)" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M104 404l9-5v10z" fill="rgb(47, 111, 214)" stroke="none"/><path d="M156 404l-9-5v10z" fill="rgb(47, 111, 214)" stroke="none"/>
+    <text x="130" y="114" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">message</text>
+    <text x="130" y="136" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">reference,</text>
+    <text x="130" y="147" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">then reply</text>
+    <text x="130" y="190" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">transcripts</text>
+    <text x="130" y="396" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">decisions</text>
+    <text x="130" y="418" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">queues</text>
+    <path d="M454 53V77" fill="none" stroke="rgb(47, 111, 214)" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M454 44l-5 9h10z" fill="rgb(47, 111, 214)" stroke="none"/><path d="M454 86l-5-9h10z" fill="rgb(47, 111, 214)" stroke="none"/>
+    <text x="446" y="70" text-anchor="end" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">masked text up</text>
+    <text x="462" y="70" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">nine fields back · no tools</text>
+    <path d="M613 150H693" fill="none" stroke="rgb(47, 111, 214)" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M604 150l9-5v10z" fill="rgb(47, 111, 214)" stroke="none"/><path d="M702 150l-9-5v10z" fill="rgb(47, 111, 214)" stroke="none"/>
+    <text x="653" y="142" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">reads only</text>
+    <text x="653" y="164" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">4 read-only keys</text>
+    <path d="M386 457V490H693" fill="none" stroke="rgb(47, 111, 214)" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M386 448l-5 9h10z" fill="rgb(47, 111, 214)" stroke="none"/><path d="M702 490l-9-5v10z" fill="rgb(47, 111, 214)" stroke="none"/>
+    <text x="398" y="484" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">re-reads the evidence before a credit, visit or text</text>
+
+    <!-- wire: announcements -->
+    <path d="M702 404H613" fill="none" stroke="rgb(214, 95, 24)" stroke-width="2" stroke-dasharray="7, 5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M604 404l9-5v10z" fill="rgb(214, 95, 24)" stroke="none"/>
+    <text x="653" y="396" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">numbered events</text>
+    <text x="653" y="418" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(67, 85, 107)">and a heartbeat</text>
+
+    <!-- wire: actions -->
+    <path d="M352 448V470H692" fill="none" stroke="rgb(18, 138, 107)" stroke-width="3.2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M702 470l-10-6v12z" fill="rgb(18, 138, 107)" stroke="none"/>
+    <text x="396" y="463" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="500" fill="rgb(18, 35, 58)">the only writes · each under an idempotency key, applied once</text>
+
+    <!-- the human gate -->
+    <path d="M330 332l7 7l-7 7l-7-7z" fill="rgb(232, 227, 248)" stroke="rgb(91, 69, 176)" stroke-width="1.3" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <rect x="344" y="325" width="106" height="29" rx="4" fill="rgb(232, 227, 248)" stroke="rgb(91, 69, 176)" stroke-width="1.3" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="397" y="336.5" text-anchor="middle" font-family="'Atkinson Mono', ui-monospace, Consolas, 'Liberation Mono', monospace" font-size="8.5" font-weight="600" letter-spacing="0.68" fill="rgb(74, 55, 150)">HUMAN GATE</text>
+    <text x="397" y="348.5" text-anchor="middle" font-family="'Atkinson Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="700" fill="rgb(74, 55, 150)">credit above INR 500</text>
+
+    <!-- people and channels -->
+    <rect x="4" y="100" width="100" height="44" rx="22" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-linecap="butt" stroke-linejoin="miter"/><text x="54" y="119" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Customer</text><text x="54" y="133" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">web chat</text>
+    <rect x="4" y="154" width="100" height="44" rx="22" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-linecap="butt" stroke-linejoin="miter"/><text x="54" y="173" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" font-weight="700" fill="rgb(18, 35, 58)">Contact centre</text><text x="54" y="187" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">call transcripts</text>
+    <rect x="4" y="376" width="100" height="56" rx="26" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-linecap="butt" stroke-linejoin="miter"/><text x="54" y="397" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Staff</text><text x="54" y="410" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">agent · supervisor</text><text x="54" y="422" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">operations</text>
+
+    <!-- API -->
+    <rect x="156" y="98" width="114" height="100" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="213" y="119" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">API</text>
+    <text x="213" y="133" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">front desk · care-api</text>
+    <text x="213" y="153" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">reference first, in</text>
+    <text x="213" y="166" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">one database write</text>
+    <text x="213" y="186" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">holds no SkyLink key</text>
+
+    <!-- Orchestrator -->
+    <rect x="298" y="86" width="306" height="130" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="312" y="108" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Orchestrator</text>
+    <text x="402" y="108" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">coordinator · care-worker</text>
+    <text x="312" y="123" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">a state machine: plain code picks every next step</text>
+    <rect x="312" y="132" width="56" height="22" rx="4" fill="rgb(237, 241, 244)" stroke="rgb(163, 178, 192)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/><text x="340" y="147" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" fill="rgb(18, 35, 58)">Triage</text>
+    <rect x="374" y="132" width="80" height="22" rx="4" fill="rgb(237, 241, 244)" stroke="rgb(163, 178, 192)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/><text x="414" y="147" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" fill="rgb(18, 35, 58)">Diagnostics</text>
+    <rect x="460" y="132" width="74" height="22" rx="4" fill="rgb(237, 241, 244)" stroke="rgb(163, 178, 192)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/><text x="497" y="147" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" fill="rgb(18, 35, 58)">Resolution</text>
+    <rect x="540" y="132" width="52" height="22" rx="4" fill="rgb(237, 241, 244)" stroke="rgb(163, 178, 192)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/><text x="566" y="147" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" fill="rgb(18, 35, 58)">Dispatch</text>
+    <rect x="312" y="160" width="142" height="22" rx="4" fill="rgb(237, 241, 244)" stroke="rgb(163, 178, 192)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/><text x="383" y="175" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" fill="rgb(18, 35, 58)">Troubleshooting (RAG)</text>
+    <text x="462" y="175" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">five specialist agents</text>
+    <text x="312" y="203" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">read-only keys · they propose, the executor acts</text>
+
+    <!-- Language model provider -->
+    <rect x="352" y="6" width="204" height="38" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-dasharray="5, 4" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="454" y="22" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Language model provider</text>
+    <text x="454" y="36" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">OpenAI gpt-5.4-mini · off by default</text>
+
+    <!-- Database -->
+    <rect x="156" y="262" width="448" height="60" rx="8" fill="rgb(255, 255, 255)" stroke="rgb(67, 85, 107)" stroke-width="1.6" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="170" y="283" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Database</text>
+    <text x="238" y="283" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">case files · PostgreSQL 17 + pgvector</text>
+    <text x="170" y="299" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">cases · messages · inbox notes · proposals · approvals · audit log</text>
+    <text x="170" y="313" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">network picture · guide index, the only vectors · also the queue between the parts</text>
+
+    <!-- Staff desk -->
+    <rect x="156" y="360" width="114" height="88" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(91, 69, 176)" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="213" y="381" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Staff desk</text>
+    <text x="213" y="395" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="700" fill="rgb(74, 55, 150)">the human gate</text>
+    <text x="213" y="413" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">credit approvals</text>
+    <text x="213" y="426" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">handed-over cases</text>
+    <text x="213" y="439" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">operations queue</text>
+
+    <!-- Executor -->
+    <rect x="298" y="360" width="146" height="88" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(18, 35, 58)" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="371" y="380" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Executor</text>
+    <text x="371" y="394" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">the hands · care-executor</text>
+    <rect x="317" y="402" width="108" height="16" rx="3" fill="rgb(18, 35, 58)" stroke="none"/>
+    <text x="371" y="413.3" text-anchor="middle" font-family="'Atkinson Mono', ui-monospace, Consolas, 'Liberation Mono', monospace" font-size="8.5" font-weight="600" letter-spacing="0.85" fill="rgb(255, 255, 255)">THE ONLY WRITER</text>
+    <text x="371" y="436" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">checks again, acts once</text>
+
+    <!-- Feed consumer -->
+    <rect x="458" y="360" width="146" height="88" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="531" y="380" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Feed consumer</text>
+    <text x="531" y="394" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">the radio · care-ingest</text>
+    <rect x="483" y="401" width="96" height="20" rx="4" fill="rgb(237, 241, 244)" stroke="rgb(163, 178, 192)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/><text x="531" y="415" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" fill="rgb(18, 35, 58)">Notifications</text>
+    <text x="531" y="436" text-anchor="middle" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">each event applied once</text>
+
+    <!-- Gateway and SkyLink's six systems -->
+    <rect x="702" y="78" width="28" height="420" rx="4" fill="rgb(18, 35, 58)" stroke="none"/>
+    <text transform="translate(719.5 288) rotate(-90)" text-anchor="middle" font-family="'Atkinson Mono', ui-monospace, Consolas, 'Liberation Mono', monospace" font-size="9.5" font-weight="600" letter-spacing="0.95" fill="rgb(255, 255, 255)">API GATEWAY · ONE KEY PER IDENTITY</text>
+    <rect x="752" y="86" width="156" height="84" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-dasharray="5, 4" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="764" y="105" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Network Monitoring</text>
+    <text x="764" y="120" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">status · line tests</text>
+    <text x="764" y="152" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">event feed, numbered</text>
+    <rect x="752" y="181" width="156" height="54" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-dasharray="5, 4" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="764" y="203" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">CRM</text><text x="764" y="219" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">profile · identity · consent</text>
+    <rect x="752" y="246" width="156" height="54" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-dasharray="5, 4" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="764" y="268" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Billing</text><text x="764" y="284" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">credits on an account</text>
+    <rect x="752" y="311" width="156" height="54" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-dasharray="5, 4" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="764" y="333" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Field Service</text><text x="764" y="349" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">technician slots and visits</text>
+    <rect x="752" y="376" width="156" height="54" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-dasharray="5, 4" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="764" y="398" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Incident Management</text><text x="764" y="414" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">complaints · repair tickets</text>
+    <rect x="752" y="441" width="156" height="54" rx="6" fill="rgb(255, 255, 255)" stroke="rgb(163, 178, 192)" stroke-width="1.2" stroke-dasharray="5, 4" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <text x="764" y="463" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="700" fill="rgb(18, 35, 58)">Text messages</text><text x="764" y="479" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">notification gateway</text>
+    <!-- which kind of traffic reaches which system -->
+    <path d="M730 116H745" fill="none" stroke="rgb(47, 111, 214)" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M752 116l-8-4v8z" fill="rgb(47, 111, 214)" stroke="none"/>
+    <path d="M752 148H738" fill="none" stroke="rgb(214, 95, 24)" stroke-width="2" stroke-dasharray="7, 5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M730 148l8-4v8z" fill="rgb(214, 95, 24)" stroke="none"/>
+    <path d="M730 208H745" fill="none" stroke="rgb(47, 111, 214)" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M752 208l-8-4v8z" fill="rgb(47, 111, 214)" stroke="none"/>
+    <path d="M730 264H745" fill="none" stroke="rgb(47, 111, 214)" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M752 264l-8-4v8z" fill="rgb(47, 111, 214)" stroke="none"/>
+    <path d="M730 282H744" fill="none" stroke="rgb(18, 138, 107)" stroke-width="3.2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M752 282l-9-5v10z" fill="rgb(18, 138, 107)" stroke="none"/>
+    <path d="M730 329H745" fill="none" stroke="rgb(47, 111, 214)" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M752 329l-8-4v8z" fill="rgb(47, 111, 214)" stroke="none"/>
+    <path d="M730 347H744" fill="none" stroke="rgb(18, 138, 107)" stroke-width="3.2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M752 347l-9-5v10z" fill="rgb(18, 138, 107)" stroke="none"/>
+    <path d="M730 394H745" fill="none" stroke="rgb(47, 111, 214)" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M752 394l-8-4v8z" fill="rgb(47, 111, 214)" stroke="none"/>
+    <path d="M730 412H744" fill="none" stroke="rgb(18, 138, 107)" stroke-width="3.2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M752 412l-9-5v10z" fill="rgb(18, 138, 107)" stroke="none"/>
+    <path d="M730 468H744" fill="none" stroke="rgb(18, 138, 107)" stroke-width="3.2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M752 468l-9-5v10z" fill="rgb(18, 138, 107)" stroke="none"/>
+
+    <!-- legend -->
+    <path d="M114 531H140" fill="none" stroke="rgb(47, 111, 214)" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M148 531l-9-5v10z" fill="rgb(47, 111, 214)" stroke="none"/><text x="154" y="534.5" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">Asks and answers (request-response)</text>
+    <path d="M338 531H364" fill="none" stroke="rgb(214, 95, 24)" stroke-width="2" stroke-dasharray="7, 5" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M372 531l-9-5v10z" fill="rgb(214, 95, 24)" stroke="none"/><text x="378" y="534.5" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">Announcements (event stream)</text>
+    <path d="M532 531H557" fill="none" stroke="rgb(18, 138, 107)" stroke-width="3.2" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M566 531l-10-6v12z" fill="rgb(18, 138, 107)" stroke="none"/><text x="572" y="534.5" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">Actions (the only writes)</text>
+    <path d="M712 531H738" fill="none" stroke="rgb(90, 107, 126)" stroke-width="2" stroke-dasharray="1.5, 5" stroke-linecap="round" stroke-linejoin="miter"/><path d="M746 531l-9-5v10z" fill="rgb(90, 107, 126)" stroke="none"/><text x="752" y="534.5" font-family="Archivo, 'Arial Nova', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgb(67, 85, 107)">Notes left in the database</text>
+  </svg>
