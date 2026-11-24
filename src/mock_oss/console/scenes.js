@@ -230,7 +230,7 @@ export const SCENES = [
         do: "resolve",
         label: () => "Resolve the outage",
         expect: (play) =>
-          `The restoration message carries the credit: "a service credit of INR … It has been sent for approval". The policy prices every started hour: monthly fee × hours × multiplier ÷ 720, on INR ${play.cast.monthly_fee_inr} a month here. Above INR 500 it waits for a supervisor; up to INR 500 an agent may approve it.`,
+          `The restoration message carries the credit: "a service credit of INR … It has been sent for approval". The policy prices every started hour: monthly fee × hours × multiplier ÷ 720, on INR ${play.cast.monthly_fee_inr} a month here. Above INR 500 it waits for a supervisor; up to INR 500 it is applied without review.`,
       },
       {
         staff: true,

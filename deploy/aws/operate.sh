@@ -12,6 +12,10 @@
 #   operate.sh reset                start the current release again, from a clean demo state
 #   operate.sh rollback             start the release before the current one again
 #   operate.sh llm openai|offline   switch what reads the messages; only the worker restarts
+#   operate.sh credit-review all|above-limit
+#                                   whether credits up to the policy limit wait for an agent
+#                                   (all) or are applied without review (above-limit); the
+#                                   worker and the executor restart
 #   operate.sh logs <service>       the last 200 lines of one service's log
 #   operate.sh status               the containers on the host
 #   operate.sh gitlab-setup         give the GitLab project's pipeline this deployment's settings
@@ -91,6 +95,16 @@ llm() { # openai|offline
   on_host "bash $HOST_DEPLOY restart worker"
 }
 
+credit_review() { # true|false: the value of CARE_CREDIT_REVIEW_ALL
+  local env_secret
+  env_secret="$(tf env_secret)"
+  secret "$env_secret" | sed "s/^CARE_CREDIT_REVIEW_ALL=.*/CARE_CREDIT_REVIEW_ALL=$1/" |
+    aws_ secretsmanager put-secret-value --secret-id "$env_secret" \
+      --secret-string file:///dev/stdin > /dev/null
+  # Both read it: one proposes a credit, the other checks again before applying it.
+  on_host "bash $HOST_DEPLOY restart worker && bash $HOST_DEPLOY restart executor"
+}
+
 gitlab_setup() {
   : "${GITLAB_TOKEN:?set GITLAB_TOKEN to a GitLab.com token with the api scope}"
   local api pair name value
@@ -136,6 +150,16 @@ case "${1:-}" in
         ;;
     esac
     ;;
+  credit-review)
+    case "${2:-}" in
+      all) credit_review true ;;
+      above-limit) credit_review false ;;
+      *)
+        echo "usage: operate.sh credit-review all|above-limit" >&2
+        exit 2
+        ;;
+    esac
+    ;;
   logs)
     [[ "${2:-}" =~ ^[a-z-]+$ ]] || {
       echo "usage: operate.sh logs <service>" >&2
@@ -146,7 +170,7 @@ case "${1:-}" in
   status) on_host "bash $HOST_DEPLOY compose ps" ;;
   gitlab-setup) gitlab_setup ;;
   *)
-    sed -n '2,18p' "$0" >&2
+    sed -n '2,22p' "$0" >&2
     exit 2
     ;;
 esac

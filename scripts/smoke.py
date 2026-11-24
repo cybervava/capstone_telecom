@@ -12,8 +12,9 @@ systems:
    watched for the NOC's detection window, and no repair is arranged meanwhile,
 6. a customer on a healthy node with a passing line: steps quoted from the guide for their own
    router model, with the source,
-7. an outage long enough to earn a service credit: the credit is proposed from the policy, an
-   agent approves it through the API, and it is applied to the account once.
+7. an outage long enough to earn a service credit: the credit is proposed from the policy and
+   applied to the account once; with CARE_CREDIT_REVIEW_ALL=true, only after an agent has
+   approved it through the API.
 
 Run with:  uv run --env-file .env python scripts/smoke.py
 Exits non-zero if any check fails. It changes simulator state and restores it at the end.
@@ -42,6 +43,14 @@ BREAKER_REST_SECONDS = float(os.environ.get("CARE_OSS_BREAKER_REST_SECONDS", "10
 # The hold before a visit is offered is only waited out when it is this short (`make demo`).
 SHORT_HOLD_MINUTES = 1
 HOLD_WAIT_SECONDS = 150.0
+# How the stack under test is set up (the setting's own default is true): whether a credit at
+# or under the policy limit waits for an agent, or is applied without review.
+REVIEW_ALL = os.environ.get("CARE_CREDIT_REVIEW_ALL", "true").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 SEARCH = {"service_type": "broadband", "mapping_defect": "none", "status": "active"}
 failures: list[str] = []
 
@@ -407,12 +416,14 @@ def credit_is_approved_and_applied(
         "restoration message offers the credit", "you are due a service credit of INR" in restored
     )
     check("credit names the policy version", "(v0-placeholder)" in restored)
-    check("credit waits for approval", "sent for approval" in restored)
     account = f"/billing/v1/accounts/{customer['customer_id']}/credits"
-    before = len(sim.get(account).json()["credits"])
     say(f"\n     assistant: {restored}")
-
     agent = token(api, "agent")
+    if not REVIEW_ALL:
+        applied_without_review(api, sim, headers, agent, accepted, account, outage_id, restored)
+        return
+    check("credit waits for approval", "sent for approval" in restored)
+    before = len(sim.get(account).json()["credits"])
 
     def mine() -> dict[str, Any] | None:
         listed = api.get("/v1/approvals", headers=agent).json()["data"]
@@ -442,6 +453,38 @@ def credit_is_approved_and_applied(
         (newest["amount_inr"], newest["approved_by"], newest["outage_id"])
         == (approval["request"]["amount_inr"], "agent:smoke.run", outage_id),
         f"INR {newest['amount_inr']} approved by {newest['approved_by']}",
+    )
+
+
+def applied_without_review(
+    api: httpx.Client,
+    sim: httpx.Client,
+    headers: dict[str, str],
+    agent: dict[str, str],
+    accepted: dict[str, Any],
+    account: str,
+    outage_id: str,
+    restored: str,
+) -> None:
+    """A credit at or under the policy limit, on a stack that does not hold those for a person."""
+    check("credit is applied without review", "It is being applied to your account" in restored)
+    contact = wait_for_replies(api, headers, accepted["contact_id"], count=3)
+    confirmation = outbound(contact)[-1]
+    check(
+        "customer is told the credit was applied",
+        "has been applied to your account" in confirmation,
+    )
+    listed = api.get("/v1/approvals", headers=agent).json()["data"]
+    check(
+        "nobody was asked to approve it",
+        all(a["request"]["complaint_ref"] != accepted["complaint_ref"] for a in listed),
+    )
+    ours = [c for c in sim.get(account).json()["credits"] if c["outage_id"] == outage_id]
+    check("exactly one credit was added", len(ours) == 1, f"{len(ours)}")
+    check(
+        "the credit names no approver",
+        bool(ours) and ours[0]["approved_by"] is None,
+        f"INR {ours[0]['amount_inr']}" if ours else "",
     )
 
 
@@ -486,7 +529,7 @@ def main() -> int:
         say(f"\n6. A {with_a_good_line['router_model']} router on a healthy node and line")
         guided_steps_are_cited(api, sim, with_a_good_line)
 
-        say(f"\n7. A five-hour outage on {long_outage['true_node_id']}: credit and approval")
+        say(f"\n7. A five-hour outage on {long_outage['true_node_id']}: the credit")
         credit_is_approved_and_applied(api, sim, long_outage)
 
         say("\n8. The held line still fails after the hold: a technician visit")

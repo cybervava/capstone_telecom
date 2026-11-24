@@ -307,8 +307,9 @@ async def test_billing_failing_while_the_credit_is_applied_delays_it_and_applies
 async def test_credit_at_or_under_the_limit_is_applied_without_review_when_configured(
     platform: Platform, simulator: Simulator, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Decision D3 is open; the switch exists and review-everything is the default. It is one
-    setting for the whole deployment: who proposes and who applies must both have it."""
+    """Decision D3 (23 Nov): the stack runs this way. Review-everything stays the default of
+    the code. It is one setting for the whole deployment: who proposes and who applies must
+    both have it."""
     monkeypatch.setattr(platform.runtime.resolution, "_review_all", False)
     monkeypatch.setattr(platform.executor.handler(CREDIT_APPLY), "_review_all", False)
     customer = await premium_customer(simulator)

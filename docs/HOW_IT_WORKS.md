@@ -71,7 +71,7 @@ In words:
 1. **A customer writes in**, on the website's chat. (A contact centre could also pass on calls, as text.) The **front desk** files the message, hands back a complaint reference straight away, and does nothing else.
 2. **A coordinator picks up the case** and works through it with a team of **specialists**. One works out who the customer is and what they want. One checks the network. One finds the right page of the router manual. One works out whether a credit is owed. One looks at technician availability.
 3. **The specialists can look at SkyLink's systems but cannot change anything.** When something needs doing (registering the complaint, opening a repair ticket, sending a text message, paying a credit, booking a technician), they write it down as a *proposal*.
-4. **A separate worker, "the hands", is the only part allowed to change anything in SkyLink's systems.** It carries out proposals one by one, after checking again that each still makes sense, and (as the platform is set up) pays a credit only after a person has approved it.
+4. **A separate worker, "the hands", is the only part allowed to change anything in SkyLink's systems.** It carries out proposals one by one, after checking again that each still makes sense, and pays a credit above INR 500 only after a supervisor has approved it.
 5. **A "radio" listens to the network team's announcements** ("outage declared on this node", "outage over") and wakes up any customer who is waiting for that news.
 6. **Staff work at a staff desk.** They approve or reject credits, pick up conversations the assistant has handed over, and can take a conversation away from the assistant at any time.
 
@@ -174,7 +174,7 @@ The executor is the only program that holds the key allowed to change anything i
 | Register the complaint | At the front desk, with the reference | — |
 | Open a repair ticket (incident) | When a customer is told of an outage or a suspected fault | — |
 | Send a text message | When the radio hears of an outage, or of its end | That the customer consents to such messages, and that the message is not stale |
-| Apply a service credit | When an outage the customer waited on is over | That a person approved exactly this request; the policy version; the account's limits |
+| Apply a service credit | When an outage the customer waited on is over | Above INR 500, that a supervisor approved exactly this request; the policy version; the account's limits |
 | Book a technician visit | When the customer has chosen a slot | That the network is still clear, the line still faulty, and no other visit is booked |
 
 Each proposal has a unique name, such as "credit for service S0001234 for outage OUT-20261116-0001", and is stored exactly as it will be sent, together with a *fingerprint* (a hash) of that exact content. Proposing the same thing twice gives the same row, not a second one.
@@ -214,7 +214,7 @@ What each staff role may do:
 |---|---|---|---|
 | See the queues, any conversation and its logbook | yes | yes | yes |
 | Close a handed-over case; take a conversation over from the assistant | yes | yes | no |
-| Approve or reject a credit | up to INR 500 | any amount | no |
+| Approve or reject a credit above INR 500 | no | yes | no |
 | Close an operations item | no | yes | yes |
 
 Every decision, closure and takeover is written to the logbook in the same transaction, so there is never a decision without its record.
@@ -244,7 +244,7 @@ Priya is signed in on the website. Their broadband stopped working this morning,
 5. **One repair ticket per node.** The complaint is linked to the outage's ticket. If 500 customers on that node write in, there is still one ticket, with 500 complaints attached.
 6. **The case parks**, waiting on the network. It keeps a slow watch (every 15 minutes) behind the radio.
 7. **The NOC resolves the outage.** The radio wakes Priya's case. Diagnostics looks again and finds the node **confirmed clear**. Priya is told "Your service should be working again". The outage lasted five hours, so the credit policy owes a credit: on a plan of INR 999 a month it works out at INR 6.94, which the policy's minimum raises to INR 50.00. The message says so, and that the credit has been sent for approval. Priya is told to restart the router once if service is not back within 10 minutes, and to reply here if it still fails; a timer is set to close the case quietly after 24 hours without an answer.
-8. **An agent approves the credit** at the staff desk. The hands check the approval against the exact request and apply it. Priya is told the credit has been applied, with its reference.
+8. **The credit is applied without review**, because it is not above INR 500. The hands check the request against the account's limits and apply it. Priya is told the credit has been applied, with its reference. (Above INR 500 a supervisor would have to approve it first at the staff desk.)
 9. **Priya answers** "yes, it's working, thanks". The case closes.
 
 ### 4.2 A visitor who is not signed in, on a healthy network
@@ -354,7 +354,7 @@ Two examples on a plan of INR 999 a month:
 - A **30-hour** outage: 999 × 30 × 1.5 ÷ 720 = INR 62.44.
 - A **5-hour** outage: 999 × 5 × 1.0 ÷ 720 = INR 6.94, raised to the minimum of **INR 50.00**.
 
-**Who approves.** Every credit waits for a person: an agent, or a supervisor above INR 500. (Whether small credits may be paid without review is a decision the client has not taken yet.) The approver is shown the request with its working and its fingerprint, and their decision must quote that fingerprint back, so a decision made on an out-of-date screen cannot land on a different request. The hands check the fingerprint again before paying. A rejection must give its reason. An approval nobody gives within 72 hours lapses, the credit is not applied, and a person follows up.
+**Who approves.** A credit up to and including INR 500 is applied without review; above INR 500 it waits for a supervisor (decision D3, taken on 23 Nov). One setting, `CARE_CREDIT_REVIEW_ALL=true`, makes smaller credits wait for an agent as well; the tests and evaluations run that stricter way. The approver is shown the request with its working and its fingerprint, and their decision must quote that fingerprint back, so a decision made on an out-of-date screen cannot land on a different request. The hands check the fingerprint again before paying. A rejection must give its reason. An approval nobody gives within 72 hours lapses, the credit is not applied, and a person follows up.
 
 Credits go to customers who contacted SkyLink about the outage. Whether every affected customer should be credited is another open decision.
 
@@ -482,7 +482,7 @@ What this cannot stop is stated plainly. Someone who tries the same four digits 
 
 ### 7.3 People stay in charge
 
-- **Every credit is decided by a person** (section 5.5).
+- **Every credit above INR 500 is decided by a supervisor** (section 5.5).
 - **About two dozen situations hand a conversation to a person**. They include: the customer asks for one; the reading is low-confidence; identity cannot be established; billing questions; a customer who insists, after being told, that an outage is their own equipment's fault; a network status that stays unverified; guide steps that did not help; a visit offer nobody answered; a write that failed; a crash. The person gets a summary built from the recorded facts (the reason, how identity was established, the service and router, the network evidence and its time, the line test, credits, visits, steps already given). The customer's own words are not copied into it.
 - **After a handover the assistant falls silent.** New messages from the customer go to the person's queue. Only the outcome of a credit or a booking already under way is still told to the customer.
 - **Staff can take any conversation over** from the assistant, with a written reason. The customer is told a member of the team has taken over (not who), and the assistant answers nothing further in it.
