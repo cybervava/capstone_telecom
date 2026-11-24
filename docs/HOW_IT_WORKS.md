@@ -219,6 +219,8 @@ What each staff role may do:
 
 Every decision, closure and takeover is written to the logbook in the same transaction, so there is never a decision without its record.
 
+When a person closes a handed-over case, the customer is told so in their conversation, once, in the same transaction. If the person wrote a note, it is shown to the customer as that person's note, exactly as written; the logbook keeps it with contact details masked. The customer is not told who closed the case. Closing a case does not close the conversation: if the customer writes again, the message goes back to the staff queue.
+
 **In the code:** the page is `src/skylink_care/web/staff.html` and `staff.js`; the rules are in `src/skylink_care/api/approvals.py`, `handoffs.py`, `ops.py` and `takeover.py`.
 
 ### 3.7 The stand-in SkyLink (the simulator)

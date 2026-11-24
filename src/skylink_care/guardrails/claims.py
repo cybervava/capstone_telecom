@@ -64,6 +64,7 @@ _NOTHING = (
     "network_unknown.v1",
     "handed_to_human.v1",
     "taken_over.v1",
+    "dealt_with_by_staff.v1",
     "need_identifier.v1",
     "need_verification.v1",
     "verification_failed.v1",

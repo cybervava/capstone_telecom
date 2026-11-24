@@ -126,6 +126,10 @@ def _other_replies() -> dict[str, Reply]:
         "out_of_scope": replies.out_of_scope(REF),
         "handed_to_human/apology": replies.handed_to_human(REF, APOLOGY),
         "taken_over": replies.taken_over(REF),
+        "dealt_with_by_staff": replies.dealt_with_by_staff(REF, None),
+        "dealt_with_by_staff/with a note": replies.dealt_with_by_staff(
+            REF, "Line card replaced; tested fine."
+        ),
         "handed_to_human/any other reason": replies.handed_to_human(
             REF, handover.wording_for("A_REASON_NOBODY_WORDED")
         ),
@@ -187,6 +191,17 @@ def test_what_a_customer_is_told_when_a_person_takes_over_claims_nothing(reason:
     reply = replies.handed_to_human(REF, handover.wording_for(reason))
 
     assert check(reply, None, now=AT, max_age=timedelta(seconds=60)) is None
+
+
+def test_a_persons_closing_note_is_shown_as_theirs_and_claims_nothing_for_the_platform() -> None:
+    """The note is a person's own statement, quoted as such. The template around it says
+    nothing about the network, whatever the note says."""
+    note = "No outage has been reported; the network is fine."
+    reply = replies.dealt_with_by_staff(REF, note)
+
+    assert CLAIMS[reply.template_id].value == "nothing"
+    assert f'Their note to you: "{note}"' in reply.text
+    assert replies.AI_DISCLOSURE not in reply.text
 
 
 def test_the_apology_for_a_failed_turn_can_always_be_sent() -> None:

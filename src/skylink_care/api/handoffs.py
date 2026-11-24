@@ -2,8 +2,10 @@
 
 Staff see every open item with the complaint it belongs to. An agent or a supervisor closes an
 item once they have dealt with it; who did, and what they noted, goes into the contact's audit
-trail in the same transaction. The note is free text from a person: it is kept as written with
-the item, and contact details in it are masked in the audit trail.
+trail in the same transaction, and the customer is told in their conversation that it was
+dealt with. The note is free text from a person: it is kept as written with the item, shown
+to the customer as that person's note, and contact details in it are masked in the audit
+trail. The customer is not told who closed it.
 """
 
 from __future__ import annotations
@@ -14,6 +16,7 @@ from uuid import UUID
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 
+from skylink_care.agents import replies
 from skylink_care.api.auth import Principal, Role, require
 from skylink_care.api.schemas import HandoffDoneIn, ok
 from skylink_care.clock import Clock
@@ -21,15 +24,20 @@ from skylink_care.db.audit import AuditEntry, AuditRepository
 from skylink_care.db.contacts import ContactRepository
 from skylink_care.db.database import Database
 from skylink_care.db.handoffs import ClosureOutcome, HandoffRepository
+from skylink_care.db.messages import MessageRepository
 from skylink_care.guardrails.pii import redact_for_log
+from skylink_care.orchestrator.outgoing import store_notice
 
 STAFF = (Role.AGENT, Role.SUPERVISOR, Role.OPS)
 CLOSERS = (Role.AGENT, Role.SUPERVISOR)
+# Who the message a closure stores is from, as a customer sees it.
+FROM_STAFF = "staff"
 
 
 def register_handoff_routes(app: FastAPI, database: Database, now: Clock) -> None:
     handoffs = HandoffRepository(database)
     contacts = ContactRepository(database)
+    messages = MessageRepository(database)
     audit = AuditRepository(database)
 
     @app.get("/v1/handoffs")
@@ -55,6 +63,15 @@ def register_handoff_routes(app: FastAPI, database: Database, now: Clock) -> Non
                 raise HTTPException(status.HTTP_409_CONFLICT, "this item is already closed")
             closed = closure.handoff
             contact = await contacts.get(closed.contact_id, conn=conn)
+            if contact is not None:
+                await store_notice(
+                    messages,
+                    closed.contact_id,
+                    replies.dealt_with_by_staff(contact.complaint_ref, body.note or None),
+                    author=FROM_STAFF,
+                    dedupe_key=f"handoff-done:{handoff_id}",
+                    conn=conn,
+                )
             await audit.append(
                 AuditEntry(
                     correlation_id=contact.correlation_id if contact else str(handoff_id),

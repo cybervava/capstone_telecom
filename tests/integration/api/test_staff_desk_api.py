@@ -16,6 +16,7 @@ from skylink_care.db.audit import AuditRepository
 from skylink_care.db.contacts import ContactRepository
 from skylink_care.db.database import Database
 from skylink_care.db.handoffs import HandoffRepository
+from skylink_care.db.messages import MessageRepository
 from tests.integration.api.test_api import SECRET, token
 from tests.support.credits import NOW, a_contact
 
@@ -56,6 +57,12 @@ async def queue(client: httpx.AsyncClient, headers: dict[str, str]) -> list[dict
     return list(response.json()["data"])
 
 
+async def told_by_staff(db: Database, contact_id: Any) -> list[Any]:
+    """What the customer was told by a person's action, apart from the rest of the thread."""
+    thread = await MessageRepository(db).list_for_contact(contact_id)
+    return [message for message in thread if message.author == "staff"]
+
+
 # --- the queue -----------------------------------------------------------------------------------
 
 
@@ -93,6 +100,52 @@ async def test_item_is_closed_once_with_who_closed_it_and_leaves_the_queue(
     record = next(entry for entry in trail if entry.step == "handoff.done")
     assert (record.actor, record.outcome) == ("staff:agent:anna", "LINE_FAULT")
     assert record.outputs["note"] == "Called the customer; visit booked."
+
+
+async def test_customer_is_told_once_that_the_case_was_dealt_with_in_the_closers_words(
+    client: httpx.AsyncClient, db: Database, contacts: ContactRepository
+) -> None:
+    contact_id = await queued(db, contacts)
+    contact = await contacts.get(contact_id)
+    assert contact is not None
+    (item,) = await queue(client, AGENT)
+    url = f"/v1/handoffs/{item['handoff_id']}/done"
+    note = "We replaced the faulty line card; your connection tested fine at 14:05."
+
+    await client.post(url, json={"note": note}, headers=AGENT)
+    await client.post(url, json={"note": "A second try."}, headers=AGENT)
+
+    (told,) = await told_by_staff(db, contact_id)
+    assert (told.direction, told.author) == ("outbound", "staff")
+    assert told.meta["template_id"] == "dealt_with_by_staff.v1"
+    assert note in told.body
+    assert contact.complaint_ref in told.body
+    # Who closed it is on the staff's side of the record, not the customer's.
+    assert "anna" not in told.body
+
+
+async def test_customer_is_told_the_case_was_dealt_with_when_no_note_is_given(
+    client: httpx.AsyncClient, db: Database, contacts: ContactRepository
+) -> None:
+    contact_id = await queued(db, contacts)
+    (item,) = await queue(client, AGENT)
+
+    await client.post(f"/v1/handoffs/{item['handoff_id']}/done", json={}, headers=AGENT)
+
+    (told,) = await told_by_staff(db, contact_id)
+    assert told.meta["template_id"] == "dealt_with_by_staff.v1"
+    assert "note" not in told.body.lower()
+
+
+async def test_refused_closure_tells_the_customer_nothing(
+    client: httpx.AsyncClient, db: Database, contacts: ContactRepository
+) -> None:
+    contact_id = await queued(db, contacts)
+    (item,) = await queue(client, AGENT)
+
+    await client.post(f"/v1/handoffs/{item['handoff_id']}/done", json={}, headers=token(Role.OPS))
+
+    assert await told_by_staff(db, contact_id) == []
 
 
 async def test_closing_a_reason_lets_the_same_reason_be_queued_again_later(

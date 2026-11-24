@@ -506,6 +506,19 @@ def taken_over(complaint_ref: str) -> Reply:
     )
 
 
+def dealt_with_by_staff(complaint_ref: str, note: str | None) -> Reply:
+    """A person has closed their item of the staff queue. Said by the platform, not by the
+    assistant. The note is the person's own statement and is quoted as theirs; who they are
+    stays on the staff's side of the record."""
+    theirs = f' Their note to you: "{note}"' if note else ""
+    return Reply(
+        f"A member of our team has dealt with your complaint {complaint_ref} and marked it"
+        f" done.{theirs} If you still need help, reply here and your message will go to our"
+        " team.",
+        "dealt_with_by_staff.v1",
+    )
+
+
 def out_of_scope(complaint_ref: str) -> Reply:
     return Reply(
         f"{AI_DISCLOSURE} I can help with SkyLink broadband and mobile service problems,"

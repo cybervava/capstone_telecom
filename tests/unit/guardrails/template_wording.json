@@ -35,6 +35,14 @@
     "template_id": "credit_unconfirmed.v1",
     "text": "I'm SkyLink's automated assistant. I could not confirm that the service credit for your outage has been applied. A member of our team will check your account and contact you; you don't need to do anything. Your complaint reference is SKL-261115-000001-9."
   },
+  "dealt_with_by_staff": {
+    "template_id": "dealt_with_by_staff.v1",
+    "text": "A member of our team has dealt with your complaint SKL-261115-000001-9 and marked it done. If you still need help, reply here and your message will go to our team."
+  },
+  "dealt_with_by_staff/with a note": {
+    "template_id": "dealt_with_by_staff.v1",
+    "text": "A member of our team has dealt with your complaint SKL-261115-000001-9 and marked it done. Their note to you: \"Line card replaced; tested fine.\" If you still need help, reply here and your message will go to our team."
+  },
   "guided_steps": {
     "template_id": "guided_steps.v1",
     "text": "I'm SkyLink's automated assistant. I've checked the network: no outage has been reported for your area as of 10:05 IST on 15 Nov, and a remote test of your line at 10:05 IST on 15 Nov passed, so the problem is most likely in the equipment at your home. Please try these steps from the Tarang FG7 guide, section \"No internet\":\n1. Check the cable.\n2. Wait two minutes.\nSource: guide-tg-fg7 v1 #no-internet.\nReply here to tell me whether that fixed it; if it did not, a specialist will take over. Your complaint reference is SKL-261115-000001-9."
