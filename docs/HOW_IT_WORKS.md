@@ -243,7 +243,7 @@ Priya is signed in on the website. Their broadband stopped working this morning,
 4. **The reply is prepared**: "I've checked the network: there is a confirmed outage in your area (outage OUT-…), caused by a fibre cut. It began at 09:10 and our engineers are working on it. Service is expected back by 14:00", followed by where that estimate came from. It says there is no need to restart or reset the router and that no technician visit is needed, and gives the complaint reference. Before the message is stored, a separate check confirms that the evidence of this very turn backs the claim "there is an outage" (section 5.4).
 5. **One repair ticket per node.** The complaint is linked to the outage's ticket. If 500 customers on that node write in, there is still one ticket, with 500 complaints attached.
 6. **The case parks**, waiting on the network. It keeps a slow watch (every 15 minutes) behind the radio.
-7. **The NOC resolves the outage.** The radio wakes Priya's case. Diagnostics looks again and finds the node **confirmed clear**. Priya is told "Your service should be working again". The outage lasted five hours, so the credit policy owes a credit: on a plan of INR 999 a month it works out at INR 6.94, which the policy's minimum raises to INR 50.00. The message says so, and that the credit has been sent for approval. Priya is told to restart the router once if service is not back within 10 minutes, and to reply here if it still fails; a timer is set to close the case quietly after 24 hours without an answer.
+7. **The NOC resolves the outage.** The radio wakes Priya's case. Diagnostics looks again and finds the node **confirmed clear**. Priya is told "Your service should be working again". The outage lasted five hours, so the credit policy owes a credit: on a plan of INR 999 a month it works out at INR 6.94, which the policy's minimum raises to INR 50.00. The message says so, and that the credit is being applied. Priya is told to restart the router once if service is not back within 10 minutes, and to reply here if it still fails; a timer is set to close the case quietly after 24 hours without an answer.
 8. **The credit is applied without review**, because it is not above INR 500. The hands check the request against the account's limits and apply it. Priya is told the credit has been applied, with its reference. (Above INR 500 a supervisor would have to approve it first at the staff desk.)
 9. **Priya answers** "yes, it's working, thanks". The case closes.
 
@@ -322,7 +322,7 @@ A suspected node is treated as **unknown**: the customer is told there may be a 
 
 ### 5.4 What the assistant is allowed to say
 
-Customers are only ever sent **templates**: 34 pre-written messages with blanks filled in from verified facts. Examples are "there is a confirmed outage in your area…", "I can't verify the network status right now…" and "your service should be working again…". No AI model writes anything a customer reads.
+Customers are only ever sent **templates**: 35 pre-written messages with blanks filled in from verified facts. Examples are "there is a confirmed outage in your area…", "I can't verify the network status right now…" and "your service should be working again…". No AI model writes anything a customer reads.
 
 Every template declares what it claims about the network:
 
@@ -560,7 +560,7 @@ If the radio's stream misses an announcement, the radio's record stops counting 
 
 ### 9.1 Automated tests
 
-There are **2,662 automated tests**. At the last full run, on the GitLab pipeline that put the demonstration on AWS on 22 November, all of them passed, and together they exercised 96% of the platform's code. They come in kinds:
+There are **2,689 automated tests**. At the last full run, on the GitLab pipeline that released the demonstration to AWS on 24 November, all of them passed, and together they exercised 96% of the platform's code. They come in kinds:
 
 | Kind | Proves |
 |---|---|

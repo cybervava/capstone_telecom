@@ -641,7 +641,7 @@ function optionsOf(scene, play) {
         input,
         node("span", {
           className: "hint",
-          text: "3,000 minutes at INR 4,999 a month: INR 520.73, a supervisor's. 300 minutes: INR 50, the policy's minimum, an agent's.",
+          text: "3,000 minutes at INR 4,999 a month: INR 520.73, a supervisor's. 300 minutes: INR 50, the policy's minimum, applied without review.",
         }),
       ),
     );
