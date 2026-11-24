@@ -15,7 +15,7 @@ img { max-width: 100%; }
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Atkinson+Hyperlegible+Mono:wght@400..700&family=Atkinson+Hyperlegible+Next:ital,wght@0,300..800;1,300..800&display=swap">
 <style>
-/* Layout: an eight-stop route runs across the top, drawn as a network path. Each stop opens one
+/* Layout: a nine-stop route runs across the top, drawn as a network path. Each stop opens one
    view of the architecture. The map is drawn like a fibre plan: each kind of traffic is a strand
    in its own colour and line style. Text sits on the ground; only things you operate get a surface.
    The tokens are the discovery workshop page's own, with three strand colours added. */
@@ -735,6 +735,15 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
   .masthead__tools { inline-size: 100%; justify-content: space-between; }
   .stage__nav .btn { flex: 1 1 auto; justify-content: center; }
 }
+/* ---------- stop 5, data: one request, store by store ---------- */
+.store .node__name { font-size: 14.5px; }
+.dsteps { list-style: none; margin: 0; padding: 0; display: grid; }
+.dsteps li { display: grid; grid-template-columns: 9rem 11rem minmax(0, 1fr); gap: .25rem 1.25rem; align-items: start; padding: .85rem 0; border-top: 1px solid var(--line); }
+.dsteps b { font: 720 1rem/1.3 var(--font-display); }
+.dsteps__where { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: 0; }
+.dsteps__where em { font-style: normal; font-size: .88rem; font-weight: 600; color: var(--ink-2); }
+.dsteps li > span { min-width: 0; font-size: .94rem; color: var(--ink-2); max-width: 70ch; }
+@media (max-width: 46rem) { .dsteps li { grid-template-columns: minmax(0, 1fr); } }
 </style>
 <svg class="sprite" aria-hidden="true" focusable="false">
   <symbol id="i-ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
@@ -774,12 +783,13 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       <li><a href="#flows"><span class="route__dot">2</span><span class="route__label">Flows</span></a></li>
       <li><a href="#parts"><span class="route__dot">3</span><span class="route__label">Parts</span></a></li>
       <li><a href="#tools"><span class="route__dot">4</span><span class="route__label">Tools</span></a></li>
-      <li><a href="#cloud"><span class="route__dot">5</span><span class="route__label">Cloud</span></a></li>
-      <li><a href="#keys"><span class="route__dot">6</span><span class="route__label">Keys</span></a></li>
-      <li><a href="#decisions"><span class="route__dot">7</span><span class="route__label">Decisions</span></a></li>
-      <li><a href="#standards"><span class="route__dot">8</span><span class="route__label">Standards</span></a></li>
+      <li><a href="#data"><span class="route__dot">5</span><span class="route__label">Data</span></a></li>
+      <li><a href="#cloud"><span class="route__dot">6</span><span class="route__label">Cloud</span></a></li>
+      <li><a href="#keys"><span class="route__dot">7</span><span class="route__label">Keys</span></a></li>
+      <li><a href="#decisions"><span class="route__dot">8</span><span class="route__label">Decisions</span></a></li>
+      <li><a href="#standards"><span class="route__dot">9</span><span class="route__label">Standards</span></a></li>
     </ol>
-    <p class="route__now" id="route-now">Stop 1 of 8 · Idea</p>
+    <p class="route__now" id="route-now">Stop 1 of 9 · Idea</p>
   </div>
 </nav>
 
@@ -789,7 +799,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
   <!-- ============================== 1. IDEA ============================== -->
   <section class="stage" id="idea" aria-labelledby="idea-h">
     <header class="stage__head">
-      <p class="eyebrow">Stop 1 of 8 · The idea</p>
+      <p class="eyebrow">Stop 1 of 9 · The idea</p>
       <h2 id="idea-h" tabindex="-1">Two kinds of traffic, one careful office</h2>
       <p class="lead">SkyLink Telecom is the fictional operator in our capstone case study. Its care team has to handle two very different kinds of traffic at once: customers who ask and wait, and a network that announces faults nobody asked about. This page shows in plain words how the system we built joins the two, where it runs, and why each part is built the way it is.</p>
     </header>
@@ -831,7 +841,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       <li><strong>Coordinator and specialists</strong><span>Work each case through its steps. They may look at SkyLink's systems. They may not change them. The case study calls them the orchestrator and the specialist agents.</span></li>
       <li><strong>The hands</strong><span>The only part allowed to change anything in SkyLink's systems, after checking again. The case study calls it the Action agent.</span></li>
       <li><strong>The radio</strong><span>Listens to the network team's announcements and wakes any conversation waiting for that news.</span></li>
-      <li><strong>Staff desk</strong><span>Where people approve credits and pick up what the assistant hands over.</span></li>
+      <li><strong>Staff desk</strong><span>Where a supervisor approves credits above INR 500, and staff pick up what the assistant hands over.</span></li>
     </ul>
     <div><a class="btn btn--ghost btn--small" href="#flows">See them work together <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a></div>
 
@@ -853,7 +863,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     <dl class="owners">
       <div><dt>An event-driven plus request-and-response architecture</dt><dd><a href="#idea">Idea</a><a href="#flows">Flows</a></dd></div>
       <div><dt>A diagram, adapted to the case</dt><dd><a href="#flows">Flows</a></dd></div>
-      <div><dt>Data flow and control flow for one full request</dt><dd><a href="#flows">Flows</a></dd></div>
+      <div><dt>Data flow and control flow for one full request</dt><dd><a href="#flows">Flows</a><a href="#data">Data</a></dd></div>
       <div><dt>A component list</dt><dd><a href="#parts">Parts</a></dd></div>
       <div><dt>Failure handling for each outside system</dt><dd><a href="#parts">Parts</a></dd></div>
       <div><dt>Agent, RAG, machine learning or rules, justified step by step</dt><dd><a href="#tools">Tools</a></dd></div>
@@ -889,7 +899,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
   <!-- ============================== 2. FLOWS ============================== -->
   <section class="stage" id="flows" aria-labelledby="flows-h">
     <header class="stage__head">
-      <p class="eyebrow">Stop 2 of 8 · Flows</p>
+      <p class="eyebrow">Stop 2 of 9 · Flows</p>
       <h2 id="flows-h" tabindex="-1">Follow one message through the system</h2>
       <p class="lead">Pick a situation and step through it. The map shows every part and the lines between them. Each kind of traffic has its own strand, the way each fibre in a cable has its own colour.</p>
     </header>
@@ -951,7 +961,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
   <!-- ============================== 3. PARTS ============================== -->
   <section class="stage" id="parts" aria-labelledby="parts-h">
     <header class="stage__head">
-      <p class="eyebrow">Stop 3 of 8 · Parts</p>
+      <p class="eyebrow">Stop 3 of 9 · Parts</p>
       <h2 id="parts-h" tabindex="-1">Every part, and what happens when one fails</h2>
       <p class="lead">Six parts make up the platform, and six specialists do the thinking inside it. Around them sit the systems it depends on. Pick a part to see its job, what it is allowed to touch, and what the platform does when it stops answering.</p>
     </header>
@@ -1009,7 +1019,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
   <!-- ============================== 4. TOOLS ============================== -->
   <section class="stage" id="tools" aria-labelledby="tools-h">
     <header class="stage__head">
-      <p class="eyebrow">Stop 4 of 8 · Tools</p>
+      <p class="eyebrow">Stop 4 of 9 · Tools</p>
       <h2 id="tools-h" tabindex="-1">The right tool for each step</h2>
       <p class="lead">Rules, looked-up documents, a language AI or machine learning? The case study asks for the choice to be justified step by step. Our rule of thumb: use the plainest tool that does the job safely, and keep AI away from money, safety and customer rights.</p>
     </header>
@@ -1032,13 +1042,140 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
 
     <div class="stage__nav">
       <a class="btn btn--ghost" href="#parts"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg> Parts</a>
+      <a class="btn" href="#data">Where the data lives <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a>
+    </div>
+  </section>
+  <!-- ============================== 5. DATA ============================== -->
+  <section class="stage" id="data" aria-labelledby="data-h">
+    <header class="stage__head">
+      <p class="eyebrow">Stop 5 of 9 · Data</p>
+      <h2 id="data-h" tabindex="-1">One database, and one table in it that holds vectors</h2>
+      <p class="lead">Where does each piece of information live, and which requests touch it? The platform keeps everything in a single PostgreSQL database. There is no separate vector database. Ordinary tables hold the cases, and one table holds the router guides in a form that can be searched by meaning. That table never sees a customer's details.</p>
+    </header>
+
+    <ul class="gates" aria-label="The stores at a glance">
+      <li><b>1</b><strong>database</strong><span>PostgreSQL 17. The demonstration runs it on Amazon RDS. The platform's 21 tables and the conversations' notebooks all live in it.</span></li>
+      <li><b>1</b><strong>table with vectors</strong><span><code>guide_chunks</code>, through the pgvector extension: 96 router-guide sections, each stored as text and as a list of 256 numbers.</span></li>
+      <li><b>0</b><strong>customer details in vectors</strong><span>Only guide text is embedded. No message, name, phone number or address is ever turned into a vector.</span></li>
+    </ul>
+
+    <h3>What is loaded before any customer writes</h3>
+    <figure class="deploycard">
+      <div class="scroll-x" tabindex="0" role="group" aria-label="Diagram of the three ingestion pipelines. Scroll sideways on a small screen.">
+        <svg class="dia deploy store" viewBox="0 0 880 430" role="img" aria-label="Three pipelines fill the database. The reference loader copies identifiers from three files of the data pack into the reference tables. The guide index build checks twelve router guides, cuts them into sections and stores each as text and as a vector. The radio applies the network team's announcements to the network picture. The customer file, the policies and the quarantine folder are never opened.">
+          <text class="zone-label" x="10" y="18">SOURCES</text>
+          <text class="zone-label" x="200" y="18">PIPELINES</text>
+          <text class="zone-label" x="500" y="18">ONE POSTGRESQL DATABASE</text>
+          <rect class="zone" x="500" y="28" width="370" height="392" rx="14"/>
+
+          <path class="sample sample--file" d="M160 85H191"/><path class="mk--file" d="M200 85l-9-5v10z"/>
+          <path class="sample sample--file" d="M160 185H191"/><path class="mk--file" d="M200 185l-9-5v10z"/>
+          <path class="sample sample--event" d="M160 285H191"/><path class="head--event" d="M200 285l-9-5v10z"/>
+          <path class="sample sample--file" d="M370 85H511"/><path class="mk--file" d="M520 85l-9-5v10z"/>
+          <path class="sample sample--file" d="M370 185H511"/><path class="mk--file" d="M520 185l-9-5v10z"/>
+          <path class="sample sample--event" d="M370 285H511"/><path class="head--event" d="M520 285l-9-5v10z"/>
+          <text class="node__sub" x="440" y="75" text-anchor="middle">identifiers only</text>
+          <text class="node__sub" x="440" y="175" text-anchor="middle">checked, embedded</text>
+          <text class="node__sub" x="440" y="275" text-anchor="middle">exactly once</text>
+
+          <g class="node"><rect class="node__box" x="10" y="50" width="150" height="70" rx="8"/>
+            <text class="node__name" x="85" y="80" text-anchor="middle">Data pack</text>
+            <text class="node__sub" x="85" y="100" text-anchor="middle">nodes · map · services</text></g>
+          <g class="node"><rect class="node__box" x="10" y="150" width="150" height="70" rx="8"/>
+            <text class="node__name" x="85" y="180" text-anchor="middle">Router guides</text>
+            <text class="node__sub" x="85" y="200" text-anchor="middle">12 Markdown files</text></g>
+          <g class="node"><rect class="node__box" x="10" y="250" width="150" height="70" rx="8"/>
+            <text class="node__name" x="85" y="280" text-anchor="middle">Announcements</text>
+            <text class="node__sub" x="85" y="300" text-anchor="middle">numbered, from the NOC</text></g>
+          <rect class="zone zone--empty" x="10" y="350" width="360" height="70" rx="8"/>
+          <text class="zone-label zone-label--s" x="24" y="374">NEVER OPENED BY A PIPELINE</text>
+          <text class="node__sub" x="24" y="398">customers.csv · policies · the quarantine folder</text>
+
+          <g class="node"><rect class="node__box" x="200" y="50" width="170" height="70" rx="8"/>
+            <text class="node__name" x="285" y="80" text-anchor="middle">Reference loader</text>
+            <text class="node__sub" x="285" y="100" text-anchor="middle">a batch, at seeding</text></g>
+          <g class="node"><rect class="node__box" x="200" y="150" width="170" height="70" rx="8"/>
+            <text class="node__name" x="285" y="180" text-anchor="middle">Guide index build</text>
+            <text class="node__sub" x="285" y="200" text-anchor="middle">a batch, at seeding</text></g>
+          <g class="node"><rect class="node__box" x="200" y="250" width="170" height="70" rx="8"/>
+            <text class="node__name" x="285" y="280" text-anchor="middle">The radio</text>
+            <text class="node__sub" x="285" y="300" text-anchor="middle">always running</text></g>
+
+          <g class="node"><rect class="node__box" x="520" y="50" width="330" height="70" rx="8"/>
+            <text class="node__name" x="536" y="80">Reference tables</text>
+            <text class="node__sub" x="536" y="100">nodes · address_node_map · service_index</text></g>
+          <g class="node is-active"><rect class="node__box" x="520" y="150" width="330" height="70" rx="8"/>
+            <text class="node__name" x="536" y="180">Guide index: the only vectors</text>
+            <text class="node__sub" x="536" y="200">guide_chunks: 96 sections, text + 256 numbers</text></g>
+          <g class="node"><rect class="node__box" x="520" y="250" width="330" height="70" rx="8"/>
+            <text class="node__name" x="536" y="280">Network picture</text>
+            <text class="node__sub" x="536" y="300">outages · node_alarms · feed_state</text></g>
+          <g class="node"><rect class="node__box" x="520" y="340" width="330" height="66" rx="8"/>
+            <text class="node__name" x="536" y="368">Case tables</text>
+            <text class="node__sub" x="536" y="388">filled while contacts are handled, not by a pipeline</text></g>
+        </svg>
+      </div>
+      <figcaption>Three pipelines fill the database. Two are batches that replace their tables in one go, so a reader sees the old version or the new one and never a mixture. The third, the radio, runs all the time. The box with the heavy outline is the only place a vector is stored.</figcaption>
+    </figure>
+
+    <ol class="locks">
+      <li><strong>The reference loader</strong><span>Reads three files of the data pack: the network nodes, the address-to-node map and the list of services. From the services it keeps identifiers only: which customer has which service at which address. It never opens the customer file, so the platform holds no copy of names, phone numbers or emails.</span><em><b>Where</b> <code>src/skylink_care/pipelines/reference_loader.py</code></em></li>
+      <li><strong>The guide index build</strong><span>Reads the router-guide folder and nothing else. Each guide is checked for unsafe instructions, cut into its eight sections, and every section is stored twice over: as searchable text and as a vector. A guide that fails the check stops the build.</span><em><b>Where</b> <code>src/skylink_care/pipelines/guide_index.py</code> · <code>src/skylink_care/rag/</code></em></li>
+      <li><strong>The radio</strong><span>Reads the network team's numbered announcements through the gateway, up to 200 at a time. Each one is applied to the network picture together with its consequences and the position in the stream, in a single transaction. A missing number marks the picture as untrustworthy until a person has checked it.</span><em><b>Where</b> <code>src/skylink_care/ingest/</code></em></li>
+      <li><strong>What a vector is here</strong><span>A list of 256 numbers that stands for a section's words, made by hashing words and word pairs into 256 buckets. It needs no AI model, no download and no outside service, and the same text always gives the same numbers. It is a word-overlap signal in vector form, not a language model's understanding.</span><em><b>Where</b> <code>src/skylink_care/rag/embedding.py</code></em></li>
+    </ol>
+    <p class="src"><span class="tag tag--ok">Built</span> <span class="tag tag--sim">Stand-in</span> The pipelines are built. The data pack and the twelve guides are invented stand-ins, because SkyLink's own were never supplied. With real data only the files change.</p>
+
+    <h3>Follow one request through the stores</h3>
+    <section class="keys" aria-labelledby="dflow-h">
+      <h4 class="vh" id="dflow-h">Pick a request</h4>
+      <fieldset class="seg" id="dflow-pick"><legend>Which request?</legend></fieldset>
+      <p class="keys__sum" id="dflow-sum" aria-live="polite"></p>
+      <ol class="dsteps" id="dflow-steps" aria-live="polite"></ol>
+    </section>
+    <p class="src"><span class="tag">SQL</span> an ordinary table. <span class="tag tag--ok">Vector</span> the guide index. <span class="tag tag--ext">SkyLink</span> one of SkyLink's own systems, asked through the gateway and never copied. <span class="tag tag--curve">AI provider</span> the outside model, when one is switched on. <span class="tag tag--sim">File</span> a file on disk.</p>
+
+    <h3>The one vector search, in full</h3>
+    <p class="prose">Only the troubleshooting specialist searches the guide index, and only after the network is confirmed clear and the customer's line has passed its test. The search filters first and ranks second.</p>
+    <ol class="locks">
+      <li><strong>Filter by the customer's own router</strong><span>The router model comes from the customer's service record, never from what they wrote. A customer can only ever be shown the guide for the router they have.</span></li>
+      <li><strong>Filter by section</strong><span>Of a guide's eight sections, only four are safe to follow alone: no internet, Wi-Fi, slow speed and power cycle. At most four rows are left to rank.</span></li>
+      <li><strong>Rank by words, then by closeness</strong><span>A section scores when the customer's words name its topic, when they appear in its text, and by how close its vector is to the vector of the customer's message. Keyword rules about the kind of fault add weight to the section they expect.</span></li>
+      <li><strong>Quote, never rewrite</strong><span>The best section's numbered steps are sent word for word, with the guide, section and version they came from. The passage is checked for unsafe instructions once more before it goes.</span></li>
+    </ol>
+    <p class="aside-line">With so few rows left after the filters, every one is compared exactly. No approximate vector index is needed, and none is built. The index records which embedder built it and refuses a search made with a different one.</p>
+    <p class="src"><span class="tag tag--calc">Measured</span> On descriptions the keyword rules were not built on, the right section is found 81.25% of the time. The report lists what is still got wrong. A wrong section still comes from the customer's own guide and is safe to follow.</p>
+
+    <h3>What is kept where</h3>
+    <div class="scroll-x">
+      <table>
+        <thead><tr><th scope="col">Store</th><th scope="col">What it holds</th><th scope="col">Who writes it</th><th scope="col">Personal details</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Cases <small>SQL · contacts, contact_messages, inbox, timers</small></th><td data-label="What it holds">Each conversation with its reference and status, every message both ways, notes that wake the coordinator, and wake-up calls a conversation sets for itself.</td><td data-label="Who writes it">Front desk, coordinator, radio, staff desk</td><td data-label="Personal details">The customer's own words, their customer and service IDs, and the phone line a contact centre states.</td></tr>
+          <tr><th scope="row">Work to do <small>SQL · actions, approvals, handoffs, ops_items</small></th><td data-label="What it holds">Proposals stored exactly as they will be sent, credits above INR 500 awaiting a supervisor, cases waiting for a person, and troubles that belong to no conversation.</td><td data-label="Who writes it">Coordinator, radio, hands, staff desk</td><td data-label="Personal details">Customer and service IDs inside the requests. A staff member's closing note, as written.</td></tr>
+          <tr><th scope="row">Logbook <small>SQL · audit_log</small></th><td data-label="What it holds">Every step, with who or what did it and under which model, prompt and policy version. Rows can be added and never changed or removed.</td><td data-label="Who writes it">Every part</td><td data-label="Personal details">Contact details are masked before a row is written.</td></tr>
+          <tr><th scope="row">Network picture <small>SQL · feed_state, outages, outage_nodes, node_alarms, node_episodes, line_tests</small></th><td data-label="What it holds">What the announcements have said, how far the stream has been read, the platform's own record of trouble on a node, and the remote line tests it has run.</td><td data-label="Who writes it">Radio, coordinator</td><td data-label="Personal details">A service ID with each line test. Nothing else.</td></tr>
+          <tr><th scope="row">Reference <small>SQL · nodes, address_node_map, service_index</small></th><td data-label="What it holds">The network equipment, which address hangs off which node, and which customer has which service at which address.</td><td data-label="Who writes it">Reference loader</td><td data-label="Personal details">Identifiers only.</td></tr>
+          <tr><th scope="row">Identity tries <small>SQL · identity_attempts</small></th><td data-label="What it holds">Wrong answers to the identity check, counted for each claimed customer ID for a day.</td><td data-label="Who writes it">Coordinator</td><td data-label="Personal details">The claimed customer ID. Never the digits that were tried.</td></tr>
+          <tr><th scope="row">Notebooks <small>SQL · the workflow library's own tables</small></th><td data-label="What it holds">A conversation's working notes between turns, so a crashed process can pick up where it stopped.</td><td data-label="Who writes it">Coordinator</td><td data-label="Personal details">Whatever the turn was working with. Deleted when the assistant's work on the case is finished.</td></tr>
+          <tr><th scope="row">Guide index <small>Vector and text · guide_chunks, guide_index</small></th><td data-label="What it holds">96 guide sections: title, body, numbered steps, router model, version, a text-search form and a 256-number vector. One more row says which build is live and which embedder made it.</td><td data-label="Who writes it">Guide index build</td><td data-label="Personal details">None.</td></tr>
+          <tr><th scope="row">Not in the database <small>asked for, or read from a file</small></th><td data-label="What it holds">Names, phone numbers, emails and consent stay in SkyLink's customer records. Credits stay in Billing. The credit policy and the guides themselves are versioned files.</td><td data-label="Who writes it">SkyLink's systems, and people who review the files</td><td data-label="Personal details">Read when needed, through the gateway, and not copied.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="aside-line">The guide index can be dropped and rebuilt at any time, because the guide files are the source of truth. The stand-in for SkyLink's systems keeps its own separate SQLite file, which the platform cannot read.</p>
+    <p class="src"><span class="tag tag--ok">Built</span> The tables are created by eleven numbered scripts in <code>src/skylink_care/db/migrations/</code>. The fifth one switches on pgvector and creates the guide index.</p>
+
+    <div class="stage__nav">
+      <a class="btn btn--ghost" href="#tools"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg> Tools</a>
       <a class="btn" href="#cloud">Where it runs <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a>
     </div>
   </section>
-  <!-- ============================== 5. CLOUD ============================== -->
+
+  <!-- ============================== 6. CLOUD ============================== -->
   <section class="stage" id="cloud" aria-labelledby="cloud-h">
     <header class="stage__head">
-      <p class="eyebrow">Stop 5 of 8 · Cloud</p>
+      <p class="eyebrow">Stop 6 of 9 · Cloud</p>
       <h2 id="cloud-h" tabindex="-1">Part in the cloud, part in SkyLink's own building</h2>
       <p class="lead">A telecom company's core systems, such as network monitoring, customer records and billing, usually stay in its own data centres. Engineers call that <button type="button" class="term" data-term="on-premises">on-premises</button>. The care platform is new and can run in a rented <button type="button" class="term" data-term="cloud">cloud</button>. A design that spans both is called <button type="button" class="term" data-term="hybrid-cloud">hybrid</button>, and the line between the two halves is the most important line on the map.</p>
     </header>
@@ -1212,7 +1349,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     <p class="src"><span class="tag tag--calc">Measured</span> The first release that passed, on 22 November 2026, took 15 minutes from push to live. The site was down for 24 seconds and the eight journeys took 55 seconds. A rollback was tried once, back and forward again, in about two minutes each way.</p>
 
     <div class="stage__nav">
-      <a class="btn btn--ghost" href="#tools"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg> Tools</a>
+      <a class="btn btn--ghost" href="#data"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg> Data</a>
       <a class="btn" href="#keys">Who holds which key <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a>
     </div>
   </section>
@@ -1220,7 +1357,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
   <!-- ============================== 6. KEYS ============================== -->
   <section class="stage" id="keys" aria-labelledby="keys-h">
     <header class="stage__head">
-      <p class="eyebrow">Stop 6 of 8 · Keys</p>
+      <p class="eyebrow">Stop 7 of 9 · Keys</p>
       <h2 id="keys-h" tabindex="-1">Every part gets its own key, and only the doors it needs</h2>
       <p class="lead">Secure integration comes down to one question, asked over and over: who is allowed to do what? The platform answers it in two layers. People carry passes. Programs carry keys. Engineers call the idea <button type="button" class="term" data-term="least-privilege">least privilege</button>.</p>
     </header>
@@ -1242,8 +1379,8 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
           <tr><th scope="row">Visitor</th><td data-label="Who carries it">Someone who has not signed in</td><td data-label="What it allows">Open a contact and read their own conversation. Nothing else.</td></tr>
           <tr><th scope="row">Customer</th><td data-label="Who carries it">A signed-in customer</td><td data-label="What it allows">Their own conversations.</td></tr>
           <tr><th scope="row">Channel</th><td data-label="Who carries it">A trusted contact-centre system</td><td data-label="What it allows">The contacts it opened. Only a channel may state the phone line a call came from.</td></tr>
-          <tr><th scope="row">Agent</th><td data-label="Who carries it">Care staff</td><td data-label="What it allows">See the queues, any conversation and its logbook. Close a handed-over case. Take a conversation over. Approve a credit up to INR 500.</td></tr>
-          <tr><th scope="row">Supervisor</th><td data-label="Who carries it">Care staff</td><td data-label="What it allows">Everything an agent can do. Approve a credit of any amount. Close an operations item.</td></tr>
+          <tr><th scope="row">Agent</th><td data-label="Who carries it">Care staff</td><td data-label="What it allows">See the queues, any conversation and its logbook. Close a handed-over case, which tells the customer so. Take a conversation over. No credits: up to INR 500 they are paid without review.</td></tr>
+          <tr><th scope="row">Supervisor</th><td data-label="Who carries it">Care staff</td><td data-label="What it allows">Everything an agent can do. Approve or reject a credit above INR 500. Close an operations item.</td></tr>
           <tr><th scope="row">Operations</th><td data-label="Who carries it">Operations staff</td><td data-label="What it allows">See the queues, any conversation and its logbook. Close an operations item. No credits and no takeovers.</td></tr>
         </tbody>
       </table>
@@ -1260,7 +1397,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
         <tbody>
           <tr><th scope="row">The AI model's provider <small>only when a model is switched on</small></th><td data-label="What goes">The customer's messages, with personal details replaced by placeholders.</td><td data-label="Under which rule">Only for a customer who has been identified. The provider is asked not to keep a copy.</td></tr>
           <tr><th scope="row">The tracing service <small>only when switched on</small></th><td data-label="What goes">The name of each step, its timing and any error.</td><td data-label="Under which rule">No message, profile or working notes. Contents stay hidden unless someone unhides them on purpose.</td></tr>
-          <tr><th scope="row">SkyLink's systems</th><td data-label="What goes">Complaint and ticket registrations, text messages, credits and bookings.</td><td data-label="Under which rule">By the hands only, each with a unique label. A text only with consent. A credit only after a person's approval.</td></tr>
+          <tr><th scope="row">SkyLink's systems</th><td data-label="What goes">Complaint and ticket registrations, text messages, credits and bookings.</td><td data-label="Under which rule">By the hands only, each with a unique label. A text only with consent. A credit above INR 500 only after a supervisor's approval.</td></tr>
           <tr><th scope="row">Logs</th><td data-label="What goes">Events with their identifiers.</td><td data-label="Under which rule">Contact details and secrets are removed first.</td></tr>
         </tbody>
       </table>
@@ -1276,7 +1413,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
   <!-- ============================== 7. DECISIONS ============================== -->
   <section class="stage" id="decisions" aria-labelledby="decisions-h">
     <header class="stage__head">
-      <p class="eyebrow">Stop 7 of 8 · Decisions</p>
+      <p class="eyebrow">Stop 8 of 9 · Decisions</p>
       <h2 id="decisions-h" tabindex="-1">Seven decisions, and what each one cost</h2>
       <p class="lead">An architecture is a set of trade-offs. A <button type="button" class="term" data-term="decision-record">decision record</button> writes one of them down: the question, the options, the choice, the reason and the price paid. The case study asks for at least three. Pick the option you would choose, then compare.</p>
     </header>
@@ -1303,7 +1440,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
   <!-- ============================== 8. STANDARDS ============================== -->
   <section class="stage" id="standards" aria-labelledby="standards-h">
     <header class="stage__head">
-      <p class="eyebrow">Stop 8 of 8 · Standards</p>
+      <p class="eyebrow">Stop 9 of 9 · Standards</p>
       <h2 id="standards-h" tabindex="-1">How this lines up with industry practice</h2>
       <p class="lead">None of these ideas is new. Each has a name in the industry and a published source. This stop sets what we built beside those sources, and ends with what the build does not do yet.</p>
     </header>
@@ -1564,7 +1701,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     {
       id: 'credit',
       label: 'The outage ends and a credit is due',
-      hint: 'A person approves, the hands pay once',
+      hint: 'Up to INR 500 the hands pay at once, and only once',
       intro: 'Priya’s outage lasted five hours. The plan costs INR 999 a month. The credit policy here is a labelled placeholder, because SkyLink’s real one was never supplied.',
       steps: [
         { route: ['noc', 'gate', 'radio'], strand: 'event', kind: 'ok', title: 'The network team says it is over',
@@ -1584,24 +1721,16 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
           carries: 'A customer ID goes out. The credits already on the account come back.',
           decides: 'Code and a versioned policy file. Never an AI, and never what the customer asks for.' },
         { route: ['coord', 'files'], strand: 'file', kind: 'info', spec: 'resolution', title: 'The credit becomes a frozen proposal',
-          text: 'The amount is frozen and a fingerprint of the exact request is stored with it. Priya is told that service should be back and that a credit of INR 50.00 has been sent for approval.',
+          text: 'The amount is frozen and a fingerprint of the exact request is stored with it. INR 50.00 is not above INR 500, so no approval is asked for. Priya is told that service should be back and that the credit is being applied.',
           carries: 'The proposal, its fingerprint, and a message for Priya.',
           decides: RULES },
-        { route: ['files', 'staffdesk', 'staff'], strand: 'ask', kind: 'human', title: 'The request waits for a person',
-          text: 'An agent sees the request at the staff desk, with the working behind the amount. Above INR 500 only a supervisor may decide.',
-          carries: 'The frozen request and its working.',
-          decides: 'A person.' },
-        { route: ['staff', 'staffdesk', 'files'], strand: 'ask', kind: 'human', title: 'The agent approves this exact request',
-          text: 'The approval must quote the fingerprint back. A decision made on an out-of-date screen cannot land on a different request. The decision and its record are written together.',
-          carries: 'The decision, the approver’s name and the fingerprint.',
-          decides: 'A person, within the limit of their role.' },
         { route: ['files', 'hands'], strand: 'file', kind: 'info', title: 'The hands check everything again',
-          text: 'The hands take nothing on trust. Does the stored request still match the fingerprint the approver saw? Is this the right kind of approval for the amount? Is a credit already on the account for this service and outage? Would the billing cycle’s cap be exceeded?',
-          carries: 'The approved proposal.',
+          text: 'The hands take nothing on trust. Does the stored request still match its fingerprint? Does this amount need an approval, and is it on record? Is a credit already on the account for this service and outage? Would the billing cycle’s cap be exceeded? Above INR 500 the proposal would first wait at the staff desk for a supervisor, who must quote the fingerprint back.',
+          carries: 'The frozen proposal.',
           decides: 'Rules, run a second time by different code.' },
         { route: ['hands', 'gate', 'bill'], strand: 'act', kind: 'ok', title: 'The credit is paid, once',
           text: 'The hands apply the credit, sending the proposal’s unique label with it. If the answer is lost, the identical request goes again and Billing replies that it is already done.',
-          carries: 'The credit, exactly as approved, with its unique label.',
+          carries: 'The credit, exactly as it was frozen, with its unique label.',
           decides: 'Rules. One credit per service per outage.', pattern: 'idem' },
         { route: ['files', 'desk', 'customer'], strand: 'ask', kind: 'ok', title: 'Priya is told the outcome',
           text: 'Priya reads that the credit has been applied, with Billing’s reference. When Priya confirms the internet works, the case closes. If nobody answers, it closes quietly after 24 hours.',
@@ -1611,7 +1740,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       tiles: [
         { kind: 'ok', label: 'The customer', text: 'INR 50.00 credited, with the policy version named in the message.' },
         { kind: 'plain', label: 'SkyLink’s systems', text: 'One credit in Billing. Never two for the same service and outage.' },
-        { kind: 'human', label: 'People', text: 'One agent’s approval. A supervisor above INR 500.' },
+        { kind: 'human', label: 'People', text: 'Nobody for INR 500 or less. A supervisor above that: a small business on INR 4,999 a month, out for 50 hours, is owed INR 520.73.' },
         { kind: 'proof', label: 'How we know', text: '4,050 of 4,050 credit cases match an independent calculation. The target is 100%.' },
       ],
     },
@@ -1818,19 +1947,19 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
           text: 'Suppose the coordinator were tricked into trying to pay anyway. Its four keys can only read. The suite tries each reading key on doors it should not open, writes to Billing and Field Service among them: all 15 attempts are refused with 403 Forbidden.',
           carries: 'An attempted write. The gateway refuses it.',
           decides: 'The gateway, by what each key is allowed to do.' },
-        { route: ['files', 'staffdesk', 'staff'], strand: 'ask', kind: 'human', title: 'What reaches a person is the policy’s amount',
-          text: 'When the outage ends, code works out what the policy owes for it: INR 50.00. That is the request an agent sees. INR 5,000 appears nowhere, because no part of the system takes an amount from a message.',
+        { route: ['coord', 'files'], strand: 'file', kind: 'info', spec: 'resolution', title: 'What is paid is the policy’s amount',
+          text: 'When the outage ends, code works out what the policy owes for it: INR 50.00, which is paid without review because it is not above INR 500. INR 5,000 appears nowhere, because no part of the system takes an amount from a message. Had the policy owed more than INR 500, a supervisor would see that amount, and no other.',
           carries: 'A frozen request for INR 50.00, with its working.',
-          decides: 'A person.' },
+          decides: 'Code and a versioned policy file.' },
         { route: [], focus: [], strand: 'file', kind: 'ok', by: 'The project’s attack suite', title: 'What the attack suite found',
           text: 'The suite plays 40 such attempts, 18 of them a second time with the obedient model. All 58 runs pass with no critical failure, and all 58 again with a real AI model reading. The first run found five real gaps, none of them critical. All five were fixed.',
           carries: 'Nothing moves.',
           decides: 'Tests, run on every change.' },
       ],
       tiles: [
-        { kind: 'ok', label: 'The customer', text: 'Told about the real outage, and owed exactly what the policy says: INR 50.00, once a person approves.' },
-        { kind: 'plain', label: 'SkyLink’s systems', text: 'Nothing changed because of the instruction. No credit without a person’s decision.' },
-        { kind: 'human', label: 'People', text: 'One ordinary approval. The attempt is in the logbook for anyone to count.' },
+        { kind: 'ok', label: 'The customer', text: 'Told about the real outage, and owed exactly what the policy says: INR 50.00.' },
+        { kind: 'plain', label: 'SkyLink’s systems', text: 'Nothing changed because of the instruction. The only credit is the policy’s own.' },
+        { kind: 'human', label: 'People', text: 'Nobody. The attempt is in the logbook for anyone to count.' },
         { kind: 'proof', label: 'How we know', text: '58 of 58 attack runs pass, with no critical failure.' },
       ],
     },
@@ -1913,11 +2042,11 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     },
     {
       id: 'staffdesk', group: 'platform', tag: 'built', name: 'Staff desk', real: 'A page served by care-api',
-      job: 'Where people approve or reject credits, pick up conversations the assistant has handed over, and see troubles that belong to no conversation.',
+      job: 'Where a supervisor approves or rejects credits above INR 500, staff pick up conversations the assistant has handed over, and everyone sees troubles that belong to no conversation.',
       holds: 'Staff passes, each with a role: agent, supervisor or operations.',
       never: 'Lets a decision land without its record. Each decision and its logbook entry are written together.',
-      fails: 'Credits and handed-over cases wait. An approval nobody gives within 72 hours lapses, the credit is not applied, and a person follows up.',
-      facts: 'Not built yet: a button to take a conversation over (the route behind it exists) and a way to reply to the customer from the desk.',
+      fails: 'Credits above INR 500 and handed-over cases wait. An approval nobody gives within 72 hours lapses, the credit is not applied, and a person follows up.',
+      facts: 'Closing a handed-over case tells the customer so in their conversation, once, with the closing note quoted as the staff member’s own. Not built yet: a button to take a conversation over (the route behind it exists) and a free reply to the customer from the desk.',
       code: 'src/skylink_care/web/staff.html · src/skylink_care/api/approvals.py',
     },
     {
@@ -1951,7 +2080,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       id: 'sp-resolution', group: 'specialists', tag: 'built', name: 'Resolution', real: 'The case study’s Resolution and Credit Agent',
       job: 'Works out whether a credit is owed and how much, from the credits already on the account and the credit policy file.',
       holds: 'A key that can read billing. It cannot write to it.',
-      never: 'Applies a credit. It proposes one with the amount frozen, for a person to approve and the hands to pay.',
+      never: 'Applies a credit. It proposes one with the amount frozen, for the hands to pay. Above INR 500 a supervisor approves it first.',
       fails: 'If Billing cannot be read, no credit is proposed and a person is asked to look at it. Nothing is guessed.',
       facts: 'Code and a versioned policy file. No AI and no machine learning touch the numbers.',
       code: 'src/skylink_care/agents/resolution.py · src/skylink_care/domain/credit.py',
@@ -2049,7 +2178,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     { n: 2, layer: 'Guardrails', here: 'On the way in: passes, rate limits, masking of personal data and a check for trick wording. On the way out: pre-written messages, quoted sources, and a check of what each message claims about the network.' },
     { n: 3, layer: 'Orchestrator', here: 'A state machine that saves each conversation’s progress and limits its steps and time.' },
     { n: 4, layer: 'Specialists', here: 'Triage, diagnostics, troubleshooting, resolution and credit, dispatch, proactive notification.' },
-    { n: 5, layer: 'Human gate', here: 'An approval bound to the exact frozen request, checked again by the hands before any money moves.' },
+    { n: 5, layer: 'Human gate', here: 'For a credit above INR 500, a supervisor’s approval bound to the exact frozen request, checked again by the hands before any money moves.' },
     { n: 6, layer: 'Tools and systems', here: 'One key for each specialist, typed connections to SkyLink’s systems, every call logged, and the credit rules in code. The machine-learning tool of this layer, a churn score, is left out on purpose: decision record 7 says why.' },
     { n: 7, layer: 'Data and ingestion', here: 'The radio and its picture of the network, the join from customer to network node, the versioned router-guide index, and the notes in the case files.' },
     { n: 8, layer: 'Trust and operations', here: 'A logbook that cannot be rewritten, redacted logs, seven evaluations, an attack suite and automated release pipelines. Dashboards, metrics and alerts are not built yet.' },
@@ -2146,12 +2275,12 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       proof: '4,050 of 4,050 cases match an independent calculation.',
     },
     {
-      q: 'Should the credit be paid?', picks: ['person'],
-      use: 'Every credit waits for an agent. Above INR 500 it waits for a supervisor. The approval is bound to a fingerprint of the exact request.',
-      why: 'The case study requires approval above INR 500. Whether smaller credits may be paid without review is an open decision, so the safe setting is on.',
-      whyNot: 'Automatic payment is one setting away. It stays off until the client decides.',
-      cost: 'Delay and staff time for every credit. An approval nobody gives within 72 hours lapses.',
-      proof: 'The attack suite tries credits nobody approved, approved by the wrong role, or approved for a different request. None gets through.',
+      q: 'Should a credit above INR 500 be paid?', picks: ['person'],
+      use: 'Above INR 500 a credit waits for a supervisor, whose approval is bound to a fingerprint of the exact request. Up to INR 500 it is paid without review, after the hands’ own checks.',
+      why: 'The case study requires approval above INR 500 and asks for nothing below it. The team decided on 23 November 2026 that smaller credits are paid without review.',
+      whyNot: 'Review of every credit is one setting away. The tests and the attack suite still run that stricter way.',
+      cost: 'Nobody looks at a small credit before it is paid: the policy file, the one-per-outage rule and the cycle cap are the only checks. Above the limit, an approval nobody gives within 72 hours lapses.',
+      proof: 'With every credit under review, the attack suite tries credits nobody approved, approved by the wrong role, or approved for a different request. None gets through. On the stack as shipped, the live check pays an INR 50.00 credit once, with no approver.',
     },
     {
       q: 'Does a technician need to come?', picks: ['rules'],
@@ -2311,8 +2440,8 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       limit: 'The keys are fixed secrets checked by a stand-in gateway. In a real deployment SkyLink’s identity system would issue short-lived ones.' },
     { title: 'One writer, and a label on every write',
       text: 'Only the hands can change anything. Each change is stored exactly as it will be sent, with a unique label, so a repeat is recognised and done once.' },
-    { title: 'A person for money, bound to the exact request',
-      text: 'A credit is paid only after a person approves a fingerprint of that very request. The approver’s role is checked twice, and the hands check the fingerprint again before paying.' },
+    { title: 'A person for larger sums, bound to the exact request',
+      text: 'A credit above INR 500 is paid only after a supervisor approves a fingerprint of that very request. The approver’s role is checked twice, and the hands check the fingerprint again before paying. Smaller credits pass the hands’ other checks and are paid without review.' },
     { title: 'An AI that can only describe',
       text: 'The AI sees masked text, returns nine fields, has no tools and gets 8 seconds. A message from a visitor who is not identified is never sent to it.',
       limit: 'Masking cannot catch digits written as words, a name in another script, or details SkyLink’s records do not hold.' },
@@ -2450,7 +2579,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
   ];
 
   const openDecisions = [
-    { id: 'D3', ask: 'May credits of INR 500 or less be paid without review? Is every affected customer credited, or only those who contacted SkyLink?', inForce: 'Every credit is reviewed. Only customers who made contact are credited.' },
+    { id: 'D3', ask: 'Is every affected customer credited, or only those who contacted SkyLink? (The other half, whether credits of INR 500 or less may be paid without review, was decided on 23 November 2026: yes.)', inForce: 'Only customers who made contact are credited.' },
     { id: 'D5', ask: 'Is the platform’s own reference the official complaint number?', inForce: 'Yes.' },
     { id: 'D9', ask: 'Is a customer ID plus four digits of the phone number enough to identify a visitor who is not signed in?', inForce: 'Yes, with limits on wrong answers. A one-time code by text would be stronger.' },
     { id: 'D10', ask: 'When an outage ends, is every waiting customer’s line tested before they are told, or a sample of lines?', inForce: 'Every line. In the load test that took 19 minutes for 9,759 waiting customers.' },
@@ -3691,6 +3820,116 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
 
   start();
 })(window);
+</script>
+<script>
+/* Stop 5, Data: which store each request reads and writes. Taken from the numbered scripts in
+   src/skylink_care/db/migrations/, the intake transaction, src/skylink_care/rag/index.py,
+   src/skylink_care/ingest/ and src/skylink_care/api/handoffs.py. */
+(function () {
+  'use strict';
+  const KIND = {
+    sql: ['SQL', 'tag'],
+    vec: ['Vector', 'tag tag--ok'],
+    sky: ['SkyLink', 'tag tag--ext'],
+    ai: ['AI provider', 'tag tag--curve'],
+    file: ['File', 'tag tag--sim'],
+    none: ['Nothing stored', 'tag'],
+  };
+  const FLOWS = [
+    {
+      id: 'intake', label: 'A first message',
+      sum: 'One transaction of four writes, and the reference goes back. No model, no SkyLink system and no vector is touched.',
+      steps: [
+        ['Front desk', 'none', 'Checks', 'The caller’s pass, the shape of the message and the limits on how often one caller may write.'],
+        ['Front desk', 'sql', 'Writes', 'contacts: the new case with its complaint reference. contact_messages: the customer’s message. inbox: a note that wakes the coordinator. actions: a queued job to register the complaint with SkyLink. All four or none.'],
+        ['Front desk', 'none', 'Answers', 'The complaint reference, at once. The assistant’s reply is worked out separately and fetched by the page a moment later.'],
+      ],
+    },
+    {
+      id: 'turn', label: 'The coordinator checks for an outage',
+      sum: 'SQL for the case and the map, SkyLink’s systems for the facts of the moment. Still no vector.',
+      steps: [
+        ['Coordinator', 'sql', 'Reads', 'inbox: the notes waiting for this case. Its notebook from the last turn. contact_messages: what the customer wrote.'],
+        ['Triage', 'ai', 'Asks', 'Only when a model is switched on and the customer is identified: the message, with personal details replaced by placeholders. Otherwise keyword rules read it and nothing leaves.'],
+        ['Triage', 'sky', 'Asks', 'Customer records: the profile and services of this customer. Used for this turn and not copied into the database.'],
+        ['Diagnostics', 'sql', 'Reads', 'service_index, address_node_map and nodes: which piece of the network serves this address. A missing, doubled or retired entry is reported as unresolved, never guessed.'],
+        ['Diagnostics', 'sky', 'Asks', 'Network Monitoring: the node’s live status. With no outage known, a remote line test as well.'],
+        ['Diagnostics', 'sql', 'Reads and writes', 'outages, outage_nodes, node_alarms and feed_state: what the radio has heard, which can prove an outage and never an all-clear. line_tests: the result of the test just run.'],
+        ['Coordinator', 'sql', 'Writes', 'contact_messages: the reply, built from a template. contacts: status, node and outage. actions: proposals such as the repair ticket. timers: when to look again. audit_log: every step. Its notebook.'],
+      ],
+    },
+    {
+      id: 'advice', label: 'Router advice',
+      sum: 'The only request that searches by vector, and it searches guide text alone.',
+      steps: [
+        ['Coordinator', 'none', 'Decides', 'Advice is allowed only when the node is confirmed clear and the customer’s line has passed its test. Rules decide that, from the turn’s evidence.'],
+        ['Troubleshooting', 'sky', 'Uses', 'The router model on the service record, which triage read from customer records earlier in the turn. What the customer writes can never change which guide is used.'],
+        ['Troubleshooting', 'none', 'Reads the words', 'Keyword rules name the kind of fault: no service, Wi-Fi or slow speed. That is the section to prefer.'],
+        ['Troubleshooting', 'vec', 'Reads', 'guide_index: which build is live and which embedder made it. guide_chunks: the rows for this router model, the four safe sections only, ranked by matching words and by closeness of their vectors to the vector of the customer’s message.'],
+        ['Troubleshooting', 'none', 'Checks', 'The passage is checked again for unsafe instructions, and that it comes from the guide for this customer’s router.'],
+        ['Coordinator', 'sql', 'Writes', 'contact_messages: the numbered steps word for word, with their source, such as “guide-tg-fg7 §wifi v1.3”. audit_log: the search and what it found.'],
+      ],
+    },
+    {
+      id: 'credit', label: 'An outage ends and a credit is due',
+      sum: 'An announcement in, a calculation from a file, and one payment out. Every hop is a row in SQL.',
+      steps: [
+        ['Radio', 'sky', 'Asks', 'The network team’s stream: the outage is resolved.'],
+        ['Radio', 'sql', 'Writes', 'outages: resolved, with its time. node_episodes: closed. inbox: a wake-up note for every case that waited. actions: “it is over” texts. feed_state: the new position. One transaction.'],
+        ['Diagnostics', 'sky', 'Asks', 'Network Monitoring, afresh: the node is confirmed clear.'],
+        ['Resolution', 'sky', 'Asks', 'Billing, with a key that can only read: the credits already on the account.'],
+        ['Resolution', 'file', 'Reads', 'The versioned credit policy file. Code works out the amount. No model and no vector takes part.'],
+        ['Resolution', 'sql', 'Writes', 'actions: the credit, frozen with its fingerprint. approvals: a request for a supervisor, only when the amount is above INR 500. contact_messages: what the customer is told.'],
+        ['Hands', 'sql', 'Reads', 'actions: the frozen request. approvals: the supervisor’s decision, where one is required.'],
+        ['Hands', 'sky', 'Asks, then writes', 'Billing: the account once more, then the credit with its unique label, so a repeat is recognised and paid once.'],
+        ['Hands', 'sql', 'Writes', 'actions: the outcome and Billing’s reference. inbox: a note that wakes the case, which then tells the customer in contact_messages.'],
+      ],
+    },
+    {
+      id: 'close', label: 'Staff close a case',
+      sum: 'Three writes in one transaction, and the customer sees the result on their next look.',
+      steps: [
+        ['Staff desk', 'sql', 'Reads', 'handoffs: the queue of cases waiting for a person. contact_messages and audit_log: the conversation and its logbook.'],
+        ['Staff desk', 'sql', 'Writes', 'handoffs: done, by whom, with the closing note. contact_messages: the customer is told the case was dealt with, the note quoted as the staff member’s own. audit_log: who closed it, with contact details in the note masked. All three or none.'],
+        ['Customer’s page', 'sql', 'Reads', 'contact_messages, about once a second: the new message appears. The customer is not told who closed the case.'],
+      ],
+    },
+  ];
+
+  const el = (tag, cls, text) => {
+    const made = document.createElement(tag);
+    if (cls) made.className = cls;
+    if (text !== undefined) made.textContent = text;
+    return made;
+  };
+
+  function show(flow) {
+    document.getElementById('dflow-sum').textContent = flow.sum;
+    document.getElementById('dflow-steps').replaceChildren(...flow.steps.map(([who, kind, verb, what]) => {
+      const item = el('li');
+      const where = el('p', 'dsteps__where');
+      where.append(el('span', KIND[kind][1], KIND[kind][0]), el('em', null, verb));
+      item.append(el('b', null, who), where, el('span', null, what));
+      return item;
+    }));
+  }
+
+  const pick = document.getElementById('dflow-pick');
+  if (!pick) return;
+  FLOWS.forEach((flow, index) => {
+    const label = el('label');
+    const input = el('input');
+    input.type = 'radio';
+    input.name = 'dflow';
+    input.id = 'dflow-' + flow.id;
+    input.value = flow.id;
+    input.checked = index === 0;
+    input.addEventListener('change', () => show(flow));
+    label.append(input, el('span', null, flow.label));
+    pick.append(label);
+  });
+  show(FLOWS[0]);
+})();
 </script>
 </body>
 </html>
