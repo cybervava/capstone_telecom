@@ -119,7 +119,7 @@ async function architectureSlide(pres) {
     talk: [
       "This is the system as built. On the left, customers, the contact centre and staff. In the middle, our care platform in the cloud. On the right, SkyLink's six systems behind a gateway, simulated here because the supplied mock APIs were not received.",
       "Two worlds meet. Customer contacts are request and response, the blue lines. The network speaks as a stream of numbered events, the orange dashes. They meet in one database, and every hand-over between the parts is a row in it.",
-      "Four things to notice. One: the API gives the complaint reference after one database write, before any model or SkyLink system is called. Two: the feed consumer applies each network event once. Three: the executor is the only writer; the specialist agents hold read-only keys and can only propose. Four: the staff desk is the human gate for a credit above 500 rupees.",
+      "Four things to notice. One: the API gives the complaint reference after one database write, before any model or SkyLink system is called. Two: the feed consumer applies each network event once. Three: the executor is the only writer; the specialist agents hold read-only keys and can only propose. Four: the staff desk is the human gate for a credit above 500 dollars.",
       "The language model sits outside. It gets masked text, returns nine fields, and is off by default.",
     ],
     sources: "presentation/G3_Telco_Architecture.pdf, sections 1, 2 and 4 and Figure 1; docs/EXECUTION_PLAN.md, section 3; README.md, \"Two things that are stand-ins\" and \"How it is put together\".",
@@ -172,7 +172,7 @@ async function cloudSlide(pres) {
   const factH = G.BODY_B - factY;
   const facts = [
     { w: 5.4, value: "AWS or Azure", label: "Nothing is tied to one cloud: containers and PostgreSQL with pgvector run the same on Azure. The team had access to AWS: the shortest safe route (client decision D4).", size: 20 },
-    { w: 3.2, value: "USD 1.90 a day", label: "the demonstration, at list prices in Mumbai; the model's fees are not in it", size: 20 },
+    { w: 3.2, value: "$1.90 a day", label: "the demonstration, at list prices in Mumbai; the model's fees are not in it", size: 20 },
     { w: 0, value: "Pilot cost", label: "not established: it needs SkyLink's real volumes", size: 20 },
   ];
   let fx = G.MX;

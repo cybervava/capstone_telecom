@@ -51,6 +51,8 @@ export const run = {
   history: readJson(HISTORY, []),
   shots: [],
   failed: [],
+  // Who read the customers' messages in this run: the stack's CARE_LLM_PROVIDER.
+  reader: 'unknown',
   // What this run changed on the simulator, to end it again whatever happens.
   outages: new Set(),
   lines: new Set(),
@@ -146,6 +148,7 @@ export async function snap(page, file, meta, { crop = null, fullPage = true, wid
     customer_id: meta.customer ?? null,
     captured_at: `${now.toISOString()} (${istTime(now)} IST, ${istDate(now)})`,
     pixels: `${header.readUInt32BE(16)} x ${header.readUInt32BE(20)}`,
+    read_by: run.reader,
     notes: [meta.notes, cramped].filter(Boolean).join(' '),
   });
   say(`  saved ${file}`);

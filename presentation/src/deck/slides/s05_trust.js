@@ -13,13 +13,13 @@ const LOCKS = [
   { icon: "LuBot", name: "Model", body: "No tools. Nine fields come back, and nothing it writes reaches a customer." },
   { icon: "LuQuote", name: "Output", body: "35 pre-written conversation messages, steps quoted with their source, a reply's claim about the network checked." },
   { icon: "LuKeyRound", name: "Action", body: "One key for each agent identity. Only the executor writes. Amounts and limits are in code." },
-  { icon: "LuUserCheck", name: "Human gate", body: "A supervisor approves the exact frozen credit above INR 500.", purple: true },
+  { icon: "LuUserCheck", name: "Human gate", body: "A supervisor approves the exact frozen credit above $500.", purple: true },
   { icon: "LuRepeat", name: "Loop", body: "At most 12 decisions a run and 30 seconds a step, then a person." },
 ];
 
 /** Slide 14: the guardrails, and the attack suite. */
 async function guardrailsSlide(pres) {
-  const slide = mainSlide(pres, SEGMENT, "The guardrails are in code, and 58 of 58 attack runs failed to get past them");
+  const slide = mainSlide(pres, SEGMENT, "The guardrails are in code, and 61 of 61 attack runs failed to get past them");
 
   const top = G.BODY_Y;
   const leftW = 7.05;
@@ -40,8 +40,8 @@ async function guardrailsSlide(pres) {
     x: rx + 0.24,
     y: top + 0.42,
     w: rw - 0.48,
-    value: "58 of 58",
-    label: "attack runs passed, with no critical failure. 40 attacks; the 18 made of words are played twice, once read by a scripted model that obeys the attacker.",
+    value: "61 of 61",
+    label: "attack runs passed, with no critical failure. 43 attacks; the 18 made of words are played twice, once read by a scripted model that obeys the attacker.",
     size: 48,
     valueH: 0.82,
     labelH: 1.0,
@@ -51,24 +51,24 @@ async function guardrailsSlide(pres) {
   kit.text(
     slide,
     kit.bulletRuns(
-      ["First run: 50 of 56. Five gaps found, all closed.", "27 checks remove a control to prove the suite can fail.", "Live model, gpt-5.4-mini: 58 of 58, one run on 17 November, not repeated since."],
+      ["First run: 50 of 56. Five gaps found, all closed.", "31 checks remove a control to prove the suite can fail.", "Live model, gpt-5.4-mini: 61 of 61, run again on 25 November."],
       { color: HEX.darkText },
     ),
     { x: rx + 0.24, y: top + 2.36, w: rw - 0.48, h: 1.5, fontSize: 14, objectName: "Attack suite facts" },
   );
   const tagW = kit.tag(slide, "measured", rx + 0.24, top + 3.96);
   kit.text(slide, "run with every credit under review", { x: rx + 0.24 + tagW + 0.1, y: top + 3.96, w: rw - 0.6 - tagW, h: 0.25, fontSize: 12, color: HEX.darkMuted, valign: "middle", objectName: "Attack suite setting" });
-  kit.sourceLine(slide, "Sources: evals/reports/attack_suite.md (22 November 2026), attack_suite_openai.md (17 November 2026); presentation/G3_Telco_Checklists.pdf, checklist 1. The suite shows that these 40 attacks fail, no more.");
+  kit.sourceLine(slide, "Sources: evals/reports/attack_suite.md and attack_suite_openai.md (25 November 2026); presentation/G3_Telco_Checklists.pdf, checklist 1. The suite shows that these 43 attacks fail, no more.");
 
   speakerNotes(slide, {
     role: ROLE,
     seconds: 45,
     talk: [
-      "Your checklist says limits must be enforced in code, never by a prompt. These are the locks: details masked before a model reads, a model with no tools, pre-written messages with checked claims, one key per agent with one writer, a supervisor for credits above 500 rupees, and a run that stops after twelve decisions.",
-      "Then we attacked it. Forty attacks, 58 runs, eighteen of them read by a scripted model that obeys the attacker. All 58 pass, with no critical failure. A suite shows these attacks fail. It cannot show that nothing would succeed.",
-      "If the panel asks which setting it ran on: the suite ran with every credit under review, which is the code's default. On the setting we ship, a credit up to 500 rupees is applied without a person, and the suite has not been re-cut or run for that setting.",
+      "Your checklist says limits must be enforced in code, never by a prompt. These are the locks: details masked before a model reads, a model with no tools, pre-written messages with checked claims, one key per agent with one writer, a supervisor for credits above 500 dollars, and a run that stops after twelve decisions.",
+      "Then we attacked it. Forty-three attacks, 61 runs, eighteen of them read by a scripted model that obeys the attacker. All 61 pass, with no critical failure. A suite shows these attacks fail. It cannot show that nothing would succeed.",
+      "If the panel asks which setting it ran on: the suite ran with every credit under review, which is the code's default. On the setting we ship, a credit up to 500 dollars is applied without a person, and the suite has not been re-cut or run for that setting.",
     ],
-    sources: "evals/reports/attack_suite.md (run of 22 November 2026: 40 attacks, 58 runs, 58 passed, 0 critical; every credit under review); evals/reports/attack_suite_openai.md (17 November 2026: 58 of 58 with gpt-5.4-mini, not repeated since); presentation/G3_Telco_Evaluation.pdf, sections 6.1 to 6.3 (50 of 56 first, five gaps closed, 27 checks); presentation/G3_Telco_Checklists.pdf, items 1.1 to 1.10; src/skylink_care/guardrails/claims.py (35 templates).",
+    sources: "evals/reports/attack_suite.md (run of 25 November 2026: 43 attacks, 61 runs, 61 passed, 0 critical; every credit under review); evals/reports/attack_suite_openai.md (25 November 2026: 61 of 61 with gpt-5.4-mini, 29 of 29 readings its own; 58 of 58 on 17 November); presentation/G3_Telco_Evaluation.pdf, sections 6.1 to 6.3 (50 of 56 first, five gaps closed, 31 checks); presentation/G3_Telco_Checklists.pdf, items 1.1 to 1.10; src/skylink_care/guardrails/claims.py (35 templates).",
   });
 }
 
@@ -153,7 +153,7 @@ async function complianceSlide(pres) {
     valign: "middle",
     objectName: "Met in part",
   });
-  kit.sourceLine(slide, "Sources: presentation/G3_Telco_Checklists.pdf (sections 0 and 6; state at commit b9c70ef, 24 November 2026); evals/reports/attack_suite.md, attack I2; evals/reports/segment_parity.md.");
+  kit.sourceLine(slide, "Sources: presentation/G3_Telco_Checklists.pdf (sections 0 and 6; state at commit 772467c, 25 November 2026); evals/reports/attack_suite.md, attack I2; evals/reports/segment_parity.md.");
 
   speakerNotes(slide, {
     role: ROLE,
@@ -217,7 +217,7 @@ async function surgeSlide(pres) {
   const rx = G.MX + leftW + 0.3;
   const rw = G.MX + G.CW - rx;
   const placed = await kit.shot(slide, "13-operations-queue.png", { x: rx, y: top, w: rw, crop: { left: 1250, top: 590, width: 910, height: 370 } });
-  kit.caption(slide, "The staff desk signed in as operations: the backlog line and the operations queue (image 13; local stack, 24 November 2026).", { x: rx, y: placed.y + placed.h + 0.05, w: rw, h: 0.4 });
+  kit.caption(slide, "The staff desk signed in as operations: the backlog line and the operations queue (image 13; local stack, 26 November 2026).", { x: rx, y: placed.y + placed.h + 0.05, w: rw, h: 0.4 });
   const listY = placed.y + placed.h + 0.52;
   const listH = G.BODY_B - listY;
   const builtW = 3.5;
@@ -259,7 +259,7 @@ async function drillSlide(pres) {
   const reply = await kit.shot(slide, file, { x: G.MX, y: top, w: 4.4, crop: { left: 596, top: 330, width: 800, height: 480 } });
   const docket = await kit.shot(slide, file, { x: G.MX + 4.6, y: top, w: 2.75, crop: { left: 42, top: 566, width: 470, height: 304 } });
   kit.text(slide, "The reference still came at once. The network chip says: not verified.", { x: docket.x, y: docket.y + docket.h + 0.1, w: 2.75, h: 0.76, fontSize: 14, objectName: "Docket reading" });
-  kit.caption(slide, "Image 07, two crops: the Network Monitoring API is refusing every call. Local stack, 24 November 2026.", { x: G.MX, y: reply.y + reply.h + 0.05, w: 7.35, h: 0.26 });
+  kit.caption(slide, "Image 07, two crops: the Network Monitoring API is refusing every call. Local stack, 26 November 2026.", { x: G.MX, y: reply.y + reply.h + 0.05, w: 7.35, h: 0.26 });
 
   const lowY = reply.y + reply.h + 0.42;
   const lowH = G.BODY_B - lowY;

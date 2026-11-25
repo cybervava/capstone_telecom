@@ -75,9 +75,9 @@ VOLUME_HEAD = (
     "Outage contacts a month (assumption)",
     "Unnecessary visits a year",
     "Annual baseline waste",
-    "the same, in INR million",
+    "the same, in $ million",
     "Annual saving at the base-case reduction",
-    "the same, in INR million",
+    "the same, in $ million",
 )
 VOLUME_NOTES = (
     "Outage contacts × share ending in an unnecessary visit × months in a year × cost of a "
@@ -94,24 +94,24 @@ CASE_ROWS = (
     CaseRow("base", "Unnecessary visits a month, baseline",
             "={c}{calls}*Unnecessary_visit_rate", s.COUNT),
     CaseRow("avoided", "Visits avoided a month", "={c}{base}*{c}{red}", s.COUNT),
-    CaseRow("truck", "Saving from avoided visits", "={c}{avoided}*Visit_cost", s.INR,
+    CaseRow("truck", "Saving from avoided visits", "={c}{avoided}*Visit_cost", s.USD,
             key="case_{case}_visits"),
-    CaseRow("call", "Saving from avoided calls (cashable)", "={saving_calls}", s.INR,
+    CaseRow("call", "Saving from avoided calls (cashable)", "={saving_calls}", s.USD,
             kind="link", how="Benefits sheet; the same in every case"),
     CaseRow("other", "Repeat contacts and churn", "={saving_repeat}+{benefit_churn}",
-            s.INR_ZERO, how="Benefits sheet; zero in the base case"),
-    CaseRow("cost", "Recurring cost", "={cost_recurring}", s.INR, kind="link",
+            s.USD_ZERO, how="Benefits sheet; zero in the base case"),
+    CaseRow("cost", "Recurring cost", "={cost_recurring}", s.USD, kind="link",
             how="Costs sheet; the same in every case"),
-    CaseRow("net", "Net benefit a month", "={c}{truck}+{c}{call}+{c}{other}-{c}{cost}", s.INR,
+    CaseRow("net", "Net benefit a month", "={c}{truck}+{c}{call}+{c}{other}-{c}{cost}", s.USD,
             strong=True, key="case_{case}_net"),
-    CaseRow("year", "Net benefit a year", "={c}{net}*Months_per_year", s.INR),
-    CaseRow("once", "One-time implementation cost", "={cost_one_time}", s.INR, kind="link",
+    CaseRow("year", "Net benefit a year", "={c}{net}*Months_per_year", s.USD),
+    CaseRow("once", "One-time implementation cost", "={cost_one_time}", s.USD, kind="link",
             how="Costs sheet"),
     CaseRow("payback", "Simple payback, months", '=IF({c}{net}>0,{c}{once}/{c}{net},"none")',
             s.RATE_2, strong=True, key="case_{case}_payback",
             how="One-time cost ÷ net benefit a month; excludes discounting and tax"),
     CaseRow("first", "Net benefit of the first year, after the one-time cost",
-            "={c}{year}-{c}{once}", s.INR),
+            "={c}{year}-{c}{once}", s.USD),
     CaseRow("target", "Is the assumed reduction at or above the brief's target?",
             '=IF({c}{red}>=Target_reduction,"Yes","No")', s.TEXT,
             how="An assumed input compared with the brief's target; not a result"),
@@ -150,10 +150,10 @@ def _volume_table(ws: Worksheet, refs: Refs, row: int) -> int:
         r = row + number
         s.put(ws, f"A{r}", f"={name}", "link", fmt=s.COUNT, align="left")
         s.put(ws, f"B{r}", f"=A{r}*Unnecessary_visit_rate*Months_per_year", "calc", fmt=s.COUNT)
-        s.put(ws, f"C{r}", f"=B{r}*Visit_cost", "calc", fmt=s.INR)
-        s.put(ws, f"D{r}", f"=C{r}", "calc", fmt=s.INR_M)
-        s.put(ws, f"E{r}", f"=C{r}*Visit_reduction", "calc", fmt=s.INR)
-        s.put(ws, f"F{r}", f"=E{r}", "calc", fmt=s.INR_M)
+        s.put(ws, f"C{r}", f"=B{r}*Visit_cost", "calc", fmt=s.USD)
+        s.put(ws, f"D{r}", f"=C{r}", "calc", fmt=s.USD_M)
+        s.put(ws, f"E{r}", f"=C{r}*Visit_reduction", "calc", fmt=s.USD)
+        s.put(ws, f"F{r}", f"=E{r}", "calc", fmt=s.USD_M)
         refs.keep(f"volume_{number}", ws, f"A{r}")
         refs.keep(f"volume_{number}_waste", ws, f"C{r}")
         refs.keep(f"volume_{number}_saving", ws, f"E{r}")
@@ -185,11 +185,11 @@ REDUCTION_HEAD = (
 REDUCTION_ROWS = (
     CaseRow("red", "Reduction in unnecessary visits", "={cut}", s.PCT_0, kind="link"),
     CaseRow("visits", "Avoided-visit benefit a month",
-            "=Outage_calls_month*Unnecessary_visit_rate*{c}{red}*Visit_cost", s.INR,
+            "=Outage_calls_month*Unnecessary_visit_rate*{c}{red}*Visit_cost", s.USD,
             how="Outage calls × share × reduction × cost of a visit", key="sens_{case}_visits"),
     CaseRow("net", "Net benefit, including the call saving and the recurring cost",
             "={c}{visits}+{saving_calls}+{saving_repeat}+{benefit_churn}-{cost_recurring}",
-            s.INR, strong=True, key="sens_{case}_net",
+            s.USD, strong=True, key="sens_{case}_net",
             how="Benefits and Costs sheets supply the call saving and the recurring cost"),
     CaseRow("payback", "Simple payback, months",
             '=IF({c}{net}>0,{cost_one_time}/{c}{net},"none")', s.RATE_2,
@@ -271,7 +271,7 @@ def _two_way(ws: Worksheet, refs: Refs, row: int) -> int:
         s.put(ws, f"A{r}", f"={name}", "link", fmt=s.COUNT, align="left")
         for column in "BCDEF":
             cells = Cells(refs, ws.title, {"r": r, "c": column, "head": head})
-            s.put(ws, f"{column}{r}", TWO_WAY_CELL.format_map(cells), "calc", fmt=s.INR)
+            s.put(ws, f"{column}{r}", TWO_WAY_CELL.format_map(cells), "calc", fmt=s.USD)
             refs.keep(f"two_way_{number}_{column}", ws, f"{column}{r}")
     last = head + len(i.VOLUME_NAMES)
     loss = CellIsRule(operator="lessThan", formula=["0"], fill=s.fill(s.WARN_SOFT))

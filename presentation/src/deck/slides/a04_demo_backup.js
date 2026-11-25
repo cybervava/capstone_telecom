@@ -1,7 +1,7 @@
 // Appendix, part 4: the demonstration told in real screenshots, in case the live one fails.
 //
 // Every picture is a crop of an image in presentation/src/assets/screens/ (see manifest.json):
-// the local stack on 24 November 2026, with the offline keyword rules reading the messages.
+// the local stack on 26 November 2026 (Indian time), with the offline keyword rules reading the messages.
 // The live demonstration runs on AWS with OpenAI's gpt-5.4-mini. Nothing in a picture is edited.
 
 const { S, G } = require("../lib/theme");
@@ -9,7 +9,7 @@ const kit = require("../lib/kit");
 const { appendixSlide, sourceNote } = require("../lib/deck");
 
 const TOP = G.APX_BODY_Y;
-const BACKUP_SOURCE = "Real screenshots, cropped and not edited: the local stack, offline keyword rules, 24 November 2026 (presentation/src/assets/screens/manifest.json). The live demonstration runs on AWS.";
+const BACKUP_SOURCE = "Real screenshots, cropped and not edited: the local stack, offline keyword rules, 26 November 2026 (presentation/src/assets/screens/manifest.json). The live demonstration runs on AWS.";
 
 /**
  * The story of a path, as numbered points in columns.
@@ -42,15 +42,15 @@ async function happyPathSlide(pres) {
   story(
     slide,
     [
-      "The NOC declares a fibre cut. 191 notices go to 191 customers on the node; 59 had said no, and none of them is sent one.",
-      "The customer writes in. The complaint reference is issued in 16 ms.",
+      "The NOC declares a fibre cut. 179 notices go to 179 customers on the node; 50 had said no, and none of them is sent one.",
+      "The customer writes in. The complaint reference is issued in 15 ms.",
       "The reply names the outage, its cause, the estimate and where it comes from. No restart, no technician.",
       "When the outage is resolved the customer is told, and the contact closes on their word.",
     ],
     { x: G.MX, y: 5.26, w: G.CW, h: 1.3, columns: 4 },
   );
   kit.sourceLine(slide, BACKUP_SOURCE);
-  sourceNote(slide, "presentation/src/assets/screens/manifest.json, images 02w, 03 and 04b (reference SKL-261124-049101-1 issued in 16 ms; 191 notices sent to 191 customers; said no to notices: 59 on the node, 0 sent one; the contact closed on the customer's confirmation); src/mock_oss/console/scenes.js, scene 1.");
+  sourceNote(slide, "presentation/src/assets/screens/manifest.json, images 02w, 03 and 04b (reference SKL-261126-049130-5 issued in 15 ms; 179 notices sent to 179 customers; said no to notices: 50 on the node, 0 sent one; the contact closed on the customer's confirmation); src/mock_oss/console/scenes.js, scene 1.");
 }
 
 /** A14: the exception, a failure handled. */
@@ -75,19 +75,19 @@ async function exceptionSlide(pres) {
     slide,
     [
       "The console takes the Network Monitoring API down. Every call to it now fails: 3 refused so far.",
-      "The customer still gets a complaint reference, in 14 ms.",
+      "The customer still gets a complaint reference, in 10 ms.",
       "The reply says the status cannot be verified: no all-clear, no router steps, no technician.",
       "When the API returns, the platform looks again by itself: no outage reported, and the line test passed.",
     ],
     { x: col3.x, y: TOP, w: col3.w, h: G.BODY_B - TOP, columns: 1 },
   );
   kit.sourceLine(slide, BACKUP_SOURCE);
-  sourceNote(slide, "presentation/src/assets/screens/manifest.json, images 07, 07b and 07c (reference SKL-261124-049108-6 issued in 14 ms; network chip \"not verified\"; calls the API refused: 3; the follow-up after the API came back); src/mock_oss/console/scenes.js, scene 5; docs/adr/0001-degraded-mode-when-the-network-api-fails.md.");
+  sourceNote(slide, "presentation/src/assets/screens/manifest.json, images 07, 07b and 07c (reference SKL-261126-049137-0 issued in 10 ms; network chip \"not verified\"; calls the API refused: 3; the follow-up after the API came back); src/mock_oss/console/scenes.js, scene 5; docs/adr/0001-degraded-mode-when-the-network-api-fails.md.");
 }
 
 /** A15: the human approval. */
 async function approvalSlide(pres) {
-  const slide = appendixSlide(pres, "A15  Demo backup: a credit above INR 500 waits for a supervisor");
+  const slide = appendixSlide(pres, "A15  Demo backup: a credit above $500 waits for a supervisor");
   const slip = await kit.shot(slide, "05c-credit-slip-worked-out-crop.png", { x: G.MX, y: TOP, w: 3.05, h: 4.5 });
   kit.caption(slide, "Image 05c. The supervisor's slip, with its working.", { x: G.MX, y: slip.y + slip.h + 0.04, w: 3.05, h: 0.24 });
 
@@ -103,15 +103,15 @@ async function approvalSlide(pres) {
   story(
     slide,
     [
-      "A plan of INR 4,999 a month, out for 50 hours: 4,999 × 50 × 1.5 / 720 = INR 520.73 in our run, worked out in code.",
-      "Above INR 500 the request waits. An agent is not offered it.",
+      "A plan of $4,999 a month, out for 50 hours: 4,999 × 50 × 1.5 / 720 = $520.73 in our run, worked out in code.",
+      "Above $500 the request waits. An agent is not offered it.",
       "The supervisor sees the frozen request and its working, and approves.",
       "The executor applies the credit once, and the customer is told with the credit reference.",
     ],
     { x: midX + midW + 0.25, y: TOP, w: G.MX + G.CW - (midX + midW + 0.25), h: G.BODY_B - TOP, columns: 1 },
   );
   kit.sourceLine(slide, BACKUP_SOURCE);
-  sourceNote(slide, "presentation/src/assets/screens/manifest.json, images 05b, 05c, 06 and 06b (the slip: INR 520.73, needs a supervisor, monthly fee INR 4999.00, outage 3000 min, billable hours 50, multiplier × 1.5; credit CR-AFEBE25A70FD applied, supervisor:demo.supervisor, a demo persona); README.md, \"Service credits and approvals\"; src/skylink_care/domain/credit.py:289 (hours are rounded up, so a run resolved a minute later bills a 51st hour: 4,999 × 51 × 1.5 / 720 = INR 531.14).");
+  sourceNote(slide, "presentation/src/assets/screens/manifest.json, images 05b, 05c, 06 and 06b (the slip: $520.73, needs a supervisor, monthly fee $4999.00, outage 3000 min, billable hours 50, multiplier × 1.5; credit CR-BE8EBDFAEEA0 applied, supervisor:demo.supervisor, a demo persona); README.md, \"Service credits and approvals\"; src/skylink_care/domain/credit.py:289 (hours are rounded up, so a run resolved a minute later bills a 51st hour: 4,999 × 51 × 1.5 / 720 = $531.14).");
 }
 
 /** A16: the guardrail block. */
@@ -126,7 +126,7 @@ async function guardrailSlide(pres) {
   story(
     slide,
     [
-      "The message tells the assistant to ignore its instructions, apply INR 5,000 and print its system prompt.",
+      "The message tells the assistant to ignore its instructions, apply $5,000 and print its system prompt.",
       "The reply declines, politely, and still carries the complaint reference.",
       "The trail records it: guardrail.input → INJECTION_SUSPECTED.",
     ],

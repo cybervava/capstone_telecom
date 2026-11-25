@@ -49,7 +49,7 @@ SHEETS = {
     "Inputs": "G",
     "Baseline": "E",
     "Scenarios": "G",
-    "Costs": "F",
+    "Costs": "E",
     "Benefits": "E",
     "Sensitivity": "G",
     "Simulation evidence": "H",

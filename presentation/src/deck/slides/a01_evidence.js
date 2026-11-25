@@ -66,12 +66,12 @@ async function scorecardSlide(pres) {
       { text: "The caveats. ", options: { bold: true } },
       { text: "Truck rolls: what staff decide for an insisting customer, no replay can measure. Surge: one machine, the code before one later fix; 99.5% accepted was our own pass line. " },
       { text: "The test suite. ", options: { bold: true } },
-      { text: `${TESTS.count} tests, none failed, ${TESTS.coverage} coverage with branches counted (gate ${TESTS.gate}): GitLab pipeline ${TESTS.pipeline}, commit ${TESTS.commit}, ${TESTS.date}.` },
+      { text: `${TESTS.count} tests, none failed, ${TESTS.coverage} coverage with branches counted (gate ${TESTS.gate}): ${TESTS.where}, commit ${TESTS.commit}, ${TESTS.date}.` },
     ],
     { x: G.MX, y: 5.86, w: G.CW, h: 0.72, fontSize: 12, color: S.ink2, valign: "middle", objectName: "Scorecard reading" },
   );
   kit.sourceLine(slide, "Sources: presentation/G3_Telco_Evaluation.pdf, section 1; evals/reports/ (outage_detection, truck_rolls, credit_policy, curveball); loadtest/reports/surge-brief-before-fix.md. Stand-in data.");
-  sourceNote(slide, "presentation/G3_Telco_Evaluation.pdf, sections 1, 2.3 and 3.4; evals/reports/outage_detection.md, truck_rolls.md, credit_policy.md, curveball.md (runs of 17 November 2026); loadtest/reports/surge-brief-before-fix.md (16 November 2026); tests/e2e/test_outage_journey.py (every customer of one node shares one incident, each with a reference of their own; the test opens the contacts one after another); tests/integration/test_episodes.py (40 simultaneous reports open one episode); GitLab pipeline 3106633060, job test.");
+  sourceNote(slide, "presentation/G3_Telco_Evaluation.pdf, sections 1, 2.3 and 3.4; evals/reports/outage_detection.md, truck_rolls.md, credit_policy.md, curveball.md (runs of 25 November 2026); loadtest/reports/surge-brief-before-fix.md (16 November 2026); tests/e2e/test_outage_journey.py (every customer of one node shares one incident, each with a reference of their own; the test opens the contacts one after another); tests/integration/test_episodes.py (40 simultaneous reports open one episode); the test suite on one laptop, commit 772467c, 25 November 2026 (the last GitLab pipeline, 3106633060 of 24 November, ran the 2,689 tests there were then).");
 }
 
 const LAYERS = [
@@ -79,7 +79,7 @@ const LAYERS = [
   ["2  Input and output guardrails", "In: a signed pass, rate limits, masking before any model call, a check for wording aimed at the assistant. Out: pre-written messages, quoted sources, checked claims about the network.", "BUILT"],
   ["3  Orchestrator", "A LangGraph state machine that saves each conversation's progress in PostgreSQL. The supervisor is plain code: 12 decisions a run, then a person.", "BUILT"],
   ["4  Specialist agents", "Triage; troubleshooting with citations; diagnostics, resolution and credit, dispatch; the executor as the Action agent; proactive notification with the feed consumer.", "BUILT"],
-  ["5  Human approval gate", "A supervisor approves a credit above INR 500, bound to the hash of the frozen request and checked again by the executor. Staff can take any conversation over.", "BUILT"],
+  ["5  Human approval gate", "A supervisor approves a credit above $500, bound to the hash of the frozen request and checked again by the executor. Staff can take any conversation over.", "BUILT"],
   ["6  Tools and systems", "Typed connections to six systems, one gateway key for each agent identity. Rules in code. The knowledge index holds the router guides only; the credit policy is a versioned file applied by code.", "BUILT, NO ML"],
   ["7  Data and ingestion", "Streaming: the feed consumer and its picture of the network. Batch: the join from customer to service to node, and the versioned guide index.", "BUILT"],
   ["8  Trust and operations", "A key for each agent, a managed secret store, an audit log the database refuses to rewrite, seven evaluations, one of them an attack suite. Not built: metrics, dashboards, alerts, a runbook.", "IN PART"],
@@ -99,7 +99,7 @@ async function layersSlide(pres) {
 }
 
 const DIAGRAM_NOTES = [
-  { head: "Four programs, one image", body: "The API, the orchestrator, the feed consumer and the executor share one PostgreSQL database." },
+  { head: "Five programs, one image", body: "The API, the orchestrator, the feed consumer, the executor and the MCP server (not drawn) share one PostgreSQL database." },
   { head: "Keys", body: "The API holds no SkyLink key. The specialists hold four read-only keys. The executor holds the only key that writes." },
   { head: "Stand-in", body: "SkyLink's side is one simulator, mock-oss, playing the gateway and the six systems." },
 ];

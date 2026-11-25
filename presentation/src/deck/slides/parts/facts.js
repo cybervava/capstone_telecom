@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 
 // The brief's four checklists, as counted in presentation/G3_Telco_Checklists.pdf, section 0
-// (state at commit b9c70ef, 24 November 2026).
+// (state at commit 772467c, 25 November 2026).
 const CHECKLISTS = [
   { name: "Guardrails", items: 10, ticked: 10, part: 0, open: 0 },
   { name: "Security", items: 8, ticked: 5, part: 3, open: 0 },
@@ -43,8 +43,9 @@ function checkAgainstChecklistsDocument() {
   }
 }
 
-// The test suite, as run by GitLab pipeline 3106633060, job test, commit b9c70ef, on
-// 24 November 2026 (presentation/G3_Telco_Evaluation.pdf, section 2.3).
-const TESTS = { count: "2,689", failed: 0, coverage: "96.0%", gate: "80%", pipeline: "3106633060", commit: "b9c70ef", date: "24 November 2026" };
+// The test suite, as run on one laptop on the code of this submission, commit 772467c, on
+// 25 November 2026 (presentation/G3_Telco_Evaluation.pdf, section 2.3). The last pipeline,
+// GitLab 3106633060 of 24 November, ran the 2,689 tests there were before the review's changes.
+const TESTS = { count: "2,902", failed: 0, coverage: "96%", gate: "80%", where: "one laptop", commit: "772467c", date: "25 November 2026" };
 
 module.exports = { CHECKLISTS, checklistTotals, checkAgainstChecklistsDocument, TESTS };

@@ -2,7 +2,7 @@
 //
 // The live demonstration runs on AWS with OpenAI's gpt-5.4-mini reading the messages. The
 // screenshots on these slides are of the local stack with the offline keyword rules, taken on
-// 24 November 2026 (presentation/src/assets/screens/manifest.json). Say which is which.
+// 26 November 2026 (presentation/src/assets/screens/manifest.json). Say which is which.
 
 const { S, HEX, FONT, G } = require("../lib/theme");
 const kit = require("../lib/kit");
@@ -26,8 +26,8 @@ const PATHS = [
   },
   {
     label: "HUMAN APPROVAL",
-    scene: "A credit above INR 500 waits for a supervisor",
-    watch: ["INR 520.73 in our run, worked out in code", "An agent is not offered the decision", "A supervisor approves the frozen request", "Applied once, with its credit reference"],
+    scene: "A credit above $500 waits for a supervisor",
+    watch: ["$520.73 in our run, worked out in code", "An agent is not offered the decision", "A supervisor approves the frozen request", "Applied once, with its credit reference"],
     fill: S.purple,
   },
 ];
@@ -58,7 +58,7 @@ async function previewSlide(pres) {
     slide,
     [
       { text: "CHANGE AN INPUT", options: { bold: true, fontSize: 10.5, charSpacing: 1, color: HEX.darkAccent, breakLine: true } },
-      { text: "Shorten the outage of path 3 to 300 minutes: the credit falls under INR 500 and is applied without review. Or name another customer, node or router model.", options: { color: HEX.darkText } },
+      { text: "Shorten the outage of path 3 to 300 minutes: the credit falls under $500 and is applied without review. Or name another customer, node or router model.", options: { color: HEX.darkText } },
     ],
     { x: G.MX + 0.24, y: bandY + 0.1, w: inviteW - 0.48, h: bandH - 0.2, fontSize: 14, valign: "middle", objectName: "The invitation" },
   );
@@ -71,7 +71,7 @@ async function previewSlide(pres) {
       { text: "Live: ", options: { bold: true } },
       { text: "AWS, with OpenAI's gpt-5.4-mini reading the messages.", options: { breakLine: true } },
       { text: "Screenshots in this deck: ", options: { bold: true } },
-      { text: "the local stack, offline keyword rules, 24 November 2026." },
+      { text: "the local stack, offline keyword rules, 26 November 2026." },
     ],
     { x: noteX + 0.2, y: bandY + 0.08, w: noteW - 0.4, h: bandH - 0.16, fontSize: 14, valign: "middle", objectName: "Which is which" },
   );
@@ -82,11 +82,11 @@ async function previewSlide(pres) {
     seconds: 40,
     talk: [
       "Now the live demonstration. It runs on AWS against our simulator of SkyLink's six systems: mock APIs, nothing hard-coded. OpenAI's gpt-5.4-mini reads the messages.",
-      "Three paths. A happy path: the network team declares an outage and a customer on that node writes in. A failure: the Network Monitoring API goes down. And a human approval: a credit above 500 rupees waits for a supervisor.",
+      "Three paths. A happy path: the network team declares an outage and a customer on that node writes in. A failure: the Network Monitoring API goes down. And a human approval: a credit above 500 dollars waits for a supervisor.",
       "You may change an input: shorten the third outage to 300 minutes, and the credit is applied without review.",
       "For the presenter, not to be read out: the console has four more scenes in reserve (\"It's my router\", router steps from the guide, a failing line and a booked visit, a prompt injection). The screenshots in this deck are from the local stack with the offline keyword rules.",
     ],
-    sources: "README.md, \"The demo console\" (seven scenes, free play, a mentor can name another customer) and \"The demo on AWS\" (gpt-5.4-mini reads the messages); src/mock_oss/console/scenes.js; docs/EXECUTION_PLAN.md, section 12, client decision D3 (a credit up to INR 500 is applied without review); the brief, p.3 and p.4 (the demo rules).",
+    sources: "README.md, \"The demo console\" (seven scenes, free play, a mentor can name another customer) and \"The demo on AWS\" (gpt-5.4-mini reads the messages); src/mock_oss/console/scenes.js; docs/EXECUTION_PLAN.md, section 12, client decision D3 (a credit up to $500 is applied without review); the brief, p.3 and p.4 (the demo rules).",
   });
 }
 
@@ -103,7 +103,7 @@ const SCREENS = [
     file: "05-supervisor-credit-slip.png",
     crop: { left: 0, top: 560, width: 2160, height: 1230 },
     watch: "Credits awaiting a decision, cases with a person, the operations queue, and the line that says the assistant is keeping up.",
-    caption: "Image 05: signed in as a supervisor, the INR 520.73 slip.",
+    caption: "Image 05: signed in as a supervisor, the $520.73 slip.",
   },
   {
     name: "DEMO CONSOLE",
@@ -138,7 +138,7 @@ async function screensSlide(pres) {
       { x: x + 0.2, y: watchY + 0.08, w: colW - 0.4, h: 1.3, fontSize: 16, valign: "middle", objectName: `Watch for ${screen.name}` },
     );
   }
-  kit.sourceLine(slide, "The three images: the local stack, offline keyword rules, 24 November 2026, unedited (screenshots manifest). The live demonstration: AWS, gpt-5.4-mini (README.md, \"The demo on AWS\").");
+  kit.sourceLine(slide, "The three images: the local stack, offline keyword rules, 26 November 2026, unedited (screenshots manifest). The live demonstration: AWS, gpt-5.4-mini (README.md, \"The demo on AWS\").");
 
   speakerNotes(slide, {
     role: ROLE,
@@ -148,11 +148,11 @@ async function screensSlide(pres) {
       "Path 1, the happy path, about 80 seconds. Console, scene 1. Press Go to declare a fibre cut. Say: the network team's feed announces it, and on the right you see the notices: sent to the customers on the node who agreed, and to none who said no. Open the customer desk as the cast customer and press Send. Point at the complaint reference and the milliseconds it took. Then the reply: the outage, its cause, the estimate and where the estimate comes from, and \"You don't need to restart or reset your router and no technician visit is needed\". Resolve the outage on the console: the customer is told without asking.",
       "Path 2, a failure handled, about 70 seconds. Scene 5. Take the Network Monitoring API down. Open the customer desk and press Send. Point: the reference still arrives at once. The reply says the live status cannot be verified. There is no all-clear, no router steps and no technician. Bring the API back within about 40 seconds of pressing Send: the platform looks again by itself and follows up in the same conversation. On the demo host it looks every 10 seconds and hands the contact to a person after five looks, about 50 seconds; the product default is a minute between looks. If you are late, show the contact on the staff desk under \"With a person\": that is the designed outcome.",
       "Path 3, a human approval, about 100 seconds. Scene 6. Declare the backdated outage, press Send, then Resolve. The message carries a credit that has been sent for approval. On the staff desk, signed in as an agent, the credit is not offered. Signed in as a supervisor, open \"How it was worked out\" on the slip and approve. The customer is told, and the console shows one credit on the billing system with who approved it.",
-      "For the presenter, about the amount: the slip reads INR 520.73 only if you resolve the outage within the same minute you declared it. Outage minutes are rounded up to whole hours, so a slower run bills a 51st hour and the slip reads INR 531.14. That is still above INR 500 and still the supervisor's. The amount also follows the monthly fee of the customer the scene casts: the slip shows the working.",
+      "For the presenter, about the amount: the slip reads $520.73 only if you resolve the outage within the same minute you declared it. Outage minutes are rounded up to whole hours, so a slower run bills a 51st hour and the slip reads $531.14. That is still above $500 and still the supervisor's. The amount also follows the monthly fee of the customer the scene casts: the slip shows the working.",
       "If the panel changes an input: in scene 6 set the minutes box to 300 and play it again. The credit is small and is applied without review, as the hint under the minutes box says (client decision D3). Or cast another customer by ID, or choose another router model in scene 3.",
       "If the live demonstration fails: go to the appendix, \"Demo backup\", four slides built from real screenshots, or play the recorded backup video.",
     ],
-    sources: "src/mock_oss/console/scenes.js (the cues and what to expect at each); README.md, \"The demo console\" and \"The demo on AWS\"; src/skylink_care/domain/credit.py:289 (hours are a ceiling division: 4,999 × 51 × 1.5 / 720 = INR 531.14); presentation/src/assets/screens/manifest.json (images 01, 02w, 05).",
+    sources: "src/mock_oss/console/scenes.js (the cues and what to expect at each); README.md, \"The demo console\" and \"The demo on AWS\"; src/skylink_care/domain/credit.py:289 (hours are a ceiling division: 4,999 × 51 × 1.5 / 720 = $531.14); presentation/src/assets/screens/manifest.json (images 01, 02w, 05).",
   });
 }
 
@@ -170,11 +170,12 @@ async function auditSlide(pres) {
 
   const top = G.BODY_Y;
   const partW = 3.6;
-  const first = await kit.shot(slide, TRAIL_FILE, { x: G.MX, y: top, w: partW, crop: { left: 0, top: 222, width: 687, height: 716 } });
-  await kit.shot(slide, TRAIL_FILE, { x: G.MX + partW + 0.2, y: top, w: partW, crop: { left: 0, top: 938, width: 687, height: 658 } });
-  kit.caption(slide, "One contact's trail, in two parts (left, then right): from the complaint to the credit a supervisor approved. A crop of the customer desk opened as staff; local stack, offline keyword rules, 24 November 2026.", {
+  // The two parts end between entries: seven on the left, eight on the right.
+  const first = await kit.shot(slide, TRAIL_FILE, { x: G.MX, y: top, w: partW, h: 3.95, crop: { left: 0, top: 222, width: 687, height: 693 } });
+  const second = await kit.shot(slide, TRAIL_FILE, { x: G.MX + partW + 0.2, y: top, w: partW, h: 3.95, crop: { left: 0, top: 915, width: 687, height: 759 } });
+  kit.caption(slide, "One contact's trail, in two parts (left, then right): from the complaint to the credit a supervisor approved. A crop of the customer desk opened as staff; local stack, offline keyword rules, 26 November 2026.", {
     x: G.MX,
-    y: first.y + first.h + 0.06,
+    y: Math.max(first.y + first.h, second.y + second.h) + 0.06,
     w: 2 * partW + 0.2,
     h: 0.42,
   });

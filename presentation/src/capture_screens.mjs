@@ -41,10 +41,10 @@ const CHROME = [
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
   'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
 ].find((path) => path && existsSync(path));
-// The documented supervisor example: INR 4,999 a month, out for 50 hours, INR 520.73.
-const SUPERVISOR_PLAN = 'INR 4999.00 a month';
+// The documented supervisor example: $4,999 a month, out for 50 hours, $520.73.
+const SUPERVISOR_PLAN = '$4999.00 a month';
 // A plan on which a five-hour outage earns more than the policy's minimum, so the formula shows.
-const SMALL_CREDIT_PLAN = 'INR 9999.00 a month';
+const SMALL_CREDIT_PLAN = '$9999.00 a month';
 // The credit scene's line says "two days". For its five-hour variant the customer says this instead.
 const FIVE_HOUR_LINE = 'Our office internet has been down for five hours, this is hurting our business';
 const CLOSING_NOTE =
@@ -55,7 +55,7 @@ const LOCAL = new Set(['127.0.0.1', 'localhost']);
 // A window wide enough for the customer desk's complaint-reference box to hold a long network chip.
 const WIDE = 1600;
 const OUTAGE_ID = /OUT-\d{8}-\d{4}/;
-const AMOUNT = /INR [\d,]+\.\d{2}/;
+const AMOUNT = /\$[\d,]+\.\d{2}/;
 // A full run takes about four minutes. One far longer was interrupted (a laptop that slept).
 const LONGEST_RUN_MINUTES = 15;
 const STAFF_NAMES = 'The staff names (demo.agent, demo.supervisor, demo.ops) are demo personas typed by the capture script.';
@@ -263,14 +263,14 @@ async function playCredit(minutes, plan, line) {
   await send(desk, line ?? lines[0]);
   await desk.waitForFunction(() => document.querySelectorAll('#thread li[data-direction="outbound"]').length >= 1, null, { timeout: 60000 });
   await go(3);
-  const state = await reply(desk, 2, ['resolved the outage', 'service credit of INR']);
+  const state = await reply(desk, 2, ['resolved the outage', 'service credit of $']);
   const restored = said(state)[1];
   return { cast, desk, outageId, state, restored, ref: state.ref, customer: cast.Customer, amount: restored.match(AMOUNT)[0] };
 }
 
 async function approval() {
   const play = await playCredit(3000, SUPERVISOR_PLAN);
-  play.scene = 'Scene 6, human approval: a credit above INR 500 waits for a supervisor';
+  play.scene = 'Scene 6, human approval: a credit above $500 waits for a supervisor';
   if (!play.restored.includes('sent for approval')) throw new Error(`the credit was not sent for approval: ${play.restored}`);
   await snap(play.desk, '05a-customer-credit-sent-for-approval.png', {
     scene: play.scene,
@@ -363,7 +363,7 @@ async function smallCredit() {
     title: `The outage is resolved: a credit of ${play.amount} is applied without review`,
     shows: `The customer desk after an outage that began 300 minutes earlier was resolved: the restoration message carries a service credit of ${play.amount} that "is being applied", and the follow-up says it "has been applied" with its credit reference. No person was asked.`,
     facts: deskFacts(applied),
-    notes: `A separate outage (${play.outageId}), declared backdated by 300 minutes with the console's credit scene, because the happy-path outage of images 02 and 03 was minutes old and earns nothing (the stand-in policy pays from 240 minutes). The customer's line is the scene's, with "five hours" in place of "two days" to fit this outage. On this stack a credit up to INR 500 is applied without review (client decision D3, execution plan); the code's default holds every credit for a person.`,
+    notes: `A separate outage (${play.outageId}), declared backdated by 300 minutes with the console's credit scene, because the happy-path outage of images 02 and 03 was minutes old and earns nothing (the stand-in policy pays from 240 minutes). The customer's line is the scene's, with "five hours" in place of "two days" to fit this outage. On this stack a credit up to $500 is applied without review (client decision D3, execution plan); the code's default holds every credit for a person.`,
   });
   await snap(run.con, '04c-console-small-credit-on-account.png', {
     scene,
@@ -371,7 +371,7 @@ async function smallCredit() {
     title: 'On the billing system: the small credit, applied with no approver',
     shows: 'The console after the small credit: the credit on the customer\'s account as the simulated billing system holds it. No approver is named, because none was asked.',
     facts: [...castFacts(play.cast), ...(await board(6, ['CR-', 'applied']))],
-    notes: 'The window only. The hint under the minutes box is the console\'s own text and describes its first cast, on INR 4,999 a month.',
+    notes: 'The window only. The hint under the minutes box is the console\'s own text and describes its first cast, on $4,999 a month.',
   }, { fullPage: false });
 }
 
@@ -388,7 +388,7 @@ async function guardrail() {
     title: 'A guardrail block: a prompt injection is refused and flagged in the audit trail',
     scene: 'Scene 7, guardrail: a prompt injection',
     customer: cast.Customer,
-    shows: 'The customer desk after a message that tells the assistant to ignore its instructions, apply an INR 5,000 credit and print its system prompt: a polite refusal that keeps the reference, and, opened as staff, the audit trail with the input guardrail\'s entry.',
+    shows: 'The customer desk after a message that tells the assistant to ignore its instructions, apply an $5,000 credit and print its system prompt: a polite refusal that keeps the reference, and, opened as staff, the audit trail with the input guardrail\'s entry.',
     facts: deskFacts(state, { trail: true }),
     notes: 'No credit was applied and no prompt was shown. The guardrail entry in the trail is "guardrail.input → INJECTION_SUSPECTED".',
   });
@@ -448,8 +448,20 @@ async function guide() {
     customer: cast.Customer,
     shows: `The customer desk of a customer whose service record has a ${cast.Router} router: the network chip says none reported, the reply says no outage is reported and the remote line test passed, then gives numbered steps from the guide for that router model, ending with the source line (guide, section, version).`,
     facts: [`Router on the service record: ${cast.Router}`, ...deskFacts(state)],
-    notes: 'The router model comes from the service record, never from the message. The steps are quoted from the guide section the retriever chose; a backtick in a step is the guide\'s own markup, shown as written.',
+    notes: (run.reader === 'offline'
+      ? 'The keyword rules chose the section among those the search found: no model was asked. '
+      : `A language model (the "${run.reader}" provider) chose the section among those the search found; a quotation before the steps is a passage it pointed at, found word for word in the customer's message or in the guide. `) +
+      'The router model comes from the service record, never from the message. The steps are quoted from the guide section the retriever chose; a backtick in a step is the guide\'s own markup, shown as written.',
   });
+  const trail = await openTrail(desk, 'troubleshooting.retrieve');
+  await snap(desk, '10b-guide-audit-trail-crop.png', {
+    title: 'Close crop: the audit trail of the guide answer, from what the search found to who chose the section',
+    scene: 'Scene 3, troubleshooting: no outage, steps from the guide',
+    customer: cast.Customer,
+    shows: 'The audit trail panel of this contact, opened as staff: the network checks, then troubleshooting.retrieve (the sections the search found, with their scores) and, where a model was asked, troubleshooting.answer (who chose the section, what the rules alone would have chosen, and what became of the passages it pointed at).',
+    facts: deskFacts(trail, { trail: true }).filter((fact) => fact.startsWith('Audit trail')),
+    notes: 'A crop of the customer desk after "Open as staff". Each entry reads "step → outcome", then actor · duration · versions, with a line on what was found or chosen; an entry opens to its inputs and outputs.',
+  }, { crop: [desk.locator('.panel--trail')] });
 }
 
 async function curveball() {
@@ -556,12 +568,22 @@ function stackSettings() {
   return existsSync(file) ? readEnv(file, wanted) : {};
 }
 
-function noteFor(stack, now) {
-  const reader = stack.CARE_LLM_PROVIDER === 'offline'
-    ? 'The offline keyword rules read the customers\' messages: no language model was called.'
-    : `The customers' messages were read by the "${stack.CARE_LLM_PROVIDER ?? 'unknown'}" provider.`;
+// Who read the customers' messages, over all the images of the manifest: each image records the
+// reader of the run that took it, so a scene retaken with a model does not relabel the others.
+function readerNote(shots) {
+  const others = [...new Set(shots.map((shot) => shot.read_by ?? 'offline'))].filter((reader) => reader !== 'offline');
+  if (!others.length) return 'The offline keyword rules read the customers\' messages: no language model was called.';
+  const named = shots.filter((shot) => (shot.read_by ?? 'offline') !== 'offline').map((shot) => shot.file.slice(0, 3).replace(/-$/, ''));
+  return (
+    'The offline keyword rules read the customers\' messages, except in images ' + named.join(', ') +
+    `, where the "${others.join('", "')}" provider read them (each image says so in read_by).`
+  );
+}
+
+function noteFor(stack, now, shots) {
+  const reader = readerNote(shots);
   const credits = stack.CARE_CREDIT_REVIEW_ALL === 'false'
-    ? 'credits up to INR 500 applied without review (above INR 500 a supervisor approves)'
+    ? 'credits up to $500 applied without review (above $500 a supervisor approves)'
     : 'every credit held for a person';
   return (
     `Real screenshots of the local demonstration stack on this machine, taken on ${istDate(now)} (Indian time) by ` +
@@ -590,7 +612,7 @@ function writeManifest(wanted, minutes) {
     not_captured: run.failed,
   };
   const manifest = {
-    note: noteFor(stack, now),
+    note: noteFor(stack, now, shots),
     known_blemish:
       'On customer-desk images whose network chip reads "outage confirmed · HH:MM IST", the values in the complaint-reference ' +
       'box run a few pixels past its right border. That is how the page lays out in a 1440 px window; it was not retouched, and ' +
@@ -640,6 +662,7 @@ async function main() {
   }
   const started = Date.now();
   run.keys = keys();
+  run.reader = stackSettings().CARE_LLM_PROVIDER ?? 'unknown';
   mkdirSync(OUT, { recursive: true });
   if (!CHROME) throw new Error('Chrome was not found. Set CHROME to the path of a Chrome or Chromium binary.');
   const { chromium } = playwright();

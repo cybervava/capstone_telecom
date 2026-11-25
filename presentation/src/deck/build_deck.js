@@ -31,6 +31,7 @@ const APPENDIX = [
   require("./slides/a03_trust"),
   require("./slides/a04_demo_backup"),
   require("./slides/a05_questions"),
+  require("./slides/a06_review"),
 ];
 
 /** @returns {Promise<{main: number, appendix: number}>} how many slides were written */

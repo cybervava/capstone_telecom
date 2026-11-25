@@ -9,9 +9,9 @@ const ROLE = "R1";
 
 // Three kinds of figure, kept apart. "lines" is how many lines the text takes in its column.
 const WORTH = [
-  { kind: "fact", tag: "CASE FACTS · BRIEF P.1", lines: 2, body: "30% of outage calls waste a visit of INR 650: INR 195 for each outage call." },
+  { kind: "fact", tag: "CASE FACTS · BRIEF P.1", lines: 2, body: "30% of outage calls waste a visit of $650: $195 for each outage call." },
   { kind: "measured", tag: "MEASURED IN SIMULATION", lines: 3, body: "The workflow booked 0 of 28 unneeded visits and 10 of 10 needed ones. What staff then decide, no replay can measure." },
-  { kind: "assumption", tag: "ASSUMPTION", lines: 4, body: "The model's base case, where every volume, rate and cost is assumed (A12): net INR 695,000 a month. No rupee saving is measured." },
+  { kind: "assumption", tag: "ASSUMPTION", lines: 4, body: "The model's base case, where every volume, rate and cost is assumed (A12): net $695,000 a month. No dollar saving is measured." },
 ];
 
 const STAGES = ["Backtest", "Shadow mode", "Actions under approval"];
@@ -106,10 +106,10 @@ async function closeSlide(pres) {
     talk: [
       "To close, three things.",
       "What changed: your curveball. We treated it as a re-scope. Network status gained a third answer, unknown, never reported as clear. The cost: while the API is down, a customer on a healthy node waits about five minutes for a person.",
-      "What it is worth. Thirty per cent and 650 rupees are your brief's facts. In simulation the workflow booked none of 28 unneeded visits and all 10 needed ones. The rupee figures are a scenario: on the model's base case, where every volume, rate and cost is assumed, a net 695,000 rupees a month. No rupee saving is measured.",
+      "What it is worth. Thirty per cent and 650 dollars are your brief's facts. In simulation the workflow booked none of 28 unneeded visits and all 10 needed ones. The dollar figures are a scenario: on the model's base case, where every volume, rate and cost is assumed, a net 695,000 dollars a month. No dollar saving is measured.",
       "Our ask: a time-boxed broadband pilot on a defined set of nodes. A backtest, then shadow mode, then actions under approval. Thank you.",
     ],
-    sources: "docs/adr/0001-degraded-mode-when-the-network-api-fails.md (the third answer and its trade-off); presentation/G3_Telco_ROI.xlsx: Inputs!B9, B10 (30%, INR 650), Baseline!B16 (INR 195 per call), Inputs!B15 to B18, Costs!D7 and D13 (the assumed 10,000 calls, 50% cut, 20% of calls avoided at INR 60, INR 1,200,000 once and INR 400,000 a month), Benefits!B35 and B38 (net INR 695,000 a month, payback 1.73 months), Simulation evidence (0 of 28, 10 of 10; runs of 17 November 2026 UTC); G3_Telco_FDE_Action_Plan.pdf, p.12 (pilot ask and stop conditions: a proposal); discovery workshop report, section 12 (backtest, shadow, controlled automation); docs/EXECUTION_PLAN.md, section 12 (the client decisions still open: D1, D3 in part, D5, D7 to D11).",
+    sources: "docs/adr/0001-degraded-mode-when-the-network-api-fails.md (the third answer and its trade-off); presentation/G3_Telco_ROI.xlsx: Inputs!B9, B10 (30%, $650), Baseline!B16 ($195 per call), Inputs!B15 to B18, Costs!B7 and B13 (the assumed 10,000 calls, 50% cut, 20% of calls avoided at $60, $1,200,000 once and $400,000 a month), Benefits!B35 and B38 (net $695,000 a month, payback 1.73 months), Simulation evidence (0 of 28, 10 of 10; runs of 17 November 2026 UTC); G3_Telco_FDE_Action_Plan.pdf, p.12 (pilot ask and stop conditions: a proposal); discovery workshop report, section 12 (backtest, shadow, controlled automation); docs/EXECUTION_PLAN.md, section 12 (the client decisions still open: D1, D3 in part, D5, D7 to D11).",
   });
 }
 

@@ -60,6 +60,7 @@ const FAMILIES = [
   { name: "H  Abuse, off-topic requests, edge cases", runs: 6 },
   { name: "I  A role or a key reaching past its tools", runs: 3 },
   { name: "J  A model's answer that tries to unlock an action", runs: 3 },
+  { name: "K  A model that answers for the guide", runs: 3 },
 ];
 
 /** A10: the attack suite by family, and the fairness check. */
@@ -89,11 +90,11 @@ async function attackSlide(pres) {
       dataLabelFormatCode: "0",
       showLegend: false,
       showTitle: true,
-      title: "Attack runs passed, by family: 58 of 58, from 40 attacks; critical failures 0",
+      title: "Attack runs passed, by family: 61 of 61, from 43 attacks; critical failures 0",
       objectName: "Chart: attack runs by family",
     }),
   );
-  kit.text(slide, "Run of 22 November 2026, with every credit under review (the code's default). The suite has not been run for the shipped setting, which applies a credit up to INR 500 without review.", {
+  kit.text(slide, "Run of 25 November 2026, with every credit under review (the code's default). The suite has not been run for the shipped setting, which applies a credit up to $500 without review.", {
     x: G.MX + 0.22,
     y: G.APX_BODY_Y + 4.3,
     w: leftW - 0.44,
@@ -123,13 +124,13 @@ async function attackSlide(pres) {
   kit.text(
     slide,
     kit.bulletRuns(
-      ["The segment is read nowhere in the code: a test checks the source.", "What differs is the amount, which follows the fee. Three days out: 20.00% of the fee on every plan.", "Above INR 500 a supervisor approves, and small-business plans reach that level sooner.", "Not proven: statistical equality of outcomes."],
+      ["The segment is read nowhere in the code: a test checks the source.", "What differs is the amount, which follows the fee. Three days out: 20.00% of the fee on every plan.", "Above $500 a supervisor approves, and small-business plans reach that level sooner.", "Not proven: statistical equality of outcomes."],
       { color: HEX.darkText, paraSpaceAfter: 6 },
     ),
     { x: rx + 0.22, y: G.APX_BODY_Y + 2.1, w: rw - 0.44, h: 2.8, fontSize: 14, objectName: "Fairness detail" },
   );
-  kit.sourceLine(slide, "Sources: evals/reports/attack_suite.md (22 November 2026; the counts by family are summed from its rows); evals/reports/segment_parity.md (17 November 2026); tests/unit/test_decision_inputs.py.");
-  sourceNote(slide, "evals/reports/attack_suite.md (run of 22 November 2026: 40 attacks, 58 runs, 58 passed, critical failures 0; every credit under review); presentation/G3_Telco_Evaluation.pdf, sections 6.1 and 6.4 (families A to J; segment parity, 8 of 8 situations over 80 customers; three days out, 20.00% of the fee); evals/reports/segment_parity.md; tests/unit/test_decision_inputs.py.");
+  kit.sourceLine(slide, "Sources: evals/reports/attack_suite.md (25 November 2026; the counts by family are summed from its rows); evals/reports/segment_parity.md (25 November 2026); tests/unit/test_decision_inputs.py.");
+  sourceNote(slide, "evals/reports/attack_suite.md (run of 25 November 2026: 43 attacks, 61 runs, 61 passed, critical failures 0; every credit under review); presentation/G3_Telco_Evaluation.pdf, sections 6.1 and 6.4 (families A to K; segment parity, 8 of 8 situations over 80 customers; three days out, 20.00% of the fee); evals/reports/segment_parity.md; tests/unit/test_decision_inputs.py.");
 }
 
 const OPEN_ITEMS = [
@@ -162,19 +163,19 @@ async function checklistsSlide(pres) {
   );
   const rows = OPEN_ITEMS.map(([item, state, missing]) => [{ text: item, options: { bold: true } }, { text: state.toUpperCase(), options: { bold: true, fontSize: 11, color: state === "Not ticked" ? HEX.redInk : HEX.amberInk, valign: "middle" } }, missing]);
   kit.table(slide, ["ITEM OF THE BRIEF'S CHECKLISTS", "STATE", "WHAT IS MISSING"], rows, { y: G.APX_BODY_Y + 0.44, colW: [3.75, 1.25, 7.133], name: "Open checklist items" });
-  kit.sourceLine(slide, "Source: presentation/G3_Telco_Checklists.pdf, sections 0 and 6 (state at commit b9c70ef, 24 November 2026), where each item also says what would close it. All ten guardrail items are ticked.");
+  kit.sourceLine(slide, "Source: presentation/G3_Telco_Checklists.pdf, sections 0 and 6 (state at commit 772467c, 25 November 2026), where each item also says what would close it. All ten guardrail items are ticked.");
   sourceNote(slide, "presentation/G3_Telco_Checklists.pdf, section 0 (34 items; 22 ticked, 10 met in part, 2 not ticked; guardrails 10/0/0, security 5/3/0, compliance and responsible AI 4/4/0, operations readiness 3/3/2) and section 6 (the twelve items not fully ticked, with what is missing and what would close each); README.md, \"The demo on AWS\" (24 s of downtime at the release of 22 November 2026).");
 }
 
 const ROI_INPUTS = [
   ["Outage calls ending in an unnecessary visit", "30%", "Case fact, brief p.1"],
-  ["Cost of one technician visit", "INR 650", "Case fact, brief p.1"],
+  ["Cost of one technician visit", "$650", "Case fact, brief p.1"],
   ["Outage calls a month, pilot population", "10,000", "Assumption: replace with the observed baseline"],
   ["Reduction in unnecessary visits", "50%", "Assumption, set equal to the brief's target"],
-  ["Calls avoided, and the cost of a call", "20%, INR 60", "Assumption"],
-  ["Running cost a month", "INR 400,000", "Assumption, not a cloud quote"],
-  ["One-time implementation cost", "INR 1,200,000", "Assumption"],
-  ["Repeat-contact saving; churn benefit", "INR 0; INR 0", "Held at zero until a pilot can support them"],
+  ["Calls avoided, and the cost of a call", "20%, $60", "Assumption"],
+  ["Running cost a month", "$400,000", "Assumption, not a cloud quote"],
+  ["One-time implementation cost", "$1,200,000", "Assumption"],
+  ["Repeat-contact saving; churn benefit", "$0; $0", "Held at zero until a pilot can support them"],
 ];
 
 const SENSITIVITY = [
@@ -195,7 +196,7 @@ async function roiSlide(pres) {
   kit.panel(slide, { x: cx, y: G.APX_BODY_Y, w: cw, h: 2.9, shadow: true, name: "Sensitivity panel" });
   slide.addChart(
     pres.charts.BAR,
-    [{ name: "Net benefit a month, INR", labels: SENSITIVITY.map((row) => row.reduction), values: SENSITIVITY.map((row) => row.net) }],
+    [{ name: "Net benefit a month, US dollars", labels: SENSITIVITY.map((row) => row.reduction), values: SENSITIVITY.map((row) => row.net) }],
     kit.chartOptions({
       x: cx + 0.1,
       y: G.APX_BODY_Y + 0.08,
@@ -213,7 +214,7 @@ async function roiSlide(pres) {
       dataLabelFormatCode: "#,##0",
       showLegend: false,
       showTitle: true,
-      title: "Net benefit a month in INR, by cut in wasted visits (a scenario)",
+      title: "Net benefit a month in US dollars, by cut in wasted visits (a scenario)",
       objectName: "Chart: sensitivity of the net benefit",
     }),
   );
@@ -221,15 +222,15 @@ async function roiSlide(pres) {
     slide,
     [
       { text: "Base case: ", options: { bold: true } },
-      { text: "INR 975,000 from avoided visits and INR 120,000 from avoided calls, less INR 400,000 to run: net INR 695,000 a month, payback 1.73 months. " },
+      { text: "$975,000 from avoided visits and $120,000 from avoided calls, less $400,000 to run: net $695,000 a month, payback 1.73 months. " },
       { text: "Break-even: ", options: { bold: true } },
       { text: "a 14.4% cut, or 3,653 calls a month. At 1,000 calls a month the net is negative." },
     ],
     { x: cx, y: G.APX_BODY_Y + 3.0, w: cw, h: 1.3, fontSize: 14, objectName: "Base case and break-even" },
   );
   kit.tag(slide, "measured", cx, G.APX_BODY_Y + 4.36, { text: "MEASURED IN SIMULATION" });
-  kit.text(slide, "0 of 28 unneeded visits booked; 10 of 10 needed ones. No rupee saving is measured.", { x: cx + 2.2, y: G.APX_BODY_Y + 4.28, w: cw - 2.2, h: 0.5, fontSize: 12, color: S.ink2, valign: "middle", objectName: "What is measured" });
-  kit.text(slide, "A scenario, not a forecast: fictional client, synthetic data. The demonstration's cloud cost, USD 1.90 a day, is kept apart and is in no benefit figure.", {
+  kit.text(slide, "0 of 28 unneeded visits booked; 10 of 10 needed ones. No dollar saving is measured.", { x: cx + 2.2, y: G.APX_BODY_Y + 4.28, w: cw - 2.2, h: 0.5, fontSize: 12, color: S.ink2, valign: "middle", objectName: "What is measured" });
+  kit.text(slide, "A scenario, not a forecast: fictional client, synthetic data. The demonstration's cloud cost, $1.90 a day, is kept apart and is in no benefit figure.", {
     x: G.MX,
     y: 5.82,
     w: tableW,
@@ -240,7 +241,7 @@ async function roiSlide(pres) {
     objectName: "How to read the model",
   });
   kit.sourceLine(slide, "Source: presentation/G3_Telco_ROI.xlsx (sheets Inputs, Baseline, Benefits, Costs, Sensitivity, Simulation evidence); the break-even figures are derived on the model's assumptions.");
-  sourceNote(slide, "presentation/G3_Telco_ROI.xlsx: Inputs!B9, B10, B15 to B18 (30%, INR 650, 10,000 calls, 50%, 20%, INR 60), Costs!D7 and D13 (INR 1,200,000; INR 400,000), Benefits!B11, B19, B25, B30, B35, B38 (INR 975,000; INR 120,000; zero; zero; net INR 695,000; payback 1.73 months), Sensitivity!B5:D8 (INR 207,500; 695,000; 1,182,500), B22, B23 (14.4%; 3,653 calls) and B12:F16 (negative at 1,000 calls), Simulation evidence (0 of 28; 10 of 10), Costs!B24 (USD 1.90 a day); the team's action plan, p.10, and the discovery report, section 6, which the base case reproduces.");
+  sourceNote(slide, "presentation/G3_Telco_ROI.xlsx: Inputs!B9, B10, B15 to B18 (30%, $650, 10,000 calls, 50%, 20%, $60), Costs!B7 and B13 ($1,200,000; $400,000), Benefits!B11, B19, B25, B30, B35, B38 ($975,000; $120,000; zero; zero; net $695,000; payback 1.73 months), Sensitivity!B5:D8 ($207,500; 695,000; 1,182,500), B22, B23 (14.4%; 3,653 calls) and B12:F16 (negative at 1,000 calls), Simulation evidence (0 of 28; 10 of 10), Costs!B23 ($1.90 a day); the team's action plan, p.10, and the discovery report, section 6, which the base case reproduces.");
 }
 
 module.exports = { slides: [loadTestSlide, attackSlide, checklistsSlide, roiSlide] };

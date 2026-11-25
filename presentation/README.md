@@ -8,7 +8,7 @@ data is synthetic.
 
 | # | Item in the brief | File | State |
 |---|---|---|---|
-| 1 | Presentation deck, max 18 slides + appendix | `G3_Telco_Presentation.pptx`, with a PDF copy | Built: 18 main slides with timed speaker notes (20 minutes), then 20 appendix slides. Add the members' names to the title slide |
+| 1 | Presentation deck, max 18 slides + appendix | `G3_Telco_Presentation.pptx`, with a PDF copy | Built: 18 main slides with timed speaker notes (20 minutes), then 22 appendix slides (A21 and A22: the project review's changes of 25 November). Add the members' names to the title slide |
 | 2 | Problem statement, 1 to 2 pages | `G3_Telco_Problem_Statement.pdf` | Built, 2 pages |
 | 3 | Architecture document | `G3_Telco_Architecture.pdf` | Built, 14 pages |
 | 4 | Code repository with README | this repository, branch `dev` | In place |
@@ -20,6 +20,10 @@ data is synthetic.
 
 ## Before submitting
 
+- Push `dev` so that the AWS demo host runs the changes of 25 November (amounts in dollars, a
+  model beside the guide search, the MCP server), and run the smoke journeys there. Until then the
+  live demonstration shows rupees and the guide scene's "crawling" line gets the "No internet"
+  steps from the keyword rules alone. The MCP server stays closed on the host (no key is set).
 - Write the five members' names: the deck's title slide, the contribution matrix and the
   checklists' signature page. Nothing is pre-filled and nothing is pre-signed.
 - Each member completes their row of the contribution matrix in their own words, then all sign.
@@ -35,17 +39,18 @@ data is synthetic.
 - If anything of milestone M5 lands (metrics, a dashboard, alerts, a runbook), update checklist
   items 4.3, 4.4, 4.5 and 4.8 and the counts on pages 1 and 10 of the checklists, slide 15 of the
   deck, and section 9 of the evaluation report, before signing.
-- The supervisor example reads INR 520.73 only if the outage is resolved within the minute it was
-  declared; later it bills a 51st hour and reads INR 531.14. Either way a supervisor decides.
+- The supervisor example reads $520.73 only if the outage is resolved within the minute it was
+  declared; later it bills a 51st hour and reads $531.14. Either way a supervisor decides.
 
 ## Where the numbers come from
 
 Every figure in these documents is taken from the repository's own reports and documents
 (`README.md`, `docs/`, `evals/reports/`, `loadtest/reports/`) or from the brief, and each document
 names its sources. Measured results are measured in simulation on the synthetic stand-in data;
-assumptions and things not built are labelled as such. The test-suite figure (2,689 tests, none
-failed, 96.0% coverage with branches counted) is GitLab pipeline 3106633060 on commit `b9c70ef`,
-24 November 2026.
+assumptions and things not built are labelled as such. The test-suite figure (2,902 tests, none
+failed, 96% coverage with branches counted) is a run on one laptop on commit `772467c`, 25 November
+2026; the last pipeline, GitLab 3106633060 on commit `b9c70ef` of 24 November, ran the 2,689 tests
+there were before the project review's changes.
 
 ## Rebuilding after an edit
 
@@ -67,6 +72,7 @@ container (`src/libreoffice/Dockerfile`, `src/office_to_pdf.sh`). PowerPoint's o
 does the same for the deck.
 
 The screenshots in `src/assets/screens/` are real captures of the local demonstration, taken on
-24 November 2026 with the offline keyword rules reading the messages; `manifest.json` says what
-each one shows. The fonts in `src/fonts/` are under the SIL Open Font License (the licence files
+26 November 2026 (Indian time) with the offline keyword rules reading the messages, except the
+guide scene (images 10 and 10b), retaken with `gpt-5.4-mini` choosing the guide section;
+`manifest.json` says what each one shows and, in `read_by`, who read the messages. The fonts in `src/fonts/` are under the SIL Open Font License (the licence files
 are beside them).

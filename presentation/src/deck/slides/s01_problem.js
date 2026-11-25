@@ -78,7 +78,7 @@ async function titleSlide(pres) {
 const FIGURES = [
   { w: 2.8, value: "3.5 m + 8 m", label: "broadband and mobile customers" },
   { w: 2.6, value: "30%", label: "of outage calls end in a technician visit nobody needed" },
-  { w: 2.4, value: "INR 650", label: "the cost of each of those visits" },
+  { w: 2.4, value: "$650", label: "the cost of each of those visits" },
 ];
 
 const JOURNEY = [
@@ -103,9 +103,9 @@ async function painSlide(pres) {
     x += figure.w + 0.244;
   }
   const wideW = G.MX + G.CW - x;
-  kit.panel(slide, { x, y: top, w: wideW, h: cardH, fill: S.ink, shadow: true, name: "Figure card INR 195,000" });
+  kit.panel(slide, { x, y: top, w: wideW, h: cardH, fill: S.ink, shadow: true, name: "Figure card $195,000" });
   kit.tag(slide, "measured", x + 0.2, top + 0.16, { text: "DERIVED FROM THE BRIEF" });
-  kit.stat(slide, { x: x + 0.2, y: top + 0.46, w: wideW - 0.4, value: "INR 195,000", label: "wasted for every 1,000 outage contacts: 1,000 × 30% × INR 650", size: 30, valueH: 0.5, labelH: 0.56, color: HEX.darkAccent, labelColor: HEX.darkText });
+  kit.stat(slide, { x: x + 0.2, y: top + 0.46, w: wideW - 0.4, value: "$195,000", label: "wasted for every 1,000 outage contacts: 1,000 × 30% × $650", size: 30, valueH: 0.5, labelH: 0.56, color: HEX.darkAccent, labelColor: HEX.darkText });
 
   // The before-picture: today's journey, with the break between the network team and care.
   const rowY = 4.5;
@@ -141,19 +141,19 @@ async function painSlide(pres) {
     ],
     { x: G.MX, y: 6.26, w: G.CW, h: 0.3, fontSize: 14, valign: "middle", objectName: "The sponsor's ask" },
   );
-  kit.sourceLine(slide, "Sources: the brief, p.1. INR 195,000 is derived from its two figures (discovery workshop report, section 1). SkyLink's contact volume is not supplied, so no annual figure is given here.");
+  kit.sourceLine(slide, "Sources: the brief, p.1. $195,000 is derived from its two figures (discovery workshop report, section 1). SkyLink's contact volume is not supplied, so no annual figure is given here.");
 
   speakerNotes(slide, {
     role: ROLE,
     seconds: 80,
     talk: [
       "SkyLink has 3.5 million broadband and 8 million mobile customers. When a fibre is cut or a tower fails, the network operations centre, the NOC, knows within minutes. Customer care is not told.",
-      "So thousands of customers call, and agents take each one through the same reboot script. Thirty per cent of those calls end with a technician sent to a home where nothing is wrong, at 650 rupees a visit. That is 195,000 rupees wasted for every thousand outage contacts. The first three figures are from your brief; the fourth is arithmetic on them.",
+      "So thousands of customers call, and agents take each one through the same reboot script. Thirty per cent of those calls end with a technician sent to a home where nothing is wrong, at 650 dollars a visit. That is 195,000 dollars wasted for every thousand outage contacts. The first three figures are from your brief; the fourth is arithmetic on them.",
       "Two more things make it urgent. A repeat complaint within seven days is your top churn signal, and the regulator tracks how long complaints take to resolve.",
       "One caution. SkyLink has not given us its contact volume, so every annual figure you see later is a scenario.",
       "The sponsor's ask is on the last line: care that knows what the network knows, outage contacts resolved automatically, and fair credits offered consistently.",
     ],
-    sources: "the brief, p.1 (customers, 30%, INR 650, churn signal, regulator, the sponsor's ask); discovery workshop report of 22 November 2026, section 1 (INR 195,000 per 1,000 contacts, derived; annual savings cannot be established without volumes); presentation/G3_Telco_Problem_Statement.pdf, section 1.",
+    sources: "the brief, p.1 (customers, 30%, $650, churn signal, regulator, the sponsor's ask); discovery workshop report of 22 November 2026, section 1 ($195,000 per 1,000 contacts, derived; annual savings cannot be established without volumes); presentation/G3_Telco_Problem_Statement.pdf, section 1.",
   });
 }
 

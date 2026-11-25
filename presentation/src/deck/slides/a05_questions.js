@@ -15,7 +15,7 @@ const OBJECTIONS_A = [
     role: "Chief Customer Officer",
     question: "Which savings are measured, and which are assumed?",
     answer:
-      "Two figures are your brief's: 30% and INR 650. Measured, in simulation: the workflow booked 0 of 28 visits that were not needed and 10 of 10 that were. Assumed: 10,000 outage calls a month, half the wasted visits, a fifth of calls avoided at INR 60, INR 400,000 a month to run. On those the net is INR 695,000 a month. No rupee saving is measured, and churn is held at zero.",
+      "Two figures are your brief's: 30% and $650. Measured, in simulation: the workflow booked 0 of 28 visits that were not needed and 10 of 10 that were. Assumed: 10,000 outage calls a month, half the wasted visits, a fifth of calls avoided at $60, $400,000 a month to run. On those the net is $695,000 a month. No dollar saving is measured, and churn is held at zero.",
     open: "SkyLink's real contact volumes, and what staff decide for customers who insist.",
   },
   {
@@ -184,15 +184,15 @@ const SOURCES = [
     ],
   },
   {
-    head: "The submission package, 24 November 2026",
+    head: "The submission package, 25 November 2026",
     lines: ["presentation/G3_Telco_Problem_Statement.pdf", "presentation/G3_Telco_Architecture.pdf", "presentation/G3_Telco_Evaluation.pdf", "presentation/G3_Telco_Checklists.pdf", "presentation/G3_Telco_ROI.xlsx"],
   },
   {
-    head: "The repository, branch dev, commit b9c70ef",
+    head: "The repository, branch dev, commit 772467c",
     lines: [
       "README.md, with the declaration of the AI assistant used",
       "docs/HOW_IT_WORKS.md, docs/EXECUTION_PLAN.md",
-      "docs/adr/0001-degraded-mode-when-the-network-api-fails.md",
+      "docs/adr/0001 to 0003: degraded mode, a model beside the guide search, tools over MCP",
       "docs/threat_model.md, regulatory_controls.md, data_inventory.md",
       "src/skylink_care/, src/mock_oss/, tests/",
     ],
@@ -200,11 +200,11 @@ const SOURCES = [
   {
     head: "Measurements, all in simulation",
     lines: [
-      "evals/reports/: seven evaluations, 17 to 22 November 2026 (UTC)",
+      "evals/reports/: seven evaluations and two live-model runs, 25 November 2026 (UTC)",
       "loadtest/reports/: three surge reports, 16 November 2026 (UTC)",
       "reports/data_profile.md, 15 November 2026",
-      "GitLab pipeline 3106633060, 24 November 2026",
-      "presentation/src/assets/screens/manifest.json: 34 screenshots",
+      "2,902 tests on one laptop, 25 November 2026 (pipeline 3106633060, 24 November: 2,689)",
+      "presentation/src/assets/screens/manifest.json: 35 screenshots",
     ],
   },
 ];
@@ -230,7 +230,7 @@ async function sourcesSlide(pres) {
     { x: G.MX + 0.24, y: noteY + 0.06, w: G.CW - 0.48, h: G.BODY_B - noteY - 0.12, fontSize: 14, color: HEX.darkText, valign: "middle", objectName: "Stand-ins" },
   );
   kit.sourceLine(slide, "Each main slide's speaker notes end with the file its figures come from. The deck is built by presentation/src/deck/build_deck.js.");
-  sourceNote(slide, "README.md, \"Two things that are stand-ins\" and \"AI assistance\"; the dates of each report are those printed in its line \"Written by the run of\"; presentation/src/assets/screens/manifest.json (34 images, 24 November 2026).");
+  sourceNote(slide, "README.md, \"Two things that are stand-ins\" and \"AI assistance\"; the dates of each report are those printed in its line \"Written by the run of\"; presentation/src/assets/screens/manifest.json (35 images, 26 November 2026, Indian time).");
 }
 
 module.exports = { slides: [objectionsOneSlide, objectionsTwoSlide, limitsSlide, sourcesSlide] };

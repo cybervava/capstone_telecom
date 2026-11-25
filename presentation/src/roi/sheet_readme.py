@@ -33,15 +33,18 @@ WHAT_IT_IS = (
     "The base case reproduces the illustration in the team's action plan (p.10) and the volume "
     "table of the discovery report (section 6). Both were written before the system was finished: "
     "they are plans, and their figures are illustrations.",
+    "Every amount is in US dollars. The brief, the action plan and the discovery report give "
+    "their amounts in rupees; since the project review of 25 November 2026 the same figures are "
+    "shown in dollars, and nothing is converted (docs/EXECUTION_PLAN.md, client decision D12).",
 )
 MEASURED_OR_ASSUMED = (
     "Case facts, from the brief: 30% of outage-driven calls end in an unnecessary technician "
-    "visit, and a visit costs INR 650.",
+    "visit, and a visit costs $650 (650 in the brief's rupees).",
     "Measured, in simulation on synthetic data: the workflow booked a visit for none of the 28 "
     "replayed contacts that did not need one, and for all 10 that did. A customer who goes on "
     "asking is handed to a person, and what that person decides no replay can measure.",
     "Assumed: the pilot's volume of outage calls, the reduction in visits achieved end to end, "
-    "the share of calls avoided, the cost of a call, and both cost figures of the pilot. No rupee "
+    "the share of calls avoided, the cost of a call, and both cost figures of the pilot. No dollar "
     "saving in this workbook is a measured result.",
 )
 HEADLINE_HEAD = (
@@ -57,22 +60,22 @@ HEADLINE = (
      "Inputs. Action plan p.10: 10,000, to be replaced with the observed baseline"),
     ("Unnecessary visits a month, baseline", "={visits_month}", s.COUNT,
      "Case fact × assumed volume", "visits_month", "Action plan p.10: 3,000"),
-    ("Saving from avoided visits a month", "={saving_visits}", s.INR,
+    ("Saving from avoided visits a month", "={saving_visits}", s.USD,
      "Scenario: case facts × assumed volume × assumed reduction", "saving_visits",
-     "Action plan p.10: INR 975,000"),
-    ("Saving from avoided calls a month", "={saving_calls}", s.INR,
+     "Action plan p.10: 975,000"),
+    ("Saving from avoided calls a month", "={saving_calls}", s.USD,
      "Assumption: share of calls avoided, cost of a call", "saving_calls",
-     "Action plan p.10: INR 120,000"),
-    ("Recurring cost a month", "={cost_recurring}", s.INR, "Assumption; not a cloud quote",
-     "cost_recurring", "Action plan p.10: INR 400,000"),
-    ("Net benefit a month", "={net_month}", s.INR, "Scenario; follows from the lines above",
-     "net_month", "Action plan p.10: INR 695,000"),
-    ("One-time implementation cost", "={cost_one_time}", s.INR, i.ASSUME, "cost_one_time",
-     "Action plan p.10: INR 1,200,000"),
+     "Action plan p.10: 120,000"),
+    ("Recurring cost a month", "={cost_recurring}", s.USD, "Assumption; not a cloud quote",
+     "cost_recurring", "Action plan p.10: 400,000"),
+    ("Net benefit a month", "={net_month}", s.USD, "Scenario; follows from the lines above",
+     "net_month", "Action plan p.10: 695,000"),
+    ("One-time implementation cost", "={cost_one_time}", s.USD, i.ASSUME, "cost_one_time",
+     "Action plan p.10: 1,200,000"),
     ("Simple payback, months", "={payback_months}", s.RATE_2,
      "Scenario; excludes discounting and tax", "payback_months", "Action plan p.10: 1.73 months"),
-    ("Saving per 1,000 outage contacts", "={block_saving}", s.INR,
-     "Case facts × assumed reduction", "block_saving", "Discovery report, section 6: INR 97,500"),
+    ("Saving per 1,000 outage contacts", "={block_saving}", s.USD,
+     "Case facts × assumed reduction", "block_saving", "Discovery report, section 6: 97,500"),
     ("Unnecessary visits the workflow booked in simulation", BOOKED, s.TEXT,
      "Measured in simulation, on synthetic data", "sim_unneeded_booked",
      "evals/reports/truck_rolls.md"),
@@ -158,9 +161,6 @@ SOURCES = (
     ("Terraform",
      "deploy/aws/terraform/variables.tf and database.tf. The instance sizes of the "
      "demonstration."),
-    ("Exchange rate",
-     "European Central Bank reference rates of 23 November 2026, read from "
-     "api.frankfurter.dev. USD to INR. Outside the repository; an assumption."),
 )  # fmt: skip
 CAVEATS = (
     "The volume of 10,000 outage calls a month is illustrative. Discovery report: 'Annual "

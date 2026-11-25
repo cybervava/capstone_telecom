@@ -128,7 +128,7 @@ function architectureDiagram(slide) {
     lineWidth: 2.25,
     lines: [
       { text: "the human gate", options: { bold: true, color: S.purple, breakLine: true } },
-      { text: "credit above INR 500", options: { color: S.ink2 } },
+      { text: "credit above $500", options: { color: S.ink2 } },
     ],
   });
   component(slide, {

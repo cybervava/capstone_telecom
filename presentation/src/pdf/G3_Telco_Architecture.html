@@ -110,8 +110,8 @@
 
 <h2><span class="n">1</span> Summary</h2>
 <div class="cols-2 even tightp">
-  <p><b>The problem.</b> When a fibre cut or a tower fault happens, SkyLink's network team knows within minutes and customer care does not. Agents run the same reboot script, and 30% of these calls end in an unnecessary technician visit costing INR 650 (brief, p.1). The architect's part is to link network events, which arrive as a stream, to customer contacts, which ask and wait, and to decide what rules, machine learning and a language model each do.</p>
-  <p><b>The architecture.</b> Four programs from one container image share one PostgreSQL database. The <b>API</b> (front desk) returns a complaint reference after one database write. The <b>orchestrator</b> (coordinator) works each case with five specialist agents that can read SkyLink's systems and cannot change them. The <b>feed consumer</b> (the radio) applies the network's numbered events. The <b>executor</b> (the hands; the brief's Action agent) holds the only write key. Staff decide at the <b>staff desk</b> (the human gate).</p>
+  <p><b>The problem.</b> When a fibre cut or a tower fault happens, SkyLink's network team knows within minutes and customer care does not. Agents run the same reboot script, and 30% of these calls end in an unnecessary technician visit costing $650 (brief, p.1). The architect's part is to link network events, which arrive as a stream, to customer contacts, which ask and wait, and to decide what rules, machine learning and a language model each do.</p>
+  <p><b>The architecture.</b> Five programs from one container image share one PostgreSQL database. The <b>API</b> (front desk) returns a complaint reference after one database write. The <b>orchestrator</b> (coordinator) works each case with five specialist agents that can read SkyLink's systems and cannot change them. The <b>feed consumer</b> (the radio) applies the network's numbered events. The <b>executor</b> (the hands; the brief's Action agent) holds the only write key. Staff decide at the <b>staff desk</b> (the human gate). The <b>MCP server</b> lets other assistants ask, and never act.</p>
 </div>
 
 <blockquote class="brief">"The LLM reasons and talks; ML models and rules compute scores, amounts and eligibility; only the Action agent writes to enterprise systems, and only after the human gate for high-impact actions."<cite>The principle of the brief's reference architecture, p.5</cite></blockquote>
@@ -119,10 +119,10 @@
 <table class="tight" style="margin-top:2.5mm">
   <thead><tr><th style="width:36mm">The principle</th><th>How this build enforces it, in code</th><th style="width:50mm">Evidence</th></tr></thead>
   <tbody>
-    <tr><th>The LLM reasons and talks</th><td>The model reads a message with personal details masked and returns a form of nine fields. It has no tools, and it writes nothing a customer reads: customers get one of 35 pre-written messages. Keyword rules are the default and the fallback.</td><td><span class="tag tag--calc">Measured</span> 58 of 58 attack runs pass, 18 of them read by a scripted model that obeys the attacker.</td></tr>
+    <tr><th>The LLM reasons and talks</th><td>The model reads a masked message into a form of nine fields, and may choose which guide section fits. It has no tools and writes nothing a customer reads: customers get one of 35 pre-written messages. Keyword rules are the default and the fallback.</td><td><span class="tag tag--calc">Measured</span> 61 of 61 attack runs pass, 18 of them read by a scripted model that obeys the attacker.</td></tr>
     <tr><th>ML and rules compute scores, amounts, eligibility</th><td>Code computes all three: the network decision, the credit from a versioned policy file, the rule for a technician visit. No machine-learning model is built (section 3).</td><td><span class="tag tag--calc">Measured</span> 4,050 of 4,050 credit cases match an independent calculation.</td></tr>
     <tr><th>Only the Action agent writes</th><td>Specialist agents hold read-only keys and write proposals to the database. The executor, a separate program with the only write key, checks each proposal again and applies it once.</td><td><span class="tag tag--calc">Measured</span> All 15 attempts to write, or to read out of scope, with a read-only key are refused (403).</td></tr>
-    <tr><th>Only after the human gate</th><td>A credit above INR 500 is paid only after a supervisor approves a hash of the exact frozen request, which the executor checks again. Up to INR 500 it is applied without review (client decision D3, execution plan, 23 November 2026).</td><td><span class="tag tag--human">Human gate</span> The tests, the evaluations and the attack suite run stricter, with every credit under review.</td></tr>
+    <tr><th>Only after the human gate</th><td>A credit above $500 is paid only after a supervisor approves a hash of the exact frozen request, which the executor checks again. Up to $500 it is applied without review (client decision D3, execution plan, 23 November 2026).</td><td><span class="tag tag--human">Human gate</span> The tests, the evaluations and the attack suite run stricter, with every credit under review.</td></tr>
   </tbody>
 </table>
 
@@ -132,7 +132,7 @@
   <div><em>Degraded mode</em><b>8 of 8</b><span>failure drills hold every rule. No false all-clear.</span></div>
   <div><em>One writer</em><b>1 incident</b><span>a node, however many of its customers write in.</span></div>
 </div>
-<p class="src"><span class="tag tag--calc">Measured</span> on synthetic stand-in data, against a simulator, on one laptop: the design holds at this rate, and these are not capacity figures (<code>loadtest/reports/surge-brief-before-fix.md</code>; <code>evals/reports/</code>: <code>outage_detection</code>, <code>curveball</code>, <code>attack_suite</code>, <code>credit_policy</code>; <code>tests/e2e/test_outage_journey.py</code>). Test suite: 2,689 tests, 0 failed, 96.0% coverage, gate 80% (GitLab pipeline 3106633060, commit <code>b9c70ef</code>, 24 November 2026).</p>
+<p class="src"><span class="tag tag--calc">Measured</span> on synthetic stand-in data, against a simulator, on one laptop: the design holds at this rate, and these are not capacity figures (<code>loadtest/reports/surge-brief-before-fix.md</code>; <code>evals/reports/</code>: <code>outage_detection</code>, <code>curveball</code>, <code>attack_suite</code>, <code>credit_policy</code>; <code>tests/e2e/test_outage_journey.py</code>). Test suite: 2,902 tests, 0 failed, 96% coverage, gate 80% (one laptop, commit <code>772467c</code>, 25 November 2026).</p>
 <p class="src"><b>Stand-ins.</b> The client is fictional and all data is synthetic. The datasets, credit policy, router guides and mock APIs that the brief says SkyLink supplies were not received, so the team built replacements, among them one simulator, <code>mock-oss</code>, for the gateway and SkyLink's six systems (README, "Two things that are stand-ins").</p>
 
 <!-- ============================================================ 2 · THE ARCHITECTURE -->
@@ -157,7 +157,7 @@
     <tr><th>2 Input and output guardrails</th><td>In: a signed pass on every request, rate limits, personal details masked before any model call, a check for wording aimed at the assistant. Out: pre-written messages, quoted sources, and a check of what each message claims about the network.</td><td><span class="tag tag--ok">Built</span></td></tr>
     <tr><th>3 Orchestrator <small>LangGraph supervisor</small></th><td>A LangGraph state machine that saves each conversation's progress in PostgreSQL. The supervisor is plain code. Limits: 30 seconds and two attempts a step, 12 decisions a turn, then a person.</td><td><span class="tag tag--ok">Built</span></td></tr>
     <tr><th>4 Specialist agents <small>intake, knowledge, decision, action</small></th><td>Intake is triage. Knowledge is troubleshooting, with citations. Decision is diagnostics, resolution and credit, and dispatch. Action is the executor, a separate program. The telecom case's sixth agent, proactive notification, works with the feed consumer.</td><td><span class="tag tag--ok">Built</span></td></tr>
-    <tr><th>5 Human approval gate</th><td>A supervisor's approval of a credit above INR 500, bound to the hash of the frozen request, lapsing after 72 hours, and checked again by the executor. Staff can take any conversation over. Every decision is written with its audit entry.</td><td><span class="tag tag--human">Built</span></td></tr>
+    <tr><th>5 Human approval gate</th><td>A supervisor's approval of a credit above $500, bound to the hash of the frozen request, lapsing after 72 hours, and checked again by the executor. Staff can take any conversation over. Every decision is written with its audit entry.</td><td><span class="tag tag--human">Built</span></td></tr>
     <tr><th>6 Tools and systems <small>enterprise APIs, ML models and rules, knowledge index</small></th><td>Typed connections to six systems, one gateway key for each agent identity, every call audited. Rules in code: the network decision, the credit engine, the visit rule. Knowledge index: the router guides. ML models: none. The churn score the brief maps here is left out on purpose.</td><td><span class="tag tag--ok">Built</span><br><span class="tag tag--no">No ML</span></td></tr>
     <tr><th>7 Data and ingestion pipeline</th><td>Streaming: the feed consumer and its picture of the network. Batch: the join from customer to service to network node, and the build of the versioned guide index (check, split, embed).</td><td><span class="tag tag--ok">Built</span></td></tr>
     <tr><th>8 Trust and operations <small>across every layer</small></th><td>A key for each agent, a managed secret store on AWS, an audit log the database refuses to rewrite, redacted logs, seven evaluations (one an attack suite), a release pipeline that rolls back by itself. Not built: metrics, dashboards, alerts and a runbook (milestone M5).</td><td><span class="tag tag--ok">Built</span><br><span class="tag tag--no">In part</span></td></tr>
@@ -171,7 +171,7 @@
 <section class="wide">
 <figure>
 <!--FIG1-->
-  <svg class="dia" id="fig-architecture" viewBox="0 0 920 548" role="img" aria-label="Architecture of the care platform. Customers, a contact centre and staff on the left reach the API and the staff desk. Both write to one PostgreSQL database in the middle of the care platform, which runs in the cloud. The orchestrator with its five specialist agents reads SkyLink's systems through a gateway with read-only keys and asks a language model provider outside the platform. The feed consumer receives numbered events from Network Monitoring. The executor is the only writer. A human gate stands before a credit above INR 500. SkyLink's six systems are on-premises behind one API gateway.">
+  <svg class="dia" id="fig-architecture" viewBox="0 0 920 548" role="img" aria-label="Architecture of the care platform. Customers, a contact centre and staff on the left reach the API and the staff desk. Both write to one PostgreSQL database in the middle of the care platform, which runs in the cloud. The orchestrator with its five specialist agents reads SkyLink's systems through a gateway with read-only keys and asks a language model provider outside the platform. The feed consumer receives numbered events from Network Monitoring. The executor is the only writer. A human gate stands before a credit above $500. SkyLink's six systems are on-premises behind one API gateway.">
     <rect class="paper" x="0" y="0" width="920" height="548"/>
     <!-- zones -->
     <rect class="zone" x="114" y="56" width="502" height="452" rx="10"/>
@@ -238,7 +238,7 @@
     <path class="gate" d="M330 332l7 7l-7 7l-7-7z"/>
     <rect class="gate" x="344" y="325" width="106" height="29" rx="4"/>
     <text class="gatelabel" x="397" y="336.5" text-anchor="middle">HUMAN GATE</text>
-    <text class="lbl gatetext" x="397" y="348.5" text-anchor="middle">credit above INR 500</text>
+    <text class="lbl gatetext" x="397" y="348.5" text-anchor="middle">credit above $500</text>
 
     <!-- people and channels -->
     <rect class="box" x="4" y="100" width="100" height="44" rx="22"/><text class="name" x="54" y="119" text-anchor="middle">Customer</text><text class="sub" x="54" y="133" text-anchor="middle">web chat</text>
@@ -350,14 +350,14 @@
   <tbody>
     <tr><th>1 Take the contact, give a reference <small>API</small></th><td><span class="k k--rules">Rules</span></td><td>The two-minute rule must hold when everything else is broken, so this step depends on the database alone.</td><td>A model's reading first. It takes a second or more and can fail.</td><td>Slowest reference in the surge test: 0.253 s. The reply arrives separately.</td></tr>
     <tr><th>2 Who is this customer? <small>Triage</small></th><td><span class="k k--rules">Rules</span></td><td>Identity is a yes-or-no fact that records settle: the sign-in, the caller's line, or two things the customer knows.</td><td>A model's judgement. It can be told "I am customer C1234567" and believe it.</td><td>Five wrong answers in an hour lock the check. Four digits are weak (D9).</td></tr>
-    <tr><th>3 What do they want? <small>Triage, with the language model</small></th><td><span class="k k--llm">LLM</span> <span class="k k--rules">Rules</span></td><td>Reading free text is what a language model does better than rules. It fills in nine fields. Rules take over if it fails.</td><td>A model with tools: it can be talked into using them. Rules alone are cruder.</td><td>58 of 58 attack runs with the live model. Median reading 1.2 s, limit 8 s.</td></tr>
+    <tr><th>3 What do they want? <small>Triage, with the language model</small></th><td><span class="k k--llm">LLM</span> <span class="k k--rules">Rules</span></td><td>Reading free text is what a language model does better than rules. It fills in nine fields. Rules take over if it fails.</td><td>A model with tools: it can be talked into using them. Rules alone are cruder.</td><td>61 of 61 attack runs with the live model. Median reading 1.6 s, limit 8 s.</td></tr>
     <tr><th>4 Which network node serves them? <small>Diagnostics</small></th><td><span class="k k--rules">Rules</span></td><td>A join between records. Where the map fails, a remote line test names the node that really serves the line.</td><td>A model guessing the likeliest node.</td><td>The map alone places 96.86% of broadband services.</td></tr>
     <tr><th>5 Is there an outage for them? <small>Diagnostics</small></th><td><span class="k k--rules">Rules</span></td><td>It decides what the customer is told and whether a technician drives out, so it must come out the same way every time.</td><td>A model's opinion of the network. Only a fresh reading or a declared outage counts.</td><td>97.47% detected. No false all-clear in 8 of 8 drills. More cases go to people.</td></tr>
     <tr><th>6 Is an undeclared outage starting? <small>Diagnostics</small></th><td><span class="k k--stats">Statistics</span></td><td>Alarms, and one coincidence test: three or more lines failed on a node in 15 minutes, a less than 1-in-1,000 chance.</td><td>An anomaly model (ML). It needs months of labelled history and cannot explain itself.</td><td>Settings are assumptions. The earlier rule suspected 1 restored node in 7.</td></tr>
     <tr><th>7 What may the customer be told? <small>Orchestrator</small></th><td><span class="k k--rules">Rules</span></td><td>35 pre-written messages, filled in from verified facts. Each declares its claim about the network, which is checked.</td><td>Text written by a model. It can claim what nobody verified.</td><td>Nobody in an outage was told "clear" in the drills. Stiff wording.</td></tr>
-    <tr><th>8 Which router steps fit this fault? <small>Troubleshooting</small></th><td><span class="k k--rag">RAG</span></td><td>A filter first: only the guide for the customer's router model. Then the best section, quoted word for word.</td><td>A model rewriting the steps. A learned embedder, so the index never varies.</td><td>Right section 81.25%, as first scored out of sample. Never the wrong guide.</td></tr>
+    <tr><th>8 Which router steps fit this fault? <small>Troubleshooting</small></th><td><span class="k k--rag">RAG</span> <span class="k k--llm">LLM</span></td><td>Only the guide of the customer's own router. A model may pick among its sections; steps quoted word for word.</td><td>A model rewriting the steps. A learned embedder, so the index never varies.</td><td>81.25% right as first scored; 144 of 144 with the model. Never the wrong guide.</td></tr>
     <tr><th>9 Is a credit owed, and how much? <small>Resolution</small></th><td><span class="k k--rules">Rules</span></td><td>Money must come out the same for everyone in the same situation: a formula in code, from a versioned policy file.</td><td>An amount from a language model or a learned model. It cannot be audited.</td><td>4,050 of 4,050 cases match an independent calculation.</td></tr>
-    <tr><th>10 Pay a credit above INR 500? <small>Supervisor, then executor</small></th><td><span class="k k--person">Person</span></td><td>The brief requires approval above INR 500. It is bound to the hash of the exact request, so it cannot land on another.</td><td>Review of every credit. It is one setting away, and it is how the tests run.</td><td>Unapproved, wrong-role and wrong-request approvals: none gets through.</td></tr>
+    <tr><th>10 Pay a credit above $500? <small>Supervisor, then executor</small></th><td><span class="k k--person">Person</span></td><td>The brief requires approval above $500. It is bound to the hash of the exact request, so it cannot land on another.</td><td>Review of every credit. It is one setting away, and it is how the tests run.</td><td>Unapproved, wrong-role and wrong-request approvals: none gets through.</td></tr>
     <tr><th>11 Does a technician need to come? <small>Dispatch, then executor</small></th><td><span class="k k--rules">Rules</span></td><td>One rule, applied twice: node confirmed clear, the line's test failing after a ten-minute hold, a slot the customer chose.</td><td>A request alone. A model reading the slot answer: a misread books a visit.</td><td>None of the baseline's 3,225 unnecessary visits booked. What staff decide for an insisting customer no replay can measure.</td></tr>
     <tr><th>12 One repair ticket for each fault <small>Executor</small></th><td><span class="k k--rules">Rules</span></td><td>"Zero duplicate tickets" is a counting guarantee. A database constraint and an idempotency key give it.</td><td>Nothing here needs judgement.</td><td>One incident a node, however many of its customers write.</td></tr>
     <tr><th>13 Tell customers before they call <small>Feed consumer, notifications, executor</small></th><td><span class="k k--rules">Rules</span></td><td>The network team's event triggers it, and consent is read from CRM at the moment of sending. Nothing to interpret.</td><td>A model writing or choosing the texts.</td><td>42,845 texts sent and 12,390 withheld for want of consent.</td></tr>
@@ -369,11 +369,11 @@
 <p class="src"><span class="tag tag--calc">Measured</span> on stand-in data: the reports in <code>evals/reports/</code>, <code>loadtest/reports/surge-brief-before-fix.md</code>, <code>reports/data_profile.md</code>. Reasons: <code>docs/architecture_design.html</code> (Tools); <code>docs/EXECUTION_PLAN.md</code> (design rules, A10, A17).</p>
 </section>
 
-<div class="note"><b>Machine learning and churn scoring, exactly.</b> No machine-learning model is trained or served anywhere in this system. Churn score: not built. A repeat-contact rule raises the priority of the workflow's own handovers and nothing else (assumption A10 of the execution plan; its formal record is not written yet). Outage suspicion is one statistical test (A17). Guide retrieval uses a deterministic hashing embedder and no learned embedding model. The one learned model is the language model that reads messages, off by default.</div>
+<div class="note"><b>Machine learning and churn scoring, exactly.</b> No machine-learning model is trained or served anywhere in this system. Churn score: not built. A repeat-contact rule raises the priority of the workflow's own handovers and nothing else (assumption A10 of the execution plan; its formal record is not written yet). Outage suspicion is one statistical test (A17). Guide retrieval embeds by deterministic hashing. The one learned model is the language model, off by default.</div>
 
 <!-- ============================================================ 4 · COMPONENTS -->
 <h2><span class="n">4</span> Component list</h2>
-<p>Five programs run from one container image, each started with only its own keys: the four of the care platform and the simulator of SkyLink's side. The database is the sixth running part. Code is under <code>src/skylink_care/</code>.</p>
+<p>Six programs run from one container image, each started with only its own keys: five of the care platform, among them the MCP server, which serves read-only tools to other assistants (ADR 0003), and SkyLink's simulator.</p>
 
 <h3>The care platform <span class="tag tag--ok">Built</span></h3>
 <table class="tight">
@@ -384,7 +384,7 @@
     <tr><th>Orchestrator <small>coordinator · <code>care-worker</code> · <code>orchestrator/</code></small></th><td>A LangGraph state machine that works each conversation through fixed steps. The supervisor, one function in plain code, picks the next step. Up to 8 cases at a time, each locked while it is worked on.</td><td>Four read-only keys. The language model's key, when a model is switched on.</td><td>Changes anything in SkyLink's systems. It writes a proposal.</td></tr>
     <tr><th>Executor <small>the hands · <code>care-executor</code> · <code>executor/</code></small></th><td>The brief's Action agent. Carries out five kinds of proposal: register a complaint, open or update a repair ticket, send a text, apply a credit, book a visit. It checks the conditions again, then sends the stored request, so that it is applied once.</td><td>The only key that writes. Of CRM it reads one fact: consent to messages.</td><td>Decides what should be done. It checks again, then carries out.</td></tr>
     <tr><th>Feed consumer <small>the radio · <code>care-ingest</code> · <code>ingest/</code></small></th><td>Reads the network team's numbered events, up to 200 at a time, keeps the platform's picture of the network, proposes outage texts and wakes the cases that wait.</td><td>One key: the event feed and nothing else.</td><td>Has the last word. A case it wakes reads the network again.</td></tr>
-    <tr><th>Staff desk <small>the human gate · <code>web/staff.html</code> · <code>api/approvals.py</code></small></th><td>A page served by the API. A supervisor approves or rejects credits above INR 500. Staff close handed-over cases, which tells the customer once, with the closing note quoted. Operations staff see troubles that belong to no conversation.</td><td>Staff passes with a role: agent, supervisor or operations.</td><td>Lets a decision land without its audit entry: both are one transaction.</td></tr>
+    <tr><th>Staff desk <small>the human gate · <code>web/staff.html</code> · <code>api/approvals.py</code></small></th><td>A page served by the API. A supervisor approves or rejects credits above $500. Staff close handed-over cases, which tells the customer once, quoting the closing note. Operations staff see troubles that belong to no case.</td><td>Staff passes with a role: agent, supervisor or operations.</td><td>Lets a decision land without its audit entry: both are one transaction.</td></tr>
   </tbody>
 </table>
 
@@ -395,7 +395,7 @@
   <tbody>
     <tr><th>Triage <small>Contact Triage Agent · <code>agents/triage.py</code></small></th><td>Who the customer is: the sign-in, the caller's registered line, or a customer ID with the last four digits of the registered mobile, checked by CRM. What they ask for, read by the language model or by keyword rules.</td><td><code>crm:profile</code> <code>crm:verify</code></td><td>Believes a customer ID typed into a message.</td></tr>
     <tr><th>Diagnostics <small>Network Diagnostics Agent · <code>agents/diagnostics.py</code></small></th><td>Outage, confirmed clear or unknown, from the address-to-node map, the node's live status, the feed's record and a remote line test.</td><td><code>network:read</code> <code>network:test</code></td><td>Treats a failed lookup as all clear.</td></tr>
-    <tr><th>Troubleshooting <small>Troubleshooting Agent (RAG) · <code>agents/troubleshooting.py</code></small></th><td>Which section of the customer's own router guide fits the fault, quoted word for word with its source. It runs only when the node is confirmed clear and the line passes its test.</td><td>None: it searches the platform's own database.</td><td>Writes steps of its own, or quotes another router's guide.</td></tr>
+    <tr><th>Troubleshooting <small>Troubleshooting Agent (RAG) · <code>agents/troubleshooting.py</code></small></th><td>Which section of the customer's own router guide fits the fault (a model may choose among those found: ADR 0002), quoted word for word with its source. It runs only when the node is confirmed clear and the line passes its test.</td><td>None: it searches the platform's own database.</td><td>Writes steps of its own, or quotes another router's guide.</td></tr>
     <tr><th>Resolution <small>Resolution and Credit Agent · <code>agents/resolution.py</code></small></th><td>Whether a credit is owed and how much, from the credits already on the account and the policy file. It proposes the credit with the amount frozen.</td><td><code>billing:read</code></td><td>Applies a credit.</td></tr>
     <tr><th>Dispatch <small>Dispatch Agent · <code>agents/dispatch.py</code></small></th><td>Whether a technician visit may be offered, which slots to offer, and which slot the customer chose, read by narrow word rules.</td><td><code>field:read</code></td><td>Books a visit.</td></tr>
     <tr><th>Notifications <small>Proactive Notification · <code>agents/notifications.py</code></small></th><td>The wording of the texts that say an outage has started or ended. The feed consumer decides who is told. The executor sends each text after checking consent.</td><td>None.</td><td>Sends anything itself.</td></tr>
@@ -518,9 +518,9 @@
 </table>
 <p class="src"><span class="tag tag--calc">Measured</span> In the half-hour load test 42,845 such texts were sent and 12,390 skipped: no consent, or too old (<code>loadtest/reports/surge-brief-before-fix.md</code>). Texts are recorded in this build, never really sent. Steps: <code>docs/HOW_IT_WORKS.md</code> sections 3.5, 5.7.</p>
 
-<h3>The credit path, with the human gate above INR 500</h3>
+<h3>The credit path, with the human gate above $500</h3>
 <figure>
-  <svg class="dia" viewBox="0 0 760 108" role="img" aria-label="The credit path. The resolution agent works out the amount from the policy file. The request is frozen with its hash in the database. Up to INR 500 it goes to the executor without review. Above INR 500 a supervisor must approve the hash first. The executor checks again and pays once to Billing.">
+  <svg class="dia" viewBox="0 0 760 108" role="img" aria-label="The credit path. The resolution agent works out the amount from the policy file. The request is frozen with its hash in the database. Up to $500 it goes to the executor without review. Above $500 a supervisor must approve the hash first. The executor checks again and pays once to Billing.">
     <rect class="box" x="4" y="58" width="124" height="42" rx="6"/><text class="hname" x="66" y="76" text-anchor="middle">Resolution agent</text><text class="lbl" x="66" y="90" text-anchor="middle">amount from the policy file</text>
     <rect class="store" x="152" y="58" width="132" height="42" rx="6"/><text class="hname" x="218" y="76" text-anchor="middle">Frozen proposal</text><text class="lbl" x="218" y="90" text-anchor="middle">request and its hash, stored</text>
     <path class="gate" d="M334 55l28 24l-28 24l-28-24z"/><text class="lbl gatetext" x="334" y="82.5" text-anchor="middle">&gt; 500?</text>
@@ -530,10 +530,10 @@
     <path class="wire wire--file" d="M128 79H143"/><path class="head--file" d="M152 79l-9-5v10z"/>
     <path class="wire wire--file" d="M284 79H297"/><path class="head--file" d="M306 79l-9-5v10z"/>
     <path class="wire wire--file" d="M362 79H569"/><path class="head--file" d="M578 79l-9-5v10z"/>
-    <text class="lbl" x="470" y="73" text-anchor="middle">up to INR 500: no review</text>
+    <text class="lbl" x="470" y="73" text-anchor="middle">up to $500: no review</text>
     <text class="lbl" x="470" y="93" text-anchor="middle">client decision D3, 23 November 2026</text>
     <path class="wire wire--gate" d="M334 55V27H393"/><path class="head--gate" d="M402 27l-9-5v10z"/>
-    <text class="lbl gatetext" x="326" y="30" text-anchor="end">above INR 500</text>
+    <text class="lbl gatetext" x="326" y="30" text-anchor="end">above $500</text>
     <path class="wire wire--gate" d="M552 27H630V49"/><path class="head--gate" d="M630 58l-5-9h10z"/>
     <text class="lbl gatetext" x="638" y="30">approval on record</text>
     <path class="wire wire--act" d="M682 79H696"/><path class="head--act" d="M706 79l-10-6v12z"/>
@@ -541,7 +541,7 @@
   </svg>
   <figcaption><b>Figure 3. One human-approval step.</b> The amount never comes from a model or from what the customer wrote. The executor takes nothing on trust: it checks the hash, the approval where one is required, a credit already on the account for this service and outage, and the cap of the billing cycle.</figcaption>
 </figure>
-<p class="src"><b>Two examples, by the policy file.</b> A plan of INR 999 a month, out for 5 hours: 999 × 5 × 1.0 ÷ 720 = INR 6.94, raised to the policy's minimum of INR 50.00 and paid without review. A small-business plan of INR 4,999 a month, out for 50 hours: 4,999 × 50 × 1.5 ÷ 720 = INR 520.73, which waits for a supervisor. The policy file is a placeholder labelled <code>v0-placeholder</code>. The code's own default, and so the tests, the evaluations and the attack suite, put every credit under review; the stack and the AWS demonstration run with <code>CARE_CREDIT_REVIEW_ALL=false</code>. An approval nobody gives within 72 hours lapses. Sources: <code>docs/HOW_IT_WORKS.md</code> section 5.5; <code>README.md</code> ("Service credits and approvals"); <code>docs/EXECUTION_PLAN.md</code> section 12 (D3).</p>
+<p class="src"><b>Two examples, by the policy file.</b> A plan of $999 a month, out for 5 hours: 999 × 5 × 1.0 ÷ 720 = $6.94, raised to the policy's minimum of $50.00 and paid without review. A small-business plan of $4,999 a month, out for 50 hours: 4,999 × 50 × 1.5 ÷ 720 = $520.73, which waits for a supervisor. The policy file is a placeholder labelled <code>v0-placeholder</code>. The code's own default, and so the tests, the evaluations and the attack suite, put every credit under review; the stack and the AWS demonstration run with <code>CARE_CREDIT_REVIEW_ALL=false</code>. An approval nobody gives within 72 hours lapses. Sources: <code>docs/HOW_IT_WORKS.md</code> section 5.5; <code>README.md</code> ("Service credits and approvals"); <code>docs/EXECUTION_PLAN.md</code> section 12 (D3).</p>
 
 <!-- ============================================================ 6 · DATA -->
 <h2><span class="n">6</span> Data and knowledge</h2>
@@ -606,7 +606,7 @@
 <h2><span class="n">7</span> Cloud: what runs where, the choice, the cost and the release</h2>
 <p>SkyLink's core systems stay on its premises, and the care platform runs in the cloud. Three programs may cross the boundary between them: the orchestrator to read, the feed consumer to listen, the executor to act. Figure 5 sets what runs today beside the design for a pilot.</p>
 <figure class="mt">
-  <svg class="dia" viewBox="0 0 760 318" role="img" aria-label="Two deployments side by side. Today: one EC2 host in AWS Mumbai runs the four care programs and a simulator of SkyLink's systems behind Caddy, with a managed PostgreSQL database, a secrets store, an image registry and a release bucket; SkyLink's premises are not connected. Target for a pilot, on paper: a load balancer with a web firewall, containers on ECS Fargate across two zones, a database with a standby, a queue, a stream, monitoring, and a private link to SkyLink's API gateway and six systems on-premises.">
+  <svg class="dia" viewBox="0 0 760 318" role="img" aria-label="Two deployments side by side. Today: one EC2 host in AWS Mumbai runs the five care programs and a simulator of SkyLink's systems behind Caddy, with a managed PostgreSQL database, a secrets store, an image registry and a release bucket; SkyLink's premises are not connected. Target for a pilot, on paper: a load balancer with a web firewall, containers on ECS Fargate across two zones, a database with a standby, a queue, a stream, monitoring, and a private link to SkyLink's API gateway and six systems on-premises.">
     <!-- ================= today ================= -->
     <text class="zlabel" x="4" y="12">AS DEMONSTRATED TODAY · BUILT</text>
     <rect class="box" x="4" y="22" width="112" height="30" rx="15"/><text class="hname" x="60" y="41" text-anchor="middle">Customers, staff</text>
@@ -616,12 +616,13 @@
     <text class="zlabel" x="12" y="76">AWS · MUMBAI (AP-SOUTH-1) · EACH IN A SINGLE ZONE</text>
     <rect class="box" x="12" y="84" width="186" height="118" rx="6"/>
     <text class="hname" x="22" y="100">One EC2 host</text><text class="lbl" x="104" y="100">t3.medium</text>
-    <text class="sub" x="22" y="117">care-api</text>
-    <text class="sub" x="22" y="132">care-worker (orchestrator)</text>
-    <text class="sub" x="22" y="147">care-ingest (feed consumer)</text>
-    <text class="sub" x="22" y="162">care-executor</text>
-    <text class="sub" x="22" y="177">mock-oss (stand-in for SkyLink)</text>
-    <text class="lbl" x="22" y="194">no SSH: reached through SSM</text>
+    <text class="sub" x="22" y="115">care-api</text>
+    <text class="sub" x="22" y="128">care-worker (orchestrator)</text>
+    <text class="sub" x="22" y="141">care-ingest (feed consumer)</text>
+    <text class="sub" x="22" y="154">care-executor</text>
+    <text class="sub" x="22" y="167">care-mcp (no key set: closed)</text>
+    <text class="sub" x="22" y="180">mock-oss (stand-in for SkyLink)</text>
+    <text class="lbl" x="22" y="195">no SSH: reached through SSM</text>
     <rect class="store" x="208" y="84" width="152" height="40" rx="6"/><text class="hname" x="218" y="100">RDS PostgreSQL 17</text><text class="lbl" x="218" y="114">db.t4g.micro · encrypted</text>
     <rect class="box" x="208" y="130" width="152" height="32" rx="6"/><text class="hname" x="218" y="144">Secrets Manager</text><text class="lbl" x="218" y="156">the host's settings</text>
     <rect class="box" x="208" y="168" width="152" height="34" rx="6"/><text class="hname" x="218" y="183">ECR · S3</text><text class="lbl" x="218" y="195">images · release bundles</text>
@@ -736,8 +737,8 @@
         <tr><th>Visitor</th><td>Open a contact and read their own conversation.</td></tr>
         <tr><th>Customer</th><td>Their own conversations.</td></tr>
         <tr><th>Channel</th><td>A trusted contact-centre system: the contacts it opened. Only a channel may state the phone line a call came from.</td></tr>
-        <tr><th>Agent</th><td>See the queues, any conversation and its audit trail. Close a handed-over case. Take a conversation over. Decide credits up to INR 500 only where every credit is put under review.</td></tr>
-        <tr><th>Supervisor</th><td>Everything an agent can do. Approve or reject a credit above INR 500. Close an operations item.</td></tr>
+        <tr><th>Agent</th><td>See the queues, any conversation and its audit trail. Close a handed-over case. Take a conversation over. Decide credits up to $500 only where every credit is put under review.</td></tr>
+        <tr><th>Supervisor</th><td>Everything an agent can do. Approve or reject a credit above $500. Close an operations item.</td></tr>
         <tr><th>Operations</th><td>See the queues, any conversation and its audit trail. Close an operations item. No credits, no takeovers.</td></tr>
       </tbody>
     </table>
@@ -750,7 +751,7 @@
       <tbody>
         <tr><th>The language model's provider</th><td>Only when a model is switched on, and only for an identified customer: the messages, with personal details replaced by placeholders. The provider is asked not to keep a copy.</td></tr>
         <tr><th>The tracing service</th><td>Only when switched on: each step's name, timing and any error, with the contact's id and the code revision. No message, profile or working notes.</td></tr>
-        <tr><th>SkyLink's systems</th><td>Registrations, texts, credits and bookings, by the executor only, each under its idempotency key. A text only with consent. A credit above INR 500 only after approval.</td></tr>
+        <tr><th>SkyLink's systems</th><td>Registrations, texts, credits and bookings, by the executor only, each under its idempotency key. A text only with consent. A credit above $500 only after approval.</td></tr>
         <tr><th>Logs</th><td>Events with their identifiers. Contact details and secrets are removed first.</td></tr>
       </tbody>
     </table>
@@ -768,7 +769,7 @@
     <tr><th>A pipeline with no stored cloud key</th><td>The release pipeline proves who it is to AWS on every run and gets short-lived access, for one branch of one project: push the image, upload the release bundle, run one deploy command.</td><td>Whoever can push to that branch can release to the demonstration server.</td></tr>
   </tbody>
 </table>
-<p class="src">The whole design was then tested by attack: 40 attacks, 58 runs, no critical failure, and a script that removes safety controls in 27 checks to show that the suite itself can fail. A suite shows that those attacks fail. It cannot show that nothing would succeed. Sources: <code>docs/threat_model.md</code> (the OWASP Top 10 for LLM Applications, item by item, and "Beyond the LLM list"); <code>docs/HOW_IT_WORKS.md</code> section 7; <code>deploy/aws/terraform/iam.tf</code>, <code>database.tf</code>, <code>host.tf</code>.</p>
+<p class="src">The whole design was then tested by attack: 43 attacks, 61 runs, no critical failure, and a script that removes safety controls in 31 checks to show that the suite itself can fail. A suite shows that those attacks fail. It cannot show that nothing would succeed. Sources: <code>docs/threat_model.md</code> (the OWASP Top 10 for LLM Applications, item by item, and "Beyond the LLM list"); <code>docs/HOW_IT_WORKS.md</code> section 7; <code>deploy/aws/terraform/iam.tf</code>, <code>database.tf</code>, <code>host.tf</code>.</p>
 
 <!-- ============================================================ 9 · DECISION RECORDS -->
 <h2><span class="n">9</span> Decision records</h2>
@@ -824,7 +825,7 @@
     <dt>Decision</dt><dd>A language model is good at understanding what people write. How much of the job should it do?</dd>
     <dt>Options</dt><dd>A. An agent with tools: the model decides and calls SkyLink's systems itself. B. Rules decide and the model words the replies. <span class="chosen">C. The model describes the message in nine fields, rules decide, and pre-written messages speak.</span></dd>
     <dt>Choice</dt><dd>C. The model describes and code decides. It has no tools and writes nothing a customer reads.</dd>
-    <dt>Why</dt><dd>The model's worst possible mistake becomes a wrong tick on a form. It cannot name an amount, declare the network healthy or put a sentence before a customer. 58 of 58 attack runs pass, 18 with a scripted model that obeys the attacker.</dd>
+    <dt>Why</dt><dd>The model's worst possible mistake becomes a wrong tick on a form. It cannot name an amount, declare the network healthy or put a sentence before a customer. 61 of 61 attack runs pass, 18 with a scripted model that obeys the attacker.</dd>
     <dt>Trade-off</dt><dd>Conversations are less flexible. 35 fixed messages cannot answer everything, and unusual requests go to a person. The fallback keyword rules are cruder than the model.</dd>
   </dl>
 </section>
@@ -890,7 +891,7 @@
     <tr><th>D11</th><td>With Network Monitoring down, how long before a person takes a contact?</td><td>Five minutes.</td></tr>
   </tbody>
 </table>
-<p class="src">Open questions: five of the eight client decisions of <code>docs/EXECUTION_PLAN.md</code> section 12 not yet taken; D1, D7 and D8 are open too. Of the seven evaluations only the attack suite has run with the live language model, once; the eight smoke journeys run with it on every release. The half-hour load test predates a fix to the rule for failing lines. Sources: <code>README.md</code> ("Not built yet"); <code>docs/HOW_IT_WORKS.md</code> section 13.</p>
+<p class="src">Open questions: five of the eight client decisions of <code>docs/EXECUTION_PLAN.md</code> section 12 not yet taken; D1, D7 and D8 are open too. Only the attack suite and the choice of a guide section have run with the live language model; the eight smoke journeys run with it on every release. The half-hour load test predates a fix to the rule for failing lines. Sources: <code>README.md</code> ("Not built yet"); <code>docs/HOW_IT_WORKS.md</code> section 13.</p>
 
 <!-- ============================================================ 11 · FAILURE HANDLING -->
 <section class="wide">

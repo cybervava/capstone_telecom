@@ -41,10 +41,7 @@ class Remark:
 
 @dataclass(frozen=True)
 class Row:
-    """One figure. `key` names its value cell for other rows, other sheets and the summary.
-
-    On the Costs sheet a row also has a rupee column: `inr` is its formula and `inr_key` its name.
-    """
+    """One figure. `key` names its value cell for other rows, other sheets and the summary."""
 
     label: str
     formula: str | None
@@ -55,8 +52,6 @@ class Row:
     kind: str = "calc"
     key: str | None = None
     strong: bool = False
-    inr: str | None = None
-    inr_key: str | None = None
 
 
 @dataclass
@@ -115,17 +110,12 @@ class Cells(Mapping[str, str]):
 class Lines:
     """Writes `Band`, `Row` and `Remark` items down a sheet, one row each.
 
-    Columns are label, value, unit, working, status; with `rupees` they are label, value, unit,
-    rupee value, status, source or working."""
+    Columns are label, value, unit, working, status."""
 
     ws: Worksheet
     refs: Refs
     row: int
-    rupees: bool = False
-
-    @property
-    def last_col(self) -> int:
-        return 6 if self.rupees else 5
+    last_col: int = 5
 
     def head(self, labels: tuple[str, ...]) -> Lines:
         s.table_head(self.ws, self.row, labels)
@@ -150,20 +140,12 @@ class Lines:
         s.put(ws, f"A{r}", item.label, wrap=True)
         s.put(ws, f"B{r}", value, item.kind, fmt=item.fmt)
         s.put(ws, f"C{r}", item.unit, "note")
-        if self.rupees:
-            rupees = item.inr.format_map(cells) if item.inr else None
-            s.put(ws, f"D{r}", rupees, "calc", fmt=s.INR)
-            s.put(ws, f"E{r}", item.status, "note", wrap=True)
-            s.put(ws, f"F{r}", item.how, "note", wrap=True)
-        else:
-            s.put(ws, f"D{r}", item.how, "note", wrap=True)
-            s.put(ws, f"E{r}", item.status, "note", wrap=True)
+        s.put(ws, f"D{r}", item.how, "note", wrap=True)
+        s.put(ws, f"E{r}", item.status, "note", wrap=True)
         if item.strong:
             s.emphasise(ws, r, last_col=self.last_col)
         if item.key:
             self.refs.keep(item.key, ws, f"B{r}")
-        if item.inr_key:
-            self.refs.keep(item.inr_key, ws, f"D{r}")
 
 
 def check_names(wb: Workbook, names: frozenset[str]) -> None:

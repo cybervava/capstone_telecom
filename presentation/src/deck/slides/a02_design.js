@@ -38,12 +38,12 @@ const RECORDS_B = [
   [
     "5  The model fills in a form\ndesign rule 2",
     "The model describes a message in nine fields. Rules decide, and pre-written messages speak. It has no tools.",
-    "Its worst mistake is a wrong tick on a form. 58 of 58 attack runs pass (every credit under review), 18 with a scripted model that obeys the attacker.",
+    "Its worst mistake is a wrong tick on a form. 61 of 61 attack runs pass (every credit under review), 18 with a scripted model that obeys the attacker.",
     "Conversations are less flexible: 35 fixed conversation messages cannot answer everything, and unusual requests go to a person.",
   ],
   [
     "6  AWS, in Mumbai\nclient decision D4",
-    "Amazon Web Services, decided on 22 November 2026. The demonstration runs there for about USD 1.90 a day.",
+    "Amazon Web Services, decided on 22 November 2026. The demonstration runs there for about $1.90 a day.",
     "The team had access to AWS: the shortest safe route to a running demonstration. Nothing is tied to one cloud.",
     "One server and one database, each in a single zone. A release stopped the site for 24 s on 22 November.",
   ],
@@ -138,7 +138,7 @@ const STEPS = [
   ["7", "What may the customer be told? · Orchestrator", "Rules"],
   ["8", "Which router steps fit this fault? · Troubleshooting", "Retrieval (RAG)"],
   ["9", "Is a credit owed, and how much? · Resolution", "Rules"],
-  ["10", "Pay a credit above INR 500? · Supervisor, executor", "A person"],
+  ["10", "Pay a credit above $500? · Supervisor, executor", "A person"],
   ["11", "Does a technician need to come? · Dispatch, executor", "Rules"],
   ["12", "One repair ticket for each fault · Executor", "Rules"],
   ["13", "Tell customers before they call · Feed consumer, executor", "Rules"],

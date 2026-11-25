@@ -40,12 +40,11 @@ YELLOW = "FFFF00"
 
 # Number formats. Money shows its currency; a negative is in brackets; a zero is a dash unless
 # the zero is itself the statement (a count of nought, a benefit held at nought).
-INR = '"INR "#,##0;("INR "#,##0);"-"'
-INR_ZERO = '"INR "#,##0;("INR "#,##0);"INR 0"'
-INR_2 = '"INR "#,##0.00;("INR "#,##0.00);"-"'
-INR_M = '"INR "0.00,,"m"'
-USD_2 = '"USD "#,##0.00;("USD "#,##0.00);"-"'
-USD_4 = '"USD "0.0000;("USD "0.0000);"-"'
+USD = '"$"#,##0;("$"#,##0);"-"'
+USD_ZERO = '"$"#,##0;("$"#,##0);"$0"'
+USD_2 = '"$"#,##0.00;("$"#,##0.00);"-"'
+USD_M = '"$"0.00,,"m"'
+USD_4 = '"$"0.0000;("$"0.0000);"-"'
 COUNT = '#,##0;(#,##0);"-"'
 COUNT_ZERO = "#,##0"
 PCT_0 = "0%"

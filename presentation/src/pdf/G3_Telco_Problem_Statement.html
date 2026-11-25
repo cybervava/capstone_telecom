@@ -86,8 +86,8 @@
 <div class="kpis">
   <div><em>Customers · brief p.1</em><b>3.5 m + 8 m</b><span>broadband and mobile customers.</span></div>
   <div><em>Wasted · brief p.1</em><b>30%</b><span>of outage calls end in a technician visit nobody needed.</span></div>
-  <div><em>Per visit · brief p.1</em><b>INR 650</b><span>for every unnecessary visit.</span></div>
-  <div><em>Per 1,000 · derived</em><b>INR 195,000</b><span>wasted: 1,000 × 30% × INR 650. Halving it saves INR 97,500.</span></div>
+  <div><em>Per visit · brief p.1</em><b>$650</b><span>for every unnecessary visit.</span></div>
+  <div><em>Per 1,000 · derived</em><b>$195,000</b><span>wasted: 1,000 × 30% × $650. Halving it saves $97,500.</span></div>
 </div>
 <div class="pain">
   <div>
@@ -99,12 +99,12 @@
     <table>
       <thead><tr><th>If outage contacts a month were</th><th class="num">Wasted on visits a year</th><th class="num">Saved a year at a 50% cut</th></tr></thead>
       <tbody>
-        <tr><td>1,000</td><td class="num">INR 2.34 m</td><td class="num">INR 1.17 m</td></tr>
-        <tr><td>10,000</td><td class="num">INR 23.40 m</td><td class="num">INR 11.70 m</td></tr>
-        <tr><td>50,000</td><td class="num">INR 117.00 m</td><td class="num">INR 58.50 m</td></tr>
+        <tr><td>1,000</td><td class="num">$2.34 m</td><td class="num">$1.17 m</td></tr>
+        <tr><td>10,000</td><td class="num">$23.40 m</td><td class="num">$11.70 m</td></tr>
+        <tr><td>50,000</td><td class="num">$117.00 m</td><td class="num">$58.50 m</td></tr>
       </tbody>
     </table>
-    <p class="src">SkyLink has not supplied its volume, so every annual figure is a scenario: contacts × 30% × INR 650, before solution cost (discovery report, section 6). Only visits that would otherwise have happened count as saved; churn stays out.</p>
+    <p class="src">SkyLink has not supplied its volume, so every annual figure is a scenario: contacts × 30% × $650, before solution cost (discovery report, section 6). Only visits that would otherwise have happened count as saved; churn stays out.</p>
   </div>
 </div>
 
@@ -130,7 +130,7 @@
     <ul>
       <li><b>The brief's six capabilities, for broadband:</b> triage, diagnostics with a remote line test, steps from the customer's own router guide, credit by the policy formula in code, dispatch, consent-checked notification.</li>
       <li><b>A complaint reference for every contact,</b> chat or call transcript, issued before any model or dependency is called.</li>
-      <li><b>The human gate.</b> A supervisor approves the exact credit above INR 500; up to INR 500 it is applied without review (client decision D3, 23 November 2026). Tests and evaluations run with every credit under review.</li>
+      <li><b>The human gate.</b> A supervisor approves the exact credit above $500; up to $500 it is applied without review (client decision D3, 23 November 2026). Tests and evaluations run with every credit under review.</li>
       <li><b>Safe degraded mode</b> when the Network Monitoring API fails. <b>Mobile, thin:</b> a tower outage only.</li>
     </ul>
   </div>
@@ -157,7 +157,7 @@
       <td class="framed">Size the cost of outage-driven calls, wasted truck rolls and churn; prioritise broadband vs mobile; define complaint-resolution and churn targets; ROI case.</td>
       <td>
         <p class="ask">What does an outage contact cost, which service goes first, and what is success?</p>
-        <p><span class="tag tag--calc">Derived</span> INR 195,000 wasted per 1,000 outage contacts; annual figures are scenarios (discovery report, section 6). <span class="tag">Decision</span> Broadband first, mobile thin; churn never changes what a customer is owed (workshop decisions D2, D13, D17). <span class="tag tag--assume">Proposed</span> Pilot targets: 20% fewer seven-day repeat contacts, 20% shorter median time from restoration to closure (action plan p.10).</p>
+        <p><span class="tag tag--calc">Derived</span> $195,000 wasted per 1,000 outage contacts; annual figures are scenarios (discovery report, section 6). <span class="tag">Decision</span> Broadband first, mobile thin; churn never changes what a customer is owed (workshop decisions D2, D13, D17). <span class="tag tag--assume">Proposed</span> Pilot targets: 20% fewer seven-day repeat contacts, 20% shorter median time from restoration to closure (action plan p.10).</p>
       </td>
     </tr>
     <tr>
@@ -189,7 +189,7 @@
       <td class="framed">Customer data protection, call/chat consent, rate limits during outage surges, observability across agents and OSS APIs, failure drills when the network API is down.</td>
       <td>
         <p class="ask">Is it safe and available when surge and failure coincide, and can it be checked?</p>
-        <p><span class="tag tag--calc">Measured</span> Surge and failure drill: rows 5 to 7 below. Attack suite: 58 of 58 runs of 40 attacks pass, none critical (<code>evals/reports/attack_suite.md</code>). <span class="tag tag--ok">Built</span> Consent read at the moment of sending; personal data masked before a model reads a message; a caller's first contact never rate-limited; an audit trail per contact. <span class="tag tag--no">Not built</span> Dashboards, alerts.</p>
+        <p><span class="tag tag--calc">Measured</span> Surge and failure drill: rows 5 to 7 below. Attack suite: 61 of 61 runs of 43 attacks pass, none critical (<code>evals/reports/attack_suite.md</code>). <span class="tag tag--ok">Built</span> Consent read at the moment of sending; personal data masked before a model reads a message; a caller's first contact never rate-limited; an audit trail per contact. <span class="tag tag--no">Not built</span> Dashboards, alerts.</p>
       </td>
     </tr>
   </tbody>

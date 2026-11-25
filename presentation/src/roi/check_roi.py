@@ -8,7 +8,7 @@ It reads the results stored in the workbook (it calculates nothing in the workbo
 2. each headline result equals an independent calculation, done here in Python from the inputs
    as they stand in the workbook;
 3. while the inputs are the published ones, the results equal the figures of the action plan
-   (p.10) and of the discovery report (section 6) to the rupee.
+   (p.10) and of the discovery report (section 6) to the dollar.
 
 Exit status 0 when all of it holds, 1 otherwise.
 """
@@ -116,8 +116,10 @@ def expected(p: dict[str, float]) -> dict[str, float]:
 
 
 def _recurring(p: dict[str, float]) -> float:
-    usd = p["Pilot_cloud_USD_month"] + p["Model_cost_USD_per_contact"] * p["Outage_calls_month"]
-    return p["Recurring_cost_lump"] + usd * p["USD_INR"] + p["Labour_cost_month"]
+    itemised = (
+        p["Pilot_cloud_USD_month"] + p["Model_cost_USD_per_contact"] * p["Outage_calls_month"]
+    )
+    return p["Recurring_cost_lump"] + itemised + p["Labour_cost_month"]
 
 
 def _fixed_part(p: dict[str, float], volume: float) -> float:

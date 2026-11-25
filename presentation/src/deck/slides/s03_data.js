@@ -110,7 +110,7 @@ const FUNNEL = [
   { count: "96", w: 2.1, head: "Guide sections in the one vector table", body: "12 router guides × 8 sections", step: null },
   { count: "8", w: 1.6, head: "Filter by router", body: "the model on the customer's service record, never what the message says", step: 1 },
   { count: "4", w: 1.15, head: "Filter by section", body: "the four that are safe to follow alone", step: 2 },
-  { count: "1", w: 0.7, head: "Rank", body: "fault keywords, matching words, closeness of vectors", step: 3 },
+  { count: "1", w: 0.7, head: "Rank, then choose", body: "fault keywords, matching words, closeness of vectors; a language model picks one of the four", step: 3 },
 ];
 
 const INDEX_FACTS = [
@@ -185,8 +185,8 @@ async function retrievalDesignSlide(pres) {
   // A real reply, quoted from the customer's own router guide.
   const shotX = 7.35;
   const shotW = G.MX + G.CW - shotX;
-  const placed = await kit.shot(slide, "10-router-guide-steps-with-source.png", { x: shotX, y: top, w: shotW, h: 3.36, crop: { left: 590, top: 664, width: 810, height: 546 }, align: "center" });
-  kit.caption(slide, `Part of a real reply (local stack, offline keyword rules, 24 November 2026). ${shotInfo("10-router-guide-steps-with-source.png").title}.`, { x: shotX, y: placed.y + placed.h + 0.06, w: shotW, h: 0.42 });
+  const placed = await kit.shot(slide, "10-router-guide-steps-with-source.png", { x: shotX, y: top, w: shotW, h: 3.36, crop: { left: 590, top: 712, width: 810, height: 648 }, align: "center" });
+  kit.caption(slide, "Part of a real reply: steps from the customer's own router guide (local stack, gpt-5.4-mini choosing the section, 26 November 2026).", { x: shotX, y: placed.y + placed.h + 0.06, w: shotW, h: 0.42 });
 
   // What the index is.
   const factY = 6.0;
@@ -204,8 +204,8 @@ async function retrievalDesignSlide(pres) {
     seconds: 50,
     talk: [
       "Retrieval is narrow on purpose. The index holds 96 sections: twelve router guides of eight sections.",
-      "We filter before we search. First by the router model on the customer's service record, never by what the message says: eight sections remain. Then the four sections that are safe to follow alone. We rank those, and then quote, word for word, with guide, section and version. On the right is a real reply.",
-      "No model rewrites a step. The embedder is fixed, so the index never varies, and only guide text is embedded. The credit policy is a versioned file applied by code.",
+      "We filter before we search. First by the router model on the customer's service record, never by what the message says: eight sections remain. Then the four sections that are safe to follow alone. We rank those, and, since the review, a language model chooses among them and points at the words that show why; code checks that its choice was among them and that the words are really there. Then we quote, word for word, with guide, section and version. On the right is a real reply: the customer said it is crawling, and the model chose Slow speed, where the keyword rules alone chose No internet.",
+      "No model writes a step. The embedder is fixed, so the index never varies, and only guide text is embedded. The credit policy is a versioned file applied by code.",
     ],
     sources: "presentation/G3_Telco_Architecture.pdf, section 6 (one database, one vector table guide_chunks, 96 sections as text and 256 numbers, the four steps of the search, no customer details in vectors); README.md, \"Guide retrieval\"; presentation/G3_Telco_Evaluation.pdf, section 7 (the build sends one section; the index holds the guide sections only); presentation/src/assets/screens/manifest.json (image 10).",
   });
@@ -216,6 +216,7 @@ const RETRIEVAL_SETS = [
   { label: "Author's paraphrases, in sample", right: 96.67, constant: 50.0 },
   { label: "Independent, as first scored: out of sample", right: 81.25, constant: 47.92 },
   { label: "Independent, on today's rules: no longer out of sample", right: 89.58, constant: 47.92 },
+  { label: "Independent, a model choosing: 3 router models", right: 100.0, constant: 47.92 },
 ];
 
 const DETECTION_SPLIT = [
@@ -266,7 +267,7 @@ async function evaluationSlide(pres) {
     slide,
     [
       { text: "81.25% is 468 of 576 answers, as first scored, out of sample", options: { bold: true } },
-      { text: ": 48 descriptions written by a separate model instance that never saw the retriever, on 12 router models. Our own floor: 70%. Answers from another router's guide: 0.", options: {} },
+      { text: ": 48 descriptions by a separate model instance that never saw the retriever, 12 router models. Floor: 70%. From another router's guide: 0. With gpt-5.4-mini choosing: 144 of 144.", options: {} },
     ],
     { x: G.MX + 0.22, y: top + 3.2, w: leftW - 0.44, h: 1.08, fontSize: 14, valign: "middle", objectName: "Retrieval reading" },
   );
@@ -313,7 +314,7 @@ async function evaluationSlide(pres) {
   kit.text(slide, "Every miss is mobile, which has no remote test here: before the NOC declares, such a customer can be told \"no outage reported\".", { x: rx + 0.22, y: top + 3.5, w: rw - 0.44, h: 0.78, fontSize: 14, color: HEX.darkText, valign: "middle", objectName: "Detection reading" });
 
   const tagW = kit.tag(slide, "measured", G.MX, G.SRC_Y + 0.005, { text: "MEASURED IN SIMULATION" });
-  kit.text(slide, "Stand-in data; keyword rules read the messages, no language model. Sources: evals/reports/retrieval.md (19 November 2026), outage_detection.md (17 November 2026).", {
+  kit.text(slide, "Stand-in data; keyword rules read the messages, except in the last bar (gpt-5.4-mini). Sources: evals/reports/retrieval.md, retrieval_openai.md, outage_detection.md (25 November 2026).", {
     x: G.MX + tagW + 0.12,
     y: G.SRC_Y,
     w: G.CW - tagW - 0.12,
@@ -330,9 +331,9 @@ async function evaluationSlide(pres) {
     talk: [
       "Two evaluations, both on synthetic stand-in data, with keyword rules reading the messages.",
       "Detection. Of customers whose node is truly in outage, 97.47 per cent are told of it, against a target of 95. That is 140 contacts replayed on 32 nodes, weighted by the mix of 9,000 labelled contacts. 2.53 per cent are missed, all mobile, which has no remote test here: before the NOC declares, such a customer can be told that no outage is reported.",
-      "Retrieval. Trust the third bar. A separate model instance, which never saw the retriever, wrote 48 descriptions. Over twelve router models that is 576 answers, and 468 were the right section: 81.25 per cent, as first scored, out of sample, against our floor of 70. We then reworked the rules and the same set scores 89.58, which is no longer out of sample. No answer ever came from another router's guide.",
+      "Retrieval. Trust the third bar. A separate model instance, which never saw the retriever, wrote 48 descriptions. Over twelve router models that is 576 answers, and 468 were the right section: 81.25 per cent, as first scored, out of sample, against our floor of 70. We then reworked the rules and the same set scores 89.58, which is no longer out of sample. The last bar is the model the review asked for: choosing among the sections the search found, it got 144 of 144 on three router models. No answer ever came from another router's guide.",
     ],
-    sources: "evals/reports/outage_detection.md (run of 17 November 2026: 97.47%, 140 contacts, 32 nodes, weights from 9,000 contacts); presentation/G3_Telco_Evaluation.pdf, section 3.1 (79.33% told at contact, 18.13% held then told, 2.53% missed, all mobile) and section 7; evals/reports/retrieval.md (run of 19 November 2026: 99.07%, 96.67%, 81.25% = 468 of 576 as first scored, 89.58% on today's rules; constant answer 81.48%, 50.0%, 47.92%; floor 70%; none from another router's guide).",
+    sources: "evals/reports/outage_detection.md (run of 17 November 2026: 97.47%, 140 contacts, 32 nodes, weights from 9,000 contacts); presentation/G3_Telco_Evaluation.pdf, section 3.1 (79.33% told at contact, 18.13% held then told, 2.53% missed, all mobile) and section 7; evals/reports/retrieval_openai.md (25 November 2026: 144 of 144 with gpt-5.4-mini on three router models, 129 of 144 by the rules alone); evals/reports/retrieval.md (run of 25 November 2026: 99.07%, 96.67%, 81.25% = 468 of 576 as first scored, 89.58% on today's rules; constant answer 81.48%, 50.0%, 47.92%; floor 70%; none from another router's guide).",
   });
 }
 
