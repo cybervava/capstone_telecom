@@ -131,6 +131,16 @@ button.quiet:hover:not(:disabled) { color: var(--paper-raised); }
 .trail li[data-outcome="UNKNOWN"]::before, .trail li[data-outcome="DEGRADED"]::before, .trail li[data-outcome="OUTCOME_UNKNOWN"]::before { background: var(--unknown); }
 .trail .step { font-family: var(--mono); font-weight: 600; }
 .trail .meta { color: var(--ink-soft); display: block; overflow-wrap: anywhere; }
+/* How an answer from a guide was put together: what was found, and who chose among it. */
+.trail .note { display: block; margin-top: 0.2rem; padding-left: 0.6rem; border-left: 2px solid var(--accent); overflow-wrap: anywhere; }
+.trail li[data-outcome="UNGROUNDED"]::before, .trail li[data-outcome="REFUSED"]::before { background: var(--outage); }
+.trail__detail { margin-top: 0.3rem; }
+.trail__detail summary { cursor: pointer; color: var(--accent); width: fit-content; }
+.trail__kind { margin: 0.5rem 0 0.2rem; font: 700 var(--step--1)/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.trail__facts { margin: 0; display: grid; gap: 0.25rem; }
+.trail__facts div { display: grid; grid-template-columns: minmax(7rem, 0.4fr) minmax(0, 1fr); gap: 0.6rem; }
+.trail__facts dt { color: var(--ink-soft); }
+.trail__facts dd { margin: 0; font-family: var(--mono); white-space: pre-line; overflow-wrap: anywhere; }
 .trail:empty::before { content: "No steps recorded yet."; color: var(--ink-soft); padding-left: 1rem; font-style: italic; font-family: var(--serif); }
 
 /* Staff desk — the same paper, laid out as a bench: slips that ask for a decision, a queue of

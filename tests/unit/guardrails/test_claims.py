@@ -14,7 +14,7 @@ from skylink_care.agents.dispatch import OfferedSlot
 from skylink_care.agents.replies import Reply
 from skylink_care.domain.models import OutageInfo
 from skylink_care.domain.network import DecisionReason
-from skylink_care.guardrails.claims import CLAIMS, Claim, check
+from skylink_care.guardrails.claims import CLAIMS, Claim, check, claims_in_words
 
 NOW = datetime(2026, 11, 15, 4, 35, tzinfo=UTC)
 MAX_AGE = timedelta(seconds=60)
@@ -295,3 +295,21 @@ def test_only_one_place_in_the_platform_stores_a_message_for_the_customer() -> N
     )
 
     assert writers == ["orchestrator/outgoing.py"]
+
+
+@pytest.mark.parametrize(
+    ("words", "claimed"),
+    [
+        ("my wifi keeps dropping every few minutes", set()),
+        ("If the internet light is normal but devices cannot connect over Wi-Fi", set()),
+        ("no outage has been reported for my street", {Claim.CLEAR}),
+        ("the network is fine, it is your router", {Claim.CLEAR}),
+        ("there is a confirmed outage on my road", {Claim.OUTAGE}),
+        ("we are affected by planned maintenance", {Claim.OUTAGE}),
+    ],
+)
+def test_words_from_elsewhere_are_read_for_what_they_say_of_the_network(
+    words: str, claimed: set[Claim]
+) -> None:
+    """A quotation put into a message is read by the same tripwires as the message is."""
+    assert claims_in_words(words) == claimed

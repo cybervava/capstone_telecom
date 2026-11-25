@@ -12,11 +12,18 @@ import asyncio
 import statistics
 import time
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from skylink_care.llm.base import LLMProviderError, TriageProvider, TriageReading, Usage
+from skylink_care.llm.base import (
+    GuideAnswer,
+    GuideProvider,
+    LLMProviderError,
+    TriageProvider,
+    TriageReading,
+    Usage,
+)
 
 
 @dataclass
@@ -82,7 +89,8 @@ class ModelTally:
 
 
 class Tallied:
-    """A provider, counted: each reading it made, and each it could not make."""
+    """A provider, counted: each reading it made, and each it could not make. A question
+    about guide sections is a reading like any other, where the provider can be asked one."""
 
     def __init__(self, provider: TriageProvider, tally: ModelTally) -> None:
         self._provider = provider
@@ -90,15 +98,33 @@ class Tallied:
         self.name = provider.name
         self.model = provider.model
         tally.model = provider.model
+        if isinstance(provider, GuideProvider):
+            # Only then is this a provider that can be asked: the gateway looks for the method.
+            self.answer_from_guide = self._answer_from_guide
 
     async def read_contact(
         self, masked_text: str, *, system_prompt: str
     ) -> tuple[TriageReading, Usage]:
+        return await self._counted(
+            self._provider.read_contact(masked_text, system_prompt=system_prompt)
+        )
+
+    async def _answer_from_guide(
+        self, question: str, *, system_prompt: str
+    ) -> tuple[GuideAnswer, Usage]:
+        provider = self._provider
+        if not isinstance(provider, GuideProvider):  # pragma: no cover - set only when it is
+            raise LLMProviderError("not_supported")
+        return await self._counted(
+            provider.answer_from_guide(question, system_prompt=system_prompt)
+        )
+
+    async def _counted[Answer](
+        self, asked: Awaitable[tuple[Answer, Usage]]
+    ) -> tuple[Answer, Usage]:
         began = time.monotonic()
         try:
-            reading, usage = await self._provider.read_contact(
-                masked_text, system_prompt=system_prompt
-            )
+            answer, usage = await asked
         except LLMProviderError as error:
             self._tally.failed[error.kind] += 1
             raise
@@ -112,7 +138,7 @@ class Tallied:
         self._tally.answered += 1
         self._tally.served[usage.model or self.model] += 1
         self._tally.seconds.append(time.monotonic() - began)
-        return reading, usage
+        return answer, usage
 
 
 def _seconds(measure: Callable[[list[float]], float], seconds: list[float]) -> float | None:

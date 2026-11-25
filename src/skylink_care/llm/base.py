@@ -1,15 +1,17 @@
 """What the platform asks of a language model, and how a provider reports back.
 
-The model's job here is narrow: read what a customer wrote and describe it. It never decides
-network status, eligibility or amounts, and it never sees unmasked personal data.
+The model's job here is narrow. It reads what a customer wrote and describes it; and, when the
+guide sections for a customer's router have been found, it says which of them answers what
+the customer describes. It never decides network status, eligibility or amounts, it writes
+nothing a customer is sent, and it never sees unmasked personal data.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 CONFIDENCE_SCORE = {"high": 0.9, "medium": 0.6, "low": 0.3}
 
@@ -35,10 +37,26 @@ class TriageReading(BaseModel):
         return CONFIDENCE_SCORE[self.confidence]
 
 
-def _output_schema() -> dict[str, Any]:
-    """JSON schema for ``TriageReading`` in the form structured outputs expect: closed, and
-    every field required. Both model providers send it as it is."""
-    schema = TriageReading.model_json_schema()
+class GuideAnswer(BaseModel):
+    """What a model answers when it is shown a customer's words beside the guide sections
+    found for them. Only the first field can change what the customer is sent, and only to
+    another of the sections the model was shown; the other two are passages it copied, used
+    only if they are found where it says they are (``guardrails.grounding``)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    # The id of the section, of those shown, that answers what the customer describes.
+    section_id: str
+    # The customer's own description of the fault, copied from their message. May be empty.
+    customer_words: str
+    # The sentence of that section that says what it is for, copied from it. May be empty.
+    guide_words: str
+
+
+def _closed_schema(shape: type[BaseModel]) -> dict[str, Any]:
+    """JSON schema of an answer in the form structured outputs expect: closed, and every
+    field required. Both model providers send it as it is."""
+    schema = shape.model_json_schema()
     properties = {
         name: {key: value for key, value in spec.items() if key != "title"}
         for name, spec in schema["properties"].items()
@@ -51,7 +69,17 @@ def _output_schema() -> dict[str, Any]:
     }
 
 
-TRIAGE_SCHEMA = _output_schema()
+TRIAGE_SCHEMA = _closed_schema(TriageReading)
+GUIDE_SCHEMA = _closed_schema(GuideAnswer)
+
+
+@dataclass(frozen=True)
+class GuideSection:
+    """One section of a router guide, as a model is shown it."""
+
+    section_id: str
+    title: str
+    body: str
 
 
 @dataclass(frozen=True)
@@ -86,6 +114,14 @@ class LLMProviderError(Exception):
         self.kind = kind
 
 
+def parse_answer[Shape: BaseModel](shape: type[Shape], text: str) -> Shape:
+    """A model's answer in the shape that was asked for, or a ``protocol`` error."""
+    try:
+        return shape.model_validate_json(text)
+    except ValidationError as exc:
+        raise LLMProviderError("protocol", str(exc)[:200]) from exc
+
+
 class TriageProvider(Protocol):
     name: str
     model: str
@@ -93,3 +129,16 @@ class TriageProvider(Protocol):
     async def read_contact(
         self, masked_text: str, *, system_prompt: str
     ) -> tuple[TriageReading, Usage]: ...
+
+
+@runtime_checkable
+class GuideProvider(Protocol):
+    """A provider that can also be asked which guide section answers a customer. The keyword
+    rules are not one: they choose a section inside the search itself (``rag.symptoms``)."""
+
+    name: str
+    model: str
+
+    async def answer_from_guide(
+        self, question: str, *, system_prompt: str
+    ) -> tuple[GuideAnswer, Usage]: ...

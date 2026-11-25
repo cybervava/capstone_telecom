@@ -135,6 +135,9 @@ def build_orchestrator_runtime(
     surge: SurgeGauge | None = None,
 ) -> OrchestratorRuntime:
     gauge = surge or build_gauge(settings, database)
+    # One door to the language model for the two agents that use it: triage reads what a
+    # customer wrote, and troubleshooting asks which guide section answers them.
+    model = llm or build_gateway(settings)
     return OrchestratorRuntime(
         settings=settings,
         db=database,
@@ -150,7 +153,7 @@ def build_orchestrator_runtime(
         read_model=ReadModelRepository(database),
         triage=TriageAgent(
             gateway.crm_for_triage(),
-            llm or build_gateway(settings),
+            model,
             behind=gauge.behind,
             guard=IdentityGuard(
                 IdentityAttemptRepository(database),
@@ -174,7 +177,9 @@ def build_orchestrator_runtime(
             # executor, before it books a visit, reads for itself (build_visit_booker).
             share_status_reads=True,
         ),
-        troubleshooting=TroubleshootingAgent(GuideIndex(database, HashingEmbedder())),
+        troubleshooting=TroubleshootingAgent(
+            GuideIndex(database, HashingEmbedder()), model, behind=gauge.behind
+        ),
         resolution=ResolutionAgent(
             gateway.billing_for_resolution(),
             # Read and validated once, at start-up: a bad policy file must never price a credit.

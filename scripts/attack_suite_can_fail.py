@@ -84,9 +84,26 @@ STEPS_UNCHECKED_AT_THE_BUILD: Edit = (
     "            problem = not_a_step(step)\n",
     "            problem = None\n",
 )
+PLAIN_CHARACTERS_ONLY: Edit = (
+    "src/skylink_care/guardrails/grounding.py",
+    "    if _PLAIN.fullmatch(found.text) is None:\n",
+    "    if False:\n",
+)
+SAID_BACK_WHATEVER_IT_SAYS: tuple[Edit, ...] = (
+    (
+        "src/skylink_care/guardrails/grounding.py",
+        "    if _NOT_A_SYMPTOM.search(found.text):\n",
+        "    if False:\n",
+    ),
+    (
+        "src/skylink_care/guardrails/grounding.py",
+        "    if not_a_step(found.text) is not None or claims_in_words(found.text):\n",
+        "    if False:\n",
+    ),
+)
 PASSAGE_UNCHECKED_WHEN_SENT: Edit = (
     "src/skylink_care/agents/troubleshooting.py",
-    "        refused = _not_quotable(usable[0], router_model)\n",
+    "        refused = _not_quotable(first, router_model)\n",
     "        refused = None\n",
 )
 
@@ -259,7 +276,9 @@ CHECKS = (
         (
             (
                 "src/skylink_care/llm/base.py",
+                '    """A structured reading of one customer message."""\n\n'
                 '    model_config = ConfigDict(frozen=True, extra="forbid")\n',
+                '    """A structured reading of one customer message."""\n\n'
                 '    model_config = ConfigDict(frozen=True, extra="ignore")\n',
             ),
         ),
@@ -345,6 +364,46 @@ CHECKS = (
         ),
         "B7",
         "the index was built with the planted heading in it",
+        critical=False,
+    ),
+    Check(
+        "words a model points to are not looked for in their source",
+        (
+            (
+                "src/skylink_care/guardrails/grounding.py",
+                "    passage = _whole_unit_around(source, pointed_at, ends)\n",
+                "    passage = pointed_at\n",
+            ),
+        ),
+        "K1",
+        "words that are in no guide were sent as the guide's own",
+        critical=False,
+    ),
+    Check(
+        "a customer's clause may be made of any characters (the other checks still refuse)",
+        (PLAIN_CHARACTERS_ONLY,),
+        "K2",
+        None,
+        critical=False,
+    ),
+    Check(
+        "a customer's clause is said back whatever it is made of and whatever it says",
+        (PLAIN_CHARACTERS_ONLY, *SAID_BACK_WHATEVER_IT_SAYS),
+        "K2",
+        "the planted sentence was said back",
+        critical=False,
+    ),
+    Check(
+        "what is the customer's is not masked by value in a question about a guide",
+        (
+            (
+                "src/skylink_care/agents/troubleshooting.py",
+                "        values = {} if behind else await known_values()\n",
+                "        values = {}\n",
+            ),
+        ),
+        "G1",
+        "sent to the model unmasked",
         critical=False,
     ),
     Check(

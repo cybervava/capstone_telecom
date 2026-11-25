@@ -6,7 +6,7 @@
 
 **Result (met).** 8 of 8 situations end the same way in both segments (100.0%), over 80 customers.
 
-Written by the run of 2026-11-25T17:34:41+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: offline (keyword rules stand in for the language model; none was called).
+Written by the run of 2026-11-25T18:54:59+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: offline (keyword rules stand in for the language model; none was called).
 
 ## Outcomes by situation
 

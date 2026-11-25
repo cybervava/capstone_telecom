@@ -10,7 +10,8 @@ from __future__ import annotations
 import asyncio
 import os
 import time
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 
 import structlog
 
@@ -18,19 +19,35 @@ from skylink_care.config import MissingSecretError, Settings
 from skylink_care.guardrails.pii import mask_pii
 from skylink_care.llm.base import (
     CallRecord,
+    GuideAnswer,
+    GuideProvider,
+    GuideSection,
     LLMProviderError,
     TriageProvider,
     TriageReading,
     Usage,
 )
 from skylink_care.llm.offline import OfflineProvider
-from skylink_care.llm.prompts import Prompt, load_prompt
+from skylink_care.llm.prompts import Prompt, guide_question, load_prompt
 
 log = structlog.get_logger(__name__)
 
 DEFAULT_TIMEOUT_SECONDS = 8.0
 # Recorded on a call the model was spared because the platform was behind.
 LOAD_SHED = "load_shed"
+
+
+@dataclass(frozen=True)
+class GuideReading:
+    """What came of asking a model which guide section answers a customer."""
+
+    # None when no model answered: none can be asked, it failed, or load was shed.
+    answer: GuideAnswer | None
+    # None when no model was asked because the configured provider reads by the rules.
+    call: CallRecord | None
+    # The customer's words as the model was shown them. What it says it copied from them is
+    # looked for here.
+    shown: str
 
 
 class LLMGateway:
@@ -81,20 +98,74 @@ class LLMGateway:
             # A provider problem of any kind must slow the platform down, never stop it. The
             # failure is recorded on the call, logged with the contact's correlation id, and
             # carried into routing as ``degraded``.
-            if isinstance(exc, LLMProviderError):
-                error = exc.kind
-            elif isinstance(exc, TimeoutError):
-                error = "timeout"
-            else:
-                error = f"unexpected:{type(exc).__name__}"
-            log.warning(
-                "llm_call_degraded",
-                provider=self._primary.name,
-                error=error,
-                correlation_id=correlation_id,
-            )
+            error = self._lost_to(exc, prompt, correlation_id)
             return await self._by_the_rules(masked.text, prompt, started, lost=error)
         return reading, self._record(self._primary, prompt.version, usage, started)
+
+    @property
+    def answers_from_guides(self) -> bool:
+        """Whether there is a model to ask which guide section answers a customer. The
+        keyword rules are not one: they choose a section inside the search itself."""
+        return isinstance(self._primary, GuideProvider)
+
+    async def answer_from_guide(
+        self,
+        text: str,
+        sections: Sequence[GuideSection],
+        *,
+        known_values: Mapping[str, str],
+        shed_load: bool = False,
+        correlation_id: str | None = None,
+    ) -> GuideReading:
+        """Ask which of these guide sections answers what the customer wrote. Never raises.
+
+        ``known_values`` is what the platform knows to be this customer's, masked by value
+        before the text leaves. It is not optional: a caller that cannot say what is theirs
+        must not ask. When no model answers, the answer is None and the caller keeps what the
+        search and the rules found; a model that was asked and lost is recorded as degraded,
+        as in ``read_contact``.
+        """
+        masked = mask_pii(text, known_values=known_values)
+        provider = self._primary
+        if not isinstance(provider, GuideProvider):
+            return GuideReading(None, None, masked.text)
+        prompt = load_prompt("guide")
+        started = time.monotonic()
+        if shed_load:
+            return GuideReading(None, self._lost(prompt, started, LOAD_SHED), masked.text)
+        try:
+            async with asyncio.timeout(self._timeout_seconds):
+                answer, usage = await provider.answer_from_guide(
+                    guide_question(masked.text, sections), system_prompt=prompt.text
+                )
+        except Exception as exc:
+            error = self._lost_to(exc, prompt, correlation_id)
+            return GuideReading(None, self._lost(prompt, started, error), masked.text)
+        record = self._record(provider, prompt.version, usage, started)
+        return GuideReading(answer, record, masked.text)
+
+    def _lost_to(self, exc: Exception, prompt: Prompt, correlation_id: str | None) -> str:
+        """Why the model did not answer, in a word, logged with the contact's correlation id."""
+        if isinstance(exc, LLMProviderError):
+            error = exc.kind
+        elif isinstance(exc, TimeoutError):
+            error = "timeout"
+        else:
+            error = f"unexpected:{type(exc).__name__}"
+        log.warning(
+            "llm_call_degraded",
+            provider=self._primary.name,
+            asked=prompt.name,
+            error=error,
+            correlation_id=correlation_id,
+        )
+        return error
+
+    def _lost(self, prompt: Prompt, started: float, error: str) -> CallRecord:
+        """The record of a question no model answered: the rules stand in, and it says why."""
+        return self._record(
+            self._fallback, prompt.version, Usage(), started, degraded=True, error=error
+        )
 
     async def _by_the_rules(
         self, masked_text: str, prompt: Prompt, started: float, *, lost: str | None = None

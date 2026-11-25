@@ -25,7 +25,7 @@ import pytest
 
 from skylink_care.adapters.models import CustomerProfile
 from skylink_care.agents.triage import personal_values
-from skylink_care.llm.base import TriageProvider
+from skylink_care.llm.base import GuideSection, TriageProvider
 from skylink_care.llm.claude import ClaudeProvider
 from skylink_care.llm.gateway import LLMGateway
 from skylink_care.llm.openai_provider import OpenAIProvider
@@ -45,6 +45,16 @@ ANSWER = {
     "abusive_or_off_topic": False,
     "summary": "Customer reports no internet.",
 }
+# What a model answers when it is asked which guide section fits (``answer_from_guide``).
+GUIDE_ANSWER = {"section_id": "wifi", "customer_words": "", "guide_words": ""}
+GUIDE_SECTIONS = (
+    GuideSection(
+        "no-internet", "No internet", "Work out whether the line or the router.\n\n1. Look."
+    ),
+    GuideSection(
+        "wifi", "Wi-Fi problems", "If devices cannot connect over Wi-Fi:\n\n1. Move closer."
+    ),
+)
 # Each is formatted with spellings of the customer's own details (``spellings`` below).
 MESSAGES = (
     "Hi, this is {first} here, my internet has been down since morning",
@@ -78,11 +88,14 @@ class Requests:
 
     async def create(self, **request: Any) -> Any:
         self.sent.append(request)
+        # Each question is answered in the shape it asks for.
+        about_a_guide = "section_id" in json.dumps(request, default=str)
+        answer = json.dumps(GUIDE_ANSWER if about_a_guide else ANSWER)
         if self.provider == "openai":
             return SimpleNamespace(
                 choices=[
                     SimpleNamespace(
-                        message=SimpleNamespace(content=json.dumps(ANSWER), refusal=None),
+                        message=SimpleNamespace(content=answer, refusal=None),
                         finish_reason="stop",
                     )
                 ],
@@ -90,7 +103,7 @@ class Requests:
                 model="gpt-5.4-mini",
             )
         return SimpleNamespace(
-            content=[SimpleNamespace(type="text", text=json.dumps(ANSWER))],
+            content=[SimpleNamespace(type="text", text=answer)],
             stop_reason="end_turn",
             usage=SimpleNamespace(input_tokens=1, output_tokens=1),
             model="claude-opus-5-5",
@@ -253,6 +266,39 @@ async def test_no_identifier_of_the_customer_is_in_anything_sent_to_the_model(
     assert leaks == [], f"{len(leaks)} requests carried an identifier, for example {leaks[:3]}"
     # Outside the message nothing differs from one customer to the next: the system prompt,
     # the model and the settings are the same request every time.
+    assert {rest_of(request) for request in requests.sent} == {rest_of(requests.sent[0])}
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_no_identifier_of_the_customer_is_in_a_question_about_guide_sections(
+    provider: str,
+) -> None:
+    """The second thing a model is asked: which section of the customer's router guide fits
+    what they wrote. Their words go with the question, masked the same way."""
+    rng = random.Random(SEED)
+    requests = Requests(provider)
+    gateway = gateway_with(requests)
+    leaks: list[tuple[str, list[str]]] = []
+
+    for index in range(CUSTOMERS):
+        person = profile(index, rng)
+        written = spellings(person)
+        for template in MESSAGES:
+            text = template.format(**written)
+            used = {name: value for name, value in written.items() if f"{{{name}}}" in template}
+            reading = await gateway.answer_from_guide(
+                text, GUIDE_SECTIONS, known_values=personal_values(person)
+            )
+            assert reading.call is not None
+            assert not reading.call.degraded, reading.call.error
+            # In the request, and in what the platform keeps of what the model was shown.
+            found = left_in(message_of(requests.sent[-1]), person, used)
+            found += left_in(reading.shown, person, used)
+            if found:
+                leaks.append((text, found))
+
+    assert len(requests.sent) == CUSTOMERS * len(MESSAGES)
+    assert leaks == [], f"{len(leaks)} requests carried an identifier, for example {leaks[:3]}"
     assert {rest_of(request) for request in requests.sent} == {rest_of(requests.sent[0])}
 
 

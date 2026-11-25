@@ -6,7 +6,7 @@
 
 **Result (met).** 97.47% of affected contacts, weighted by how often each kind occurs; 140 contacts replayed on 32 nodes, undeclared outages declared 25 to 577 seconds after the contact.
 
-Written by the run of 2026-11-25T17:32:45+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: offline (keyword rules stand in for the language model; none was called).
+Written by the run of 2026-11-25T18:53:26+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: offline (keyword rules stand in for the language model; none was called).
 
 ## By kind of contact (service / timing / mapping defect)
 

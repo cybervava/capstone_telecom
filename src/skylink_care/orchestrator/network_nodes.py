@@ -8,6 +8,7 @@ Every node may run more than once for the same turn, so every side effect is ide
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from datetime import timedelta
 from typing import Any
 
@@ -15,6 +16,7 @@ import structlog
 
 from skylink_care.agents import replies
 from skylink_care.agents.diagnostics import Subject
+from skylink_care.agents.troubleshooting import KnownValues
 from skylink_care.db.actions import (
     INCIDENT_LANE,
     INCIDENT_LINK_COMPLAINT,
@@ -34,6 +36,7 @@ from skylink_care.db.timers import CLOSE_QUIET
 from skylink_care.domain.models import NetworkState
 from skylink_care.domain.network import DecisionReason
 from skylink_care.guardrails.claims import Claim
+from skylink_care.observability.audit import Auditor
 from skylink_care.orchestrator.credit_nodes import CreditNodes
 from skylink_care.orchestrator.evidence import decision_to_state, outage_from_state, parse_time
 from skylink_care.orchestrator.handover import handoff_summary
@@ -338,11 +341,18 @@ class NetworkNodes(CreditNodes, VisitNodes):
             reply = replies.checks_clear(
                 contact.complaint_ref, evidence_at=evidence_at, tested_at=tested_at
             )
+        elif (sent := await self._steps_already_sent(contact)) is not None:
+            # This step is running again: the customer has the steps it sent the first time.
+            # Nothing is searched or asked a second time (a model might choose differently),
+            # and what was sent is what is recorded.
+            steps_given, reply = sent, None
         else:
+            audit = self._rt.auditor(contact.contact_id, contact.correlation_id)
             guidance = await self._rt.troubleshooting.guide(
                 router_model=(state.get("service") or {}).get("router_model"),
                 problem=await self._everything_the_customer_wrote(contact),
-                audit=self._rt.auditor(contact.contact_id, contact.correlation_id),
+                audit=audit,
+                known_values=self._what_is_the_customers(state, audit),
             )
             if guidance is None:
                 return await self.clear_reply(state)
@@ -356,8 +366,12 @@ class NetworkNodes(CreditNodes, VisitNodes):
                 citation=passage.citation,
                 evidence_at=evidence_at,
                 tested_at=tested_at,
+                customer_words=guidance.customer_words,
+                guide_words=guidance.guide_words,
+                chosen_by=guidance.chosen_by,
             )
-        await self._say(contact, state, reply, author="agent:troubleshooting")
+        if reply is not None:
+            await self._say(contact, state, reply, author="agent:troubleshooting")
         await self._rt.timers.cancel(contact.contact_id)
         armed = await self._arm_close(contact, state)
         await self._rt.contacts.update(contact.contact_id, status="AWAITING_CUSTOMER")
@@ -368,6 +382,29 @@ class NetworkNodes(CreditNodes, VisitNodes):
             "asked_if_working": True,
             "guidance_told": steps_given or state.get("guidance_told"),
         }
+
+    def _what_is_the_customers(self, state: ContactState, audit: Auditor) -> KnownValues:
+        """Reads, when a model is about to be shown the customer's words, what of theirs must
+        be masked by value first. The triage agent reads it: nothing else may read a profile."""
+        customer_id = (state.get("identity") or {}).get("customer_id")
+
+        async def read() -> Mapping[str, str] | None:
+            if not customer_id:
+                return None
+            return await self._rt.triage.personal_values_of(str(customer_id), audit)
+
+        return read
+
+    async def _steps_already_sent(self, contact: Contact) -> str | None:
+        """The citation of the guide steps this contact was sent, from the stored message.
+        Steps are given once in a conversation, so a stored message of that template is the
+        one this step sent."""
+        messages = await self._rt.messages.list_for_contact(contact.contact_id)
+        for message in reversed(messages):
+            if message.meta.get("template_id") == replies.GUIDED_STEPS:
+                cited = (message.meta.get("facts") or {}).get("citation")
+                return str(cited) if cited else None
+        return None
 
     async def _everything_the_customer_wrote(self, contact: Contact) -> str:
         """The customer's side of the conversation, as the search query for the guide."""

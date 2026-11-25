@@ -12,21 +12,37 @@ has a guide, and the section it answers with is scored against labels made by ha
 
 Next to each figure stands what a constant answer ("always the No internet section") would
 score, because most faults are no-service faults and the labels accept that section often.
+
+No language model takes part in that measurement: the search and the keyword rules choose the
+section. Where a model is configured, it chooses among the sections the search found
+(``agents.troubleshooting``). That is measured apart, on the independent descriptions only and
+only when ``RETRIEVAL_LLM`` names a provider, because it calls the model for every description:
+
+    RETRIEVAL_LLM=openai uv run --env-file .env pytest evals/test_retrieval.py -k model
+
+It writes ``retrieval_<provider>`` and leaves the report above alone.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import os
+from collections import Counter
 from dataclasses import dataclass, field
 from itertools import cycle
 from pathlib import Path
 from typing import Any
 
+import pytest
+
+from evals.model_tally import ModelTally, Tallied
 from evals.report import Report, frozen, percent
 from skylink_care.agents.troubleshooting import TroubleshootingAgent
-from skylink_care.db.audit import AuditRepository
+from skylink_care.config import Settings
+from skylink_care.db.audit import AuditEntry, AuditRepository
 from skylink_care.db.database import Database
+from skylink_care.llm.gateway import LLMGateway, build_provider
 from skylink_care.observability.audit import Auditor
 from skylink_care.rag.embedding import HashingEmbedder
 from skylink_care.rag.index import GuideIndex
@@ -40,6 +56,11 @@ MIN_RIGHT_ON_TRANSCRIPT_PHRASES = 98.0
 MIN_RIGHT_ON_AUTHOR_PARAPHRASES = 80.0
 MIN_RIGHT_ON_INDEPENDENT = 70.0
 CONSTANT_ANSWER = "no-internet"
+# The provider of the measurement with a model beside the search; "offline" skips it.
+PROVIDER = os.environ.get("RETRIEVAL_LLM", "offline")
+# How many router models that measurement covers: every description is one call to the model
+# for each of them.
+ROUTERS_WITH_A_MODEL = int(os.environ.get("RETRIEVAL_LLM_ROUTERS", "3"))
 
 
 @dataclass
@@ -328,3 +349,181 @@ async def test_customers_get_the_right_section_of_their_own_routers_guide(db: Da
         assert (now.right, now.total) == (measured.first["right"], measured.first["of"])
     assert measured.other_model == 0
     assert measured.met, report.headline
+
+
+# --- with a language model beside the search -------------------------------------------------
+
+
+class _Trail:
+    """Keeps what an agent records, in memory: the measurement reads it back."""
+
+    def __init__(self) -> None:
+        self.entries: list[AuditEntry] = []
+
+    async def append(self, entry: AuditEntry, **_: Any) -> None:
+        self.entries.append(entry)
+
+    def outcomes(self, step: str) -> Counter[str]:
+        return Counter(entry.outcome for entry in self.entries if entry.step == step)
+
+    def quotations(self, which: str) -> Counter[str]:
+        return Counter(
+            str(entry.outputs.get(which))
+            for entry in self.entries
+            if entry.step == "troubleshooting.answer" and entry.outcome == "OK"
+        )
+
+
+async def _nothing_personal() -> dict[str, str]:
+    """The descriptions are written for the evaluation: there is no customer whose details
+    could be in them."""
+    return {}
+
+
+@pytest.mark.skipif(PROVIDER == "offline", reason="RETRIEVAL_LLM names no model to ask")
+async def test_a_model_beside_the_search_chooses_among_what_it_found(
+    db: Database, care_settings: Settings
+) -> None:
+    cases = frozen("retrieval_gold.json")
+    gold: dict[str, list[str]] = cases["independent"]["symptoms"]
+    models = [
+        item["model_id"]
+        for item in json.loads((KNOWLEDGE / "router_models.json").read_text(encoding="utf-8"))
+        if (KNOWLEDGE / "router_guides" / f"{item['model_id']}.md").is_file()
+    ][:ROUTERS_WITH_A_MODEL]
+    index = GuideIndex(db, HashingEmbedder())
+    tally, trail = ModelTally(), _Trail()
+    provider = build_provider(care_settings.model_copy(update={"llm_provider": PROVIDER}))
+    with_model = TroubleshootingAgent(index, LLMGateway(Tallied(provider, tally)))
+    alone = TroubleshootingAgent(index)
+    quiet = Auditor(AuditRepository(db), contact_id=None, correlation_id="eval-retrieval")
+    recorded = Auditor(trail, contact_id=None, correlation_id="eval-retrieval")  # type: ignore[arg-type]
+
+    by_rules, by_model = Tally(), Tally()
+    changed: list[list[str]] = []
+    for model in models:
+        for symptom, accepted in gold.items():
+            rules = await alone.guide(router_model=model, problem=symptom, audit=quiet)
+            answer = await with_model.guide(
+                router_model=model,
+                problem=symptom,
+                audit=recorded,
+                known_values=_nothing_personal,
+            )
+            assert rules is not None, "the search answered every description"
+            assert answer is not None
+            for tallied, guidance in ((by_rules, rules), (by_model, answer)):
+                tallied.other_model += guidance.passage.device_model != model
+                if guidance.passage.section_id in accepted:
+                    tallied.right += 1
+                else:
+                    tallied.wrong += 1
+                    sent = tallied.misses.setdefault(symptom, {})
+                    sent[guidance.passage.section_id] = sent.get(guidance.passage.section_id, 0) + 1
+            if answer.passage.section_id != rules.passage.section_id:
+                better = answer.passage.section_id in accepted
+                worse = rules.passage.section_id in accepted and not better
+                changed.append(
+                    [
+                        symptom,
+                        ", ".join(accepted),
+                        rules.passage.section_id,
+                        answer.passage.section_id,
+                        "right now"
+                        if better and rules.passage.section_id not in accepted
+                        else ("wrong now" if worse else "as before"),
+                        model,
+                    ]
+                )
+
+    answers = trail.outcomes("troubleshooting.answer")
+    asked = sum(answers.values())
+    customer, guide = trail.quotations("customer_words"), trail.quotations("guide_words")
+    flagged = sum(trail.outcomes("guardrail.output").values())
+    shortfall = tally.shortfall(runs_for_the_model=asked)
+    met = (
+        by_model.other_model == 0
+        and by_model.right_percent >= MIN_RIGHT_ON_INDEPENDENT
+        and shortfall is None
+    )
+    report = Report(
+        name=f"retrieval_{PROVIDER}",
+        title="The right guide section, with a language model beside the search",
+        proves=(
+            "What changes when a model is shown the customer's words beside the sections the"
+            " search found and chooses among them: how often the section is the right one,"
+            " and what became of the passages it pointed to. The steps a customer is sent are"
+            " the guide's own words either way."
+        ),
+        target=(
+            "No brief target. Every answer from the customer's own router model, right section"
+            f" for at least {MIN_RIGHT_ON_INDEPENDENT}% of the independent descriptions, and"
+            " every question the model was asked answered by the model itself."
+        ),
+        headline=(
+            f"With {tally.model} choosing among the sections found, the right section for"
+            f" {by_model.right} of {by_model.total} independent descriptions"
+            f" ({by_model.right_percent}%); the search and the keyword rules alone:"
+            f" {by_rules.right} of {by_rules.total} ({by_rules.right_percent}%), on the same"
+            f" {len(models)} router models. Answers from another model's guide:"
+            f" {by_model.other_model}. {tally.summary()}"
+        ),
+        met=met,
+        verdict="" if shortfall is None else f"NOT met: {shortfall}",
+        provider=PROVIDER,
+        numbers={
+            "router_models": models,
+            "descriptions": len(gold),
+            "right_with_the_model": by_model.right,
+            "right_percent_with_the_model": by_model.right_percent,
+            "right_by_the_rules": by_rules.right,
+            "right_percent_by_the_rules": by_rules.right_percent,
+            "answers": dict(answers),
+            "customer_words": dict(customer),
+            "guide_words": dict(guide),
+            "answers_with_something_left_out": flagged,
+            "sections_changed_by_the_model": len(changed),
+            "model": tally.numbers(),
+        },
+        assumptions=[
+            "The independent descriptions are no longer out of sample for the keyword rules"
+            " (see the report `retrieval`), and they were written by another model instance"
+            " than the one asked here: neither figure says what real customers' words would"
+            " score.",
+            f"Measured on {len(models)} of the router models that have a guide, to keep the"
+            " number of calls down (`RETRIEVAL_LLM_ROUTERS`). Each description is put to the"
+            " agent on its own, with nothing personal in it to mask.",
+            "The model can only choose among the sections the search found: a section it was"
+            " not shown is not taken from it, and its answer is then counted as refused.",
+            "A passage the model points to is used only if it is found word for word where"
+            " the model says it is, and says nothing that has no place in an answer. The"
+            " table counts what was quoted and what was left out, by reason.",
+        ],
+    )
+    report.table(
+        "What the model's answers came to",
+        ["Outcome", "Answers"],
+        [[outcome, count] for outcome, count in sorted(answers.items())],
+    )
+    report.table(
+        "Passages the model pointed to",
+        ["What became of it", "Customer's words", "Guide's words"],
+        [
+            [outcome, customer.get(outcome, 0), guide.get(outcome, 0)]
+            for outcome in sorted(set(customer) | set(guide))
+        ],
+    )
+    report.table(
+        "Descriptions sent a section outside the accepted ones, with the model",
+        ["Description", "Accepted", "Sent instead (times, over the router models)"],
+        missed_rows(by_model, gold),
+    )
+    report.table(
+        "Descriptions the model sent to another section than the rules",
+        ["Description", "Accepted", "Rules alone", "With the model", "", "Router"],
+        changed or [["none", "", "", "", "", ""]],
+    )
+    report.write()
+
+    assert by_model.other_model == 0
+    assert met, report.headline

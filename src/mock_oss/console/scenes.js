@@ -118,18 +118,20 @@ export const SCENES = [
     shows: [
       "network confirmed clear before any advice",
       "remote line test",
-      "steps quoted from the right guide, with the source",
+      "retrieval from the right guide; a model chooses among what was found",
+      "steps quoted word for word, with the source",
     ],
     cast: { segment: "consumer" },
     chooseRouter: true,
     // The line passes its remote test, whatever the data pack drew for it.
     passLine: true,
-    lines: ["My wifi keeps dropping every few minutes"],
+    // The keyword rules misplace this one: "down" outweighs "crawling" for them.
+    lines: ["My connection is not down, it's just crawling, a 1 GB file shows 4 hours"],
     cues: [
       {
         say: 0,
         expect:
-          "Network: none reported. The reply says no outage is reported and the remote line test passed, then gives numbered steps from the guide for this router, ending \"Source: guide-…\". Pick another router model above and play it again: the steps and the source change with it.",
+          "Network: none reported. The reply says no outage is reported and the remote line test passed, then gives numbered steps from the guide for this router, ending \"Source: guide-…\". With the language model on (the demo host), the model is shown the sections the search found and chooses \"Slow speed\"; the reply also quotes the customer (\"You told me: …\") and the guide's own sentence, each found word for word in its source before it is sent. With the keyword rules alone the same line gets the \"No internet\" section. On the customer desk, Open as staff: troubleshooting.retrieve lists the sections found with their scores, troubleshooting.answer says who chose and names the model and the prompt version. Pick another router model above and play it again: the steps and the source change with it.",
       },
     ],
   },

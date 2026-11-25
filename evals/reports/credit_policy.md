@@ -6,7 +6,7 @@
 
 **Result (met).** 4050 of 4050 grid cases match (100.0%); 14 of 14 hand-worked amounts match.
 
-Written by the run of 2026-11-25T17:31:12+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: none (no language model takes part in this measurement).
+Written by the run of 2026-11-25T18:52:04+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: none (no language model takes part in this measurement).
 
 ## Grid, by expected outcome
 

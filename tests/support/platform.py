@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -109,6 +110,17 @@ class Platform:
     async def replies(self, contact_id: UUID) -> list[str]:
         messages = await self.runtime.messages.list_for_contact(contact_id)
         return [message.body for message in messages if message.direction == "outbound"]
+
+    def read_through(self, gateway: OssGateway, llm: LLMGateway) -> Platform:
+        """The same platform and data, with this door to a language model."""
+        runtime = build_orchestrator_runtime(
+            self.runtime.settings, self.runtime.db, gateway, llm=llm, now=self.runtime.now
+        )
+        checkpointer = AsyncPostgresSaver(runtime.db.pool)
+        worker = OrchestratorWorker(
+            runtime, build_graph(runtime, checkpointer), checkpointer, retry_backoff_seconds=0.05
+        )
+        return dataclasses.replace(self, runtime=runtime, worker=worker, checkpointer=checkpointer)
 
 
 @pytest.fixture

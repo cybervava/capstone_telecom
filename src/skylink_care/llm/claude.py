@@ -2,7 +2,9 @@
 
 One request shape is used: a short system prompt, the masked customer text wrapped in tags so it
 reads as data, and a JSON-schema output format so the answer always parses. Effort is ``low``
-because this is classification. Any failure is raised as ``LLMProviderError``; the gateway then
+because this is classification. Two things are asked this way: what a message says
+(``read_contact``), and which of the guide sections found for a customer answers them
+(``answer_from_guide``). Any failure is raised as ``LLMProviderError``; the gateway then
 answers from the offline rules, so a model problem can slow the platform down but never stop it.
 """
 
@@ -11,9 +13,16 @@ from __future__ import annotations
 from typing import Any
 
 import anthropic
-from pydantic import ValidationError
 
-from skylink_care.llm.base import TRIAGE_SCHEMA, LLMProviderError, TriageReading, Usage
+from skylink_care.llm.base import (
+    GUIDE_SCHEMA,
+    TRIAGE_SCHEMA,
+    GuideAnswer,
+    LLMProviderError,
+    TriageReading,
+    Usage,
+    parse_answer,
+)
 from skylink_care.llm.prompts import customer_message
 
 __all__ = ["DEFAULT_MAX_TOKENS", "REFUSAL_FALLBACK_BETA", "TRIAGE_SCHEMA", "ClaudeProvider"]
@@ -41,14 +50,29 @@ class ClaudeProvider:
     async def read_contact(
         self, masked_text: str, *, system_prompt: str
     ) -> tuple[TriageReading, Usage]:
+        text, usage = await self._ask(system_prompt, customer_message(masked_text), TRIAGE_SCHEMA)
+        return parse_answer(TriageReading, text), usage
+
+    async def answer_from_guide(
+        self, question: str, *, system_prompt: str
+    ) -> tuple[GuideAnswer, Usage]:
+        """``question`` is the masked customer text and the sections found, already wrapped
+        as data (``prompts.guide_question``)."""
+        text, usage = await self._ask(system_prompt, question, GUIDE_SCHEMA)
+        return parse_answer(GuideAnswer, text), usage
+
+    async def _ask(
+        self, system_prompt: str, content: str, schema: dict[str, Any]
+    ) -> tuple[str, Usage]:
+        """One question, answered in one closed shape. Returns the answer's text."""
         request: dict[str, Any] = {
             "model": self.model,
             "max_tokens": self._max_tokens,
             "system": system_prompt,
-            "messages": [{"role": "user", "content": customer_message(masked_text)}],
+            "messages": [{"role": "user", "content": content}],
             "output_config": {
                 "effort": "low",
-                "format": {"type": "json_schema", "schema": TRIAGE_SCHEMA},
+                "format": {"type": "json_schema", "schema": schema},
             },
         }
         response = await self._send(request)
@@ -59,12 +83,8 @@ class ClaudeProvider:
         text = next((block.text for block in response.content if block.type == "text"), None)
         if text is None:
             raise LLMProviderError("protocol", "no text block in the response")
-        try:
-            reading = TriageReading.model_validate_json(text)
-        except ValidationError as exc:
-            raise LLMProviderError("protocol", str(exc)[:200]) from exc
         usage = getattr(response, "usage", None)
-        return reading, Usage(
+        return str(text), Usage(
             input_tokens=getattr(usage, "input_tokens", 0) or 0,
             output_tokens=getattr(usage, "output_tokens", 0) or 0,
             model=getattr(response, "model", None),

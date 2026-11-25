@@ -7,7 +7,13 @@ from collections import Counter
 
 from evals.model_tally import ModelTally, Tallied
 
-from skylink_care.llm.base import LLMProviderError, TriageReading, Usage
+from skylink_care.llm.base import (
+    GuideAnswer,
+    GuideSection,
+    LLMProviderError,
+    TriageReading,
+    Usage,
+)
 from skylink_care.llm.gateway import LLMGateway
 from skylink_care.llm.offline import read_with_rules
 
@@ -120,3 +126,46 @@ def test_without_readings_there_is_no_pace_to_report() -> None:
 
     assert tally.summary() == "Readings by the model: 0 of 0 (served by none)."
     assert (tally.numbers()["seconds_median"], tally.numbers()["seconds_slowest"]) == (None, None)
+
+
+class GuideModel(Model):
+    """A stand-in that can also be asked which guide section fits."""
+
+    async def answer_from_guide(
+        self, question: str, *, system_prompt: str
+    ) -> tuple[GuideAnswer, Usage]:
+        if self._error is not None:
+            raise self._error
+        answer = GuideAnswer(section_id="wifi", customer_words="", guide_words="")
+        return answer, Usage(1, 1, model="gpt-test-2026-03-17")
+
+
+SECTIONS = (GuideSection("wifi", "Wi-Fi problems", "If devices cannot connect:\n\n1. Move."),)
+
+
+async def test_an_answer_about_a_guide_is_counted_like_a_reading() -> None:
+    tally = ModelTally()
+    gateway = LLMGateway(Tallied(GuideModel(), tally))
+
+    reading = await gateway.answer_from_guide(TEXT, SECTIONS, known_values={})
+
+    assert reading.answer is not None
+    assert (tally.answered, tally.fell) == (1, 0)
+    assert tally.served == {"gpt-test-2026-03-17": 1}
+
+
+async def test_a_failed_answer_about_a_guide_is_counted_by_its_cause() -> None:
+    tally = ModelTally()
+    gateway = LLMGateway(Tallied(GuideModel(error=LLMProviderError("timeout")), tally))
+
+    reading = await gateway.answer_from_guide(TEXT, SECTIONS, known_values={})
+
+    assert reading.answer is None
+    assert (tally.answered, tally.failed) == (0, {"timeout": 1})
+
+
+async def test_a_counted_provider_can_be_asked_about_guides_only_if_the_provider_can() -> None:
+    """The gateway asks a provider about guides when it has the means. Counting a provider
+    must neither give it that nor take it away."""
+    assert LLMGateway(Tallied(GuideModel(), ModelTally())).answers_from_guides
+    assert not LLMGateway(Tallied(Model(), ModelTally())).answers_from_guides

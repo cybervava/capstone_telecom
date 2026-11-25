@@ -202,6 +202,16 @@ class TriageAgent:
             second=second,
         )
 
+    async def personal_values_of(self, customer_id: str, audit: Auditor) -> dict[str, str] | None:
+        """What the platform knows to be this customer's, read from the CRM now, for a step
+        that is about to show their words to a model after triage has done so.
+
+        Only this agent may read a profile, so the question comes here. None when the CRM
+        cannot say: words that cannot be masked by value stay inside the platform.
+        """
+        _, profile = await self._load(customer_id, audit, method=VERIFIED_EARLIER)
+        return personal_values(profile) if profile else None
+
     async def _identify(
         self,
         contact: Contact,

@@ -47,6 +47,10 @@
     "template_id": "guided_steps.v1",
     "text": "I'm SkyLink's automated assistant. I've checked the network: no outage has been reported for your area as of 10:05 IST on 15 Nov, and a remote test of your line at 10:05 IST on 15 Nov passed, so the problem is most likely in the equipment at your home. Please try these steps from the Tarang FG7 guide, section \"No internet\":\n1. Check the cable.\n2. Wait two minutes.\nSource: guide-tg-fg7 v1 #no-internet.\nReply here to tell me whether that fixed it; if it did not, a specialist will take over. Your complaint reference is SKL-261115-000001-9."
   },
+  "guided_steps/with what a model pointed to": {
+    "template_id": "guided_steps.v1",
+    "text": "I'm SkyLink's automated assistant. I've checked the network: no outage has been reported for your area as of 10:05 IST on 15 Nov, and a remote test of your line at 10:05 IST on 15 Nov passed, so the problem is most likely in the equipment at your home. You told me: \"the red light is on\". The guide for your router says: \"Work out whether the problem is the line or the router\". Please try these steps from the Tarang FG7 guide, section \"No internet\":\n1. Check the cable.\n2. Wait two minutes.\nSource: guide-tg-fg7 v1 #no-internet.\nReply here to tell me whether that fixed it; if it did not, a specialist will take over. Your complaint reference is SKL-261115-000001-9."
+  },
   "handed_to_human/BILLING": {
     "template_id": "handed_to_human.v1",
     "text": "I'm SkyLink's automated assistant. Your complaint is registered under reference SKL-261115-000001-9. Billing questions are handled by our billing team. A member of our team will take over and will have the details of this conversation, so you won't need to repeat them."

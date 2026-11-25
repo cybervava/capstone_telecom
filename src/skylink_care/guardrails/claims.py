@@ -155,11 +155,7 @@ def check(
     state = str(network.get("state")) if network else None
     if declared is None:
         return Violation("UNDECLARED_TEMPLATE", reply.template_id, "undeclared", state)
-    claims = {declared}
-    if _SAYS_CLEAR.search(reply.text):
-        claims.add(Claim.CLEAR)
-    if _SAYS_OUTAGE.search(reply.text):
-        claims.add(Claim.OUTAGE)
+    claims = {declared} | claims_in_words(reply.text)
     for claim in (Claim.CLEAR, Claim.VISIT, Claim.OUTAGE, Claim.RESTORED):
         if claim not in claims:
             continue
@@ -175,6 +171,21 @@ def check(
         if code is not None:
             return Violation(code, reply.template_id, claim.value, state)
     return None
+
+
+def claims_in_words(text: str) -> frozenset[Claim]:
+    """What these words say about the state of the network, as far as the tripwires can tell.
+
+    Asked of a whole message when it is stored, and of words that are about to be put into
+    one from elsewhere (a passage quoted from the customer or from a guide): a quotation is
+    not the place for a claim about the network.
+    """
+    found = set()
+    if _SAYS_CLEAR.search(text):
+        found.add(Claim.CLEAR)
+    if _SAYS_OUTAGE.search(text):
+        found.add(Claim.OUTAGE)
+    return frozenset(found)
 
 
 def unbacked(

@@ -1,6 +1,8 @@
 // SkyLink Care Desk — demonstration console.
 // All text from the server is written with textContent, never as HTML.
 
+import { trailItem } from "./shared.js";
+
 const el = (id) => document.getElementById(id);
 const state = { token: null, staffToken: null, contactId: null, seen: 0, timer: null, awaiting: false, delayed: false };
 const POLL_MS = 1200;
@@ -144,21 +146,10 @@ async function refresh() {
 async function refreshTrail() {
   if (!state.contactId || !state.staffToken) return;
   const trail = await api(`/v1/contacts/${state.contactId}/audit`, { token: state.staffToken });
-  const items = trail.map((record) => {
-    const item = document.createElement("li");
-    item.dataset.outcome = record.outcome;
-    const step = document.createElement("span");
-    step.className = "step";
-    step.textContent = `${record.step} → ${record.outcome}`;
-    const meta = document.createElement("span");
-    meta.className = "meta";
-    const versions = [record.model, record.prompt_version, record.policy_version].filter(Boolean).join(" · ");
-    const took = record.duration_ms === null ? "" : ` · ${record.duration_ms} ms`;
-    meta.textContent = `${record.actor}${took}${versions ? ` · ${versions}` : ""}`;
-    item.append(step, meta);
-    return item;
-  });
-  el("trail").replaceChildren(...items);
+  // A trail only grows. What is already drawn stays as it is, with whatever was opened in it.
+  const list = el("trail");
+  if (trail.length < list.children.length) list.replaceChildren();
+  list.append(...trail.slice(list.children.length).map(trailItem));
 }
 
 el("persona-form").addEventListener("submit", async (event) => {

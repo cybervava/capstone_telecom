@@ -274,6 +274,13 @@ def not_a_step(step: str) -> str | None:
     return None
 
 
+def names_a_hazard(text: str) -> bool:
+    """Whether the text names something a customer must never be told to do, whatever it says
+    of it. A guide's step may name one in order to forbid it (``not_a_step`` allows that); a
+    sentence taken from anywhere else is not given that benefit."""
+    return _HAZARDS.search(normalise(text)) is not None
+
+
 def not_a_title(title: str) -> str | None:
     """Why this text may not be sent to a customer as the name of a guide or of a section.
 

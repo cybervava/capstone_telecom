@@ -1,0 +1,54 @@
+{
+  "name": "retrieval_openai",
+  "written_at": "2026-11-25T18:59:18+00:00",
+  "target": "No brief target. Every answer from the customer's own router model, right section for at least 70.0% of the independent descriptions, and every question the model was asked answered by the model itself.",
+  "met": true,
+  "verdict": "met",
+  "headline": "With gpt-5.4-mini-2026-03-17 choosing among the sections found, the right section for 144 of 144 independent descriptions (100.0%); the search and the keyword rules alone: 129 of 144 (89.58%), on the same 3 router models. Answers from another model's guide: 0. Readings by the model: 144 of 144 (served by gpt-5.4-mini-2026-03-17; 1.4 s median, 3.2 s the slowest).",
+  "llm_provider": "openai",
+  "numbers": {
+    "router_models": [
+      "AL-AX18",
+      "AL-FX30",
+      "AL-R12"
+    ],
+    "descriptions": 48,
+    "right_with_the_model": 144,
+    "right_percent_with_the_model": 100.0,
+    "right_by_the_rules": 129,
+    "right_percent_by_the_rules": 89.58,
+    "answers": {
+      "OK": 144
+    },
+    "customer_words": {
+      "QUOTED": 117,
+      "NOT_FOR_AN_ANSWER": 3,
+      "NOT_IN_SOURCE": 17,
+      "NONE": 3,
+      "TOO_SHORT": 3,
+      "NOT_A_FAULT_DESCRIPTION": 1
+    },
+    "guide_words": {
+      "QUOTED": 144
+    },
+    "answers_with_something_left_out": 24,
+    "sections_changed_by_the_model": 15,
+    "model": {
+      "model": "gpt-5.4-mini-2026-03-17",
+      "answered_by_the_model": 144,
+      "served_by": {
+        "gpt-5.4-mini-2026-03-17": 144
+      },
+      "read_by_the_rules_instead": 0,
+      "why": {},
+      "seconds_median": 1.4,
+      "seconds_slowest": 3.2
+    }
+  },
+  "assumptions": [
+    "The independent descriptions are no longer out of sample for the keyword rules (see the report `retrieval`), and they were written by another model instance than the one asked here: neither figure says what real customers' words would score.",
+    "Measured on 3 of the router models that have a guide, to keep the number of calls down (`RETRIEVAL_LLM_ROUTERS`). Each description is put to the agent on its own, with nothing personal in it to mask.",
+    "The model can only choose among the sections the search found: a section it was not shown is not taken from it, and its answer is then counted as refused.",
+    "A passage the model points to is used only if it is found word for word where the model says it is, and says nothing that has no place in an answer. The table counts what was quoted and what was left out, by reason."
+  ]
+}

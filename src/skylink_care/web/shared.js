@@ -34,13 +34,55 @@ export function messageItem({ direction, author, body }, customerLabel = "You") 
   return node("li", { dataset: { direction } }, node("span", { className: "who", text: who }), node("p", { text: body }));
 }
 
+// "guide-al-ax18 §wifi v1.1" → "§wifi": enough to tell the sections of one guide apart.
+const sectionOf = (citation) => String(citation ?? "").split(" ")[1] ?? String(citation ?? "");
+const QUOTATION = { QUOTED: "quoted", NONE: "none offered", NOT_USED: "not used" };
+const quotation = (outcome) =>
+  QUOTATION[outcome] ?? `left out (${String(outcome ?? "").toLowerCase().replaceAll("_", " ")})`;
+
+// How an answer from a guide was put together, in a line: what the search found, with its
+// ranking, and who chose among it. The rest of every entry is one click further.
+function inShort({ step, outputs }) {
+  const out = outputs ?? {};
+  if (step === "troubleshooting.retrieve" && Array.isArray(out.found) && out.found.length) {
+    return `found ${out.found.map((each) => `${sectionOf(each.citation)} ${each.score}`).join(" · ")}`;
+  }
+  if (step === "troubleshooting.answer" && out.section) {
+    const byModel = out.chosen_by === "model";
+    const rules = byModel && out.rules_chose !== out.section ? ` (the rules alone: ${sectionOf(out.rules_chose)})` : "";
+    const chosen = byModel ? `the model chose ${sectionOf(out.section)}${rules}` : `the rules' choice stands: ${sectionOf(out.section)}`;
+    return `${chosen} · customer's words ${quotation(out.customer_words)} · guide's words ${quotation(out.guide_words)}`;
+  }
+  return null;
+}
+
+function shown(value) {
+  if (value === null || value === undefined || value === "") return "—";
+  if (Array.isArray(value)) {
+    const lines = value.map((each) => (each !== null && typeof each === "object" ? Object.values(each).join(" · ") : String(each)));
+    return lines.join("\n") || "—";
+  }
+  return typeof value === "object" ? JSON.stringify(value) : String(value);
+}
+
+function recorded(title, values) {
+  const entries = Object.entries(values ?? {});
+  if (!entries.length) return [];
+  const rows = entries.map(([name, value]) => node("div", {}, node("dt", { text: name.replaceAll("_", " ") }), node("dd", { text: shown(value) })));
+  return [node("p", { className: "trail__kind", text: title }), node("dl", { className: "trail__facts" }, ...rows)];
+}
+
 export function trailItem(record) {
   const versions = [record.model, record.prompt_version, record.policy_version].filter(Boolean).join(" · ");
   const took = record.duration_ms === null ? "" : ` · ${record.duration_ms} ms`;
-  return node(
-    "li",
-    { dataset: { outcome: record.outcome } },
+  const parts = [
     node("span", { className: "step", text: `${record.step} → ${record.outcome}` }),
     node("span", { className: "meta", text: `${record.actor}${took}${versions ? ` · ${versions}` : ""}` }),
-  );
+  ];
+  const short = inShort(record);
+  if (short) parts.push(node("span", { className: "note", text: short }));
+  // What went in and what came out, as it was recorded: already redacted by the server.
+  const details = [...recorded("Went in", record.inputs), ...recorded("Came out", record.outputs)];
+  if (details.length) parts.push(node("details", { className: "trail__detail" }, node("summary", { text: "What was recorded" }), ...details));
+  return node("li", { dataset: { outcome: record.outcome } }, ...parts);
 }

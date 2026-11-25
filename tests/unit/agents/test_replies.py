@@ -245,6 +245,62 @@ def test_guided_steps_reply_quotes_the_steps_and_says_where_they_come_from() -> 
     assert "Reply here to tell me whether that fixed it" in reply.text
     assert REF in reply.text
     assert reply.facts["citation"] == "guide-al-ax18 §wifi v1.1"
+    assert reply.facts["section_chosen_by"] == "rules"
+    assert "You told me" not in reply.text
+    assert "The guide for your router says" not in reply.text
+
+
+def test_guided_steps_reply_can_carry_what_a_model_pointed_to_as_quotations() -> None:
+    reply = replies.guided_steps(
+        REF,
+        guide_title="Aerolink AX1800 troubleshooting guide",
+        section_title="Wi-Fi problems",
+        steps=["Find the network name.", "Check the password on the label."],
+        citation="guide-al-ax18 §wifi v1.1",
+        evidence_at=NOW,
+        tested_at=NOW,
+        customer_words="wifi keeps dropping every few minutes",
+        guide_words="If the internet light is normal but devices cannot connect over Wi-Fi",
+        chosen_by="model",
+    )
+
+    assert (
+        'at your home. You told me: "wifi keeps dropping every few minutes". The guide for your'
+        ' router says: "If the internet light is normal but devices cannot connect over Wi-Fi".'
+        " Please try these steps from the Aerolink AX1800 troubleshooting guide,"
+        ' section "Wi-Fi problems":\n1. Find the network name.'
+    ) in reply.text
+    assert "Source: guide-al-ax18 §wifi v1.1." in reply.text
+    # One template whoever chose the section: a turn that runs twice stores one message.
+    assert reply.template_id == "guided_steps.v1"
+    assert reply.facts["section_chosen_by"] == "model"
+
+
+def test_guided_steps_reply_carries_either_quotation_without_the_other() -> None:
+    def said(**quoted: str) -> str:
+        return replies.guided_steps(
+            REF,
+            guide_title="Aerolink AX1800 troubleshooting guide",
+            section_title="Wi-Fi problems",
+            steps=["Find the network name."],
+            citation="guide-al-ax18 §wifi v1.1",
+            evidence_at=NOW,
+            tested_at=NOW,
+            **quoted,
+        ).text
+
+    only_customer = said(customer_words="wifi keeps dropping")
+    only_guide = said(guide_words="Use 2.4 GHz for range")
+
+    assert 'at your home. You told me: "wifi keeps dropping". Please try these steps' in (
+        only_customer
+    )
+    assert "The guide for your router says" not in only_customer
+    assert (
+        'at your home. The guide for your router says: "Use 2.4 GHz for range". Please try'
+        in only_guide
+    )
+    assert "You told me" not in only_guide
 
 
 def test_checks_clear_notice_asks_and_does_not_instruct() -> None:

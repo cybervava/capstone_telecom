@@ -20,6 +20,8 @@ from skylink_care.domain.models import OutageInfo
 from skylink_care.domain.network import DecisionReason
 
 AI_DISCLOSURE = "I'm SkyLink's automated assistant."
+# The template of the message that carries guide steps: sent once in a conversation.
+GUIDED_STEPS = "guided_steps.v1"
 
 _CAUSES = {
     "FIBRE_CUT": "a fibre cut",
@@ -230,22 +232,36 @@ def guided_steps(
     citation: str,
     evidence_at: datetime,
     tested_at: datetime,
+    customer_words: str | None = None,
+    guide_words: str | None = None,
+    chosen_by: str = "rules",
 ) -> Reply:
-    """Steps quoted from the guide for the customer's own router, with where they come from."""
+    """Steps quoted from the guide for the customer's own router, with where they come from.
+
+    ``customer_words`` and ``guide_words`` are passages a language model pointed to: the
+    customer's own description of the fault, and the sentence of the section that says what
+    it is for. Both are quotations, found word for word in their sources before they come
+    here (``guardrails.grounding``); nothing a model wrote is in this message. ``chosen_by``
+    says who chose the section among those the search found.
+    """
     numbered = "\n".join(f"{number}. {step}" for number, step in enumerate(steps, start=1))
+    understood = f' You told me: "{customer_words}".' if customer_words else ""
+    if guide_words:
+        understood += f' The guide for your router says: "{guide_words}".'
     return Reply(
         f"{AI_DISCLOSURE} I've checked the network: no outage has been reported for your area"
         f" as of {clock(evidence_at)}, and a remote test of your line at {clock(tested_at)}"
-        " passed, so the problem is most likely in the equipment at your home."
+        f" passed, so the problem is most likely in the equipment at your home.{understood}"
         f' Please try these steps from the {guide_title}, section "{section_title}":\n'
         f"{numbered}\n"
         f"Source: {citation}.\n"
         "Reply here to tell me whether that fixed it; if it did not, a specialist will take"
         f" over. Your complaint reference is {complaint_ref}.",
-        "guided_steps.v1",
+        GUIDED_STEPS,
         {
             "citation": citation,
             "steps": len(steps),
+            "section_chosen_by": chosen_by,
             "evidence_at": evidence_at.isoformat(),
             "line_tested_at": tested_at.isoformat(),
         },

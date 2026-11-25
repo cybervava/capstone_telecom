@@ -88,6 +88,18 @@ def _network_replies() -> dict[str, Reply]:
             evidence_at=AT,
             tested_at=AT,
         ),
+        "guided_steps/with what a model pointed to": replies.guided_steps(
+            REF,
+            guide_title="Tarang FG7 guide",
+            section_title="No internet",
+            steps=["Check the cable.", "Wait two minutes."],
+            citation="guide-tg-fg7 v1 #no-internet",
+            evidence_at=AT,
+            tested_at=AT,
+            customer_words="the red light is on",
+            guide_words="Work out whether the problem is the line or the router",
+            chosen_by="model",
+        ),
     }
     for reason in DecisionReason:
         for service in ("broadband", "mobile"):

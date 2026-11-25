@@ -30,7 +30,7 @@ from skylink_care.adapters.gateway import OssGateway
 from skylink_care.db.actions import CREDIT_APPLY, VISIT_BOOK
 from skylink_care.db.approvals import Approval
 from skylink_care.guardrails.claims import CLAIMS, Claim
-from skylink_care.llm.base import TriageProvider, TriageReading, Usage
+from skylink_care.llm.base import GuideAnswer, TriageProvider, TriageReading, Usage
 from skylink_care.llm.gateway import LLMGateway
 from skylink_care.orchestrator.graph import build_graph
 from skylink_care.orchestrator.worker import OrchestratorWorker
@@ -115,22 +115,43 @@ def obedient(**wanted: Any) -> TriageReading:
     return TriageReading(**{**reading, **wanted})
 
 
+def for_the_guide(
+    section_id: str = "factory-reset", customer_words: str = "", guide_words: str = ""
+) -> GuideAnswer:
+    """What a model that has been talked round answers when it is asked which guide section
+    fits. Unless an attack says otherwise it names the one section no automated answer may
+    quote."""
+    return GuideAnswer(
+        section_id=section_id, customer_words=customer_words, guide_words=guide_words
+    )
+
+
 class ObedientModel:
     """A language model that has been talked round. It answers what the attack tells it to and
-    remembers what it was shown."""
+    remembers what it was shown: the messages it read, and the questions about guide
+    sections, which carry the customer's words as well."""
 
     name = "compromised"
     model = "obeys-the-attacker"
 
     def __init__(self) -> None:
         self.answer = obedient()
+        self.guide = for_the_guide()
         self.shown: list[str] = []
+        self.asked_about_guides = 0
 
     async def read_contact(
         self, masked_text: str, *, system_prompt: str
     ) -> tuple[TriageReading, Usage]:
         self.shown.append(masked_text)
         return self.answer, Usage()
+
+    async def answer_from_guide(
+        self, question: str, *, system_prompt: str
+    ) -> tuple[GuideAnswer, Usage]:
+        self.shown.append(question)
+        self.asked_about_guides += 1
+        return self.guide, Usage()
 
 
 def read_through(platform: Platform, gateway: OssGateway, llm: LLMGateway) -> Platform:
