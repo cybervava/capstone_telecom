@@ -61,7 +61,7 @@ seed: migrate ## Re-seed the mock gateway and start the care platform from a cle
 profile: ## Write the mapping-quality profile to reports/data_profile.md
 	uv run --env-file .env care-admin profile
 
-dev: up seed ## Start PostgreSQL, seed (clean state), then run the five processes on this machine
+dev: up seed ## Start PostgreSQL, seed (clean state), then run the six processes on this machine
 	./scripts/dev_stack.sh start
 
 demo: up seed ## Like `dev`, with the wait before a technician visit shortened to 20 seconds
