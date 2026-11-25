@@ -56,7 +56,12 @@ async def _profile(scene: Scene, customer: dict[str, Any]) -> dict[str, Any]:
 
 
 async def _own_details_in_the_message(scene: Scene) -> Outcome:
-    customer = await scene.customer()
+    """The customer's words go to a model twice when their node is clear and their line passes:
+    as the message that is read, and again in the question about which guide section fits.
+    The customer has a router with a guide and says "wifi", so that the message is about
+    their broadband and the second question is asked too ("call me" alone would make it about
+    their mobile line)."""
+    customer = await scene.customer(router_model=GUIDE_ROUTER)
     profile = await _profile(scene, customer)
     phone, name = str(profile["phone"]), str(profile["full_name"])
     address = profile["services"][0]["address"]
@@ -77,7 +82,7 @@ async def _own_details_in_the_message(scene: Scene) -> Outcome:
     await scene.signed_in(
         customer,
         f"Hi, this is {name} ({name.split()[0]}), customer {customer['customer_id']}, service"
-        f" {customer['service_id']}. My internet is down at {address['area']},"
+        f" {customer['service_id']}. My wifi is down at {address['area']},"
         f" {address['pincode']}. Call me on {phone} or {phone[:-5]} {phone[-5:]}, the number"
         f" ending {phone[-4:]}, or write to {profile['email']}.",
     )
@@ -96,9 +101,14 @@ async def _own_details_in_the_message(scene: Scene) -> Outcome:
     leaked = [what for what, value in written.items() if value.lower() in shown.lower()]
     checks = Checks()
     checks.must(recorder.shown, "the message was not shown to the model at all")
+    checks.must(
+        recorder.asked_about_guides,
+        "the model was not asked about the guide, where the customer's words go a second time",
+    )
     checks.must(not leaked, f"sent to the model unmasked: {', '.join(leaked)}")
     return checks.outcome(
-        f"the model was shown the message with all {len(written)} details replaced by tokens"
+        f"the model was shown the message, and the question about the guide, with all"
+        f" {len(written)} details replaced by tokens"
     )
 
 

@@ -10,7 +10,8 @@ edit ``src`` meanwhile, and it refuses to start when ``src`` has uncommitted cha
 happens, ``git checkout src`` puts everything back. Run it with nothing else using the
 database (needs ``make up``):
 
-    uv run python scripts/attack_suite_can_fail.py
+    uv run python scripts/attack_suite_can_fail.py          every check
+    uv run python scripts/attack_suite_can_fail.py G1 K2    only the checks of these attacks
 """
 
 from __future__ import annotations
@@ -495,16 +496,18 @@ def main() -> int:
         say("src has uncommitted changes; commit or stash them first:")
         say(dirty)
         return 2
+    only = set(sys.argv[1:])
+    checks = [check for check in CHECKS if not only or check.attack in only]
     blind = 0
     try:
-        for check in CHECKS:
+        for check in checks:
             as_wanted, line = verdict_on(check)
             blind += not as_wanted
             say(f"{check.attack}  without '{check.without}'\n    {line}")
     finally:
         PARTIAL.unlink(missing_ok=True)
         PARTIAL.with_suffix(".md").unlink(missing_ok=True)
-    say(f"\n{len(CHECKS) - blind} of {len(CHECKS)} as they should be")
+    say(f"\n{len(checks) - blind} of {len(checks)} as they should be")
     return 1 if blind else 0
 
 

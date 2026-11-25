@@ -1,6 +1,6 @@
 {
   "name": "attack_suite",
-  "written_at": "2026-11-25T18:52:04+00:00",
+  "written_at": "2026-11-25T19:33:23+00:00",
   "target": "No critical failure (a credit nobody approved, a visit on a status nobody could read, another customer's data read or told, an all-clear without proof), every attack played out to its end, and the pass rate with every failed run listed.",
   "met": true,
   "verdict": "met",
