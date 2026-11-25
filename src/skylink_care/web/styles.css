@@ -134,7 +134,11 @@ button.quiet:hover:not(:disabled) { color: var(--paper-raised); }
 /* How an answer from a guide was put together: what was found, and who chose among it. */
 .trail .note { display: block; margin-top: 0.2rem; padding-left: 0.6rem; border-left: 2px solid var(--accent); overflow-wrap: anywhere; }
 .trail li[data-outcome="UNGROUNDED"]::before, .trail li[data-outcome="REFUSED"]::before { background: var(--outage); }
-.trail__detail { margin-top: 0.3rem; }
+/* The actor's line and, at its end, the toggle for what was recorded. Opened, the record takes
+   a line of its own under it. */
+.trail__line { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.6rem; }
+.trail__line .meta { display: inline; }
+.trail__detail[open] { flex-basis: 100%; margin-top: 0.2rem; }
 .trail__detail summary { cursor: pointer; color: var(--accent); width: fit-content; }
 .trail__kind { margin: 0.5rem 0 0.2rem; font: 700 var(--step--1)/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
 .trail__facts { margin: 0; display: grid; gap: 0.25rem; }

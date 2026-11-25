@@ -75,14 +75,17 @@ function recorded(title, values) {
 export function trailItem(record) {
   const versions = [record.model, record.prompt_version, record.policy_version].filter(Boolean).join(" · ");
   const took = record.duration_ms === null ? "" : ` · ${record.duration_ms} ms`;
+  const meta = node("span", { className: "meta", text: `${record.actor}${took}${versions ? ` · ${versions}` : ""}` });
+  // What went in and what came out, as it was recorded: already redacted by the server. The
+  // toggle sits at the end of the actor's line, so that a closed entry is no taller for it.
+  const details = [...recorded("Went in", record.inputs), ...recorded("Came out", record.outputs)];
   const parts = [
     node("span", { className: "step", text: `${record.step} → ${record.outcome}` }),
-    node("span", { className: "meta", text: `${record.actor}${took}${versions ? ` · ${versions}` : ""}` }),
+    details.length
+      ? node("div", { className: "trail__line" }, meta, node("details", { className: "trail__detail" }, node("summary", { text: "details" }), ...details))
+      : meta,
   ];
   const short = inShort(record);
   if (short) parts.push(node("span", { className: "note", text: short }));
-  // What went in and what came out, as it was recorded: already redacted by the server.
-  const details = [...recorded("Went in", record.inputs), ...recorded("Came out", record.outputs)];
-  if (details.length) parts.push(node("details", { className: "trail__detail" }, node("summary", { text: "What was recorded" }), ...details));
   return node("li", { dataset: { outcome: record.outcome } }, ...parts);
 }
