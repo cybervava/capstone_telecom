@@ -20,10 +20,11 @@ data is synthetic.
 
 ## Before submitting
 
-- Push `dev` so that the AWS demo host runs the changes of 25 November (amounts in dollars, a
-  model beside the guide search, the MCP server), and run the smoke journeys there. Until then the
-  live demonstration shows rupees and the guide scene's "crawling" line gets the "No internet"
-  steps from the keyword rules alone. The MCP server stays closed on the host (no key is set).
+- The AWS demo host runs the changes of 25 November since release `797ab92` (GitLab pipeline
+  3116487891, 25 November: every job passed, and the host's eight smoke journeys after it). Amounts
+  are in dollars, and the model chooses the guide section there; on the local stack it gave the
+  guide scene's "crawling" line the "Slow speed" steps. Check that scene in the rehearsal. The MCP
+  server stays closed on the host (no key is set).
 - Write the five members' names: the deck's title slide, the contribution matrix and the
   checklists' signature page. Nothing is pre-filled and nothing is pre-signed.
 - Each member completes their row of the contribution matrix in their own words, then all sign.
@@ -49,8 +50,8 @@ Every figure in these documents is taken from the repository's own reports and d
 names its sources. Measured results are measured in simulation on the synthetic stand-in data;
 assumptions and things not built are labelled as such. The test-suite figure (2,902 tests, none
 failed, 96% coverage with branches counted) is a run on one laptop on commit `772467c`, 25 November
-2026; the last pipeline, GitLab 3106633060 on commit `b9c70ef` of 24 November, ran the 2,689 tests
-there were before the project review's changes.
+2026, and the same day GitLab pipeline 3116487891 ran them on commit `797ab92` (95.78%) and released
+that commit to the AWS host.
 
 ## Rebuilding after an edit
 

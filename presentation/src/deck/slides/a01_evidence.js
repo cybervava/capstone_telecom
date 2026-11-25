@@ -25,6 +25,7 @@ const CONTENTS = [
   "A17, A18  Six likely objections, and our answers",
   "A19  What is not built, and what a pilot adds",
   "A20  Sources",
+  "A21, A22  After the project review: three changes",
 ];
 
 /** The divider before the appendix. */
@@ -71,7 +72,7 @@ async function scorecardSlide(pres) {
     { x: G.MX, y: 5.86, w: G.CW, h: 0.72, fontSize: 12, color: S.ink2, valign: "middle", objectName: "Scorecard reading" },
   );
   kit.sourceLine(slide, "Sources: presentation/G3_Telco_Evaluation.pdf, section 1; evals/reports/ (outage_detection, truck_rolls, credit_policy, curveball); loadtest/reports/surge-brief-before-fix.md. Stand-in data.");
-  sourceNote(slide, "presentation/G3_Telco_Evaluation.pdf, sections 1, 2.3 and 3.4; evals/reports/outage_detection.md, truck_rolls.md, credit_policy.md, curveball.md (runs of 25 November 2026); loadtest/reports/surge-brief-before-fix.md (16 November 2026); tests/e2e/test_outage_journey.py (every customer of one node shares one incident, each with a reference of their own; the test opens the contacts one after another); tests/integration/test_episodes.py (40 simultaneous reports open one episode); the test suite on one laptop, commit 772467c, 25 November 2026 (the last GitLab pipeline, 3106633060 of 24 November, ran the 2,689 tests there were then).");
+  sourceNote(slide, "presentation/G3_Telco_Evaluation.pdf, sections 1, 2.3 and 3.4; evals/reports/outage_detection.md, truck_rolls.md, credit_policy.md, curveball.md (runs of 25 November 2026); loadtest/reports/surge-brief-before-fix.md (16 November 2026); tests/e2e/test_outage_journey.py (every customer of one node shares one incident, each with a reference of their own; the test opens the contacts one after another); tests/integration/test_episodes.py (40 simultaneous reports open one episode); the test suite in GitLab pipeline 3116487891, commit 797ab92, 25 November 2026 (2,902 passed, 95.78%; the same 2,902 on one laptop on commit 772467c).");
 }
 
 const LAYERS = [

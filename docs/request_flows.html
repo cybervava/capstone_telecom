@@ -626,7 +626,7 @@ main:focus { outline: none; }
       <div class="flowhead__main">
         <p class="eyebrow">Flow 8 of 9 · 8 steps</p>
         <h2 id="h-model">Close-up: how a message is read</h2>
-        <p class="lead">The language model's whole job, step by step: one message in, nine fields out. It decides nothing about the network, credits or visits, and writes nothing a customer reads.</p>
+        <p class="lead">The language model's first job, step by step: one message in, nine fields out (its second, choosing a guide section, is in flow 2). It decides nothing about the network, credits or visits, and writes nothing a customer reads.</p>
       </div>
       <div class="flowhead__side">
         <div class="trigger trigger--inside"><span class="label">The message being read</span><p class="trigger__text">“Hi, this is Asha Menon from Indiranagar ... My wifi has been down since morning.”</p></div>
@@ -669,7 +669,7 @@ main:focus { outline: none; }
 <footer class="foot">
   <div class="wrap">
     <p><strong>Where the code comes from.</strong> Every excerpt is cut from this repository as it stood at commit <code>772467c</code> (25 Nov 2026): 155 excerpts from 59 files. The line numbers are the files' own, and a marked gap means lines were left out to keep an excerpt short. When the code changes, this page does not: check the file before quoting a line.</p>
-    <p><strong>What "AI" means here.</strong> There is no trained machine-learning model in this codebase. A language model reads one message into nine fields, and is switched off by default. Retrieval filters and ranks 96 sections of router guides and quotes them word for word. One probability formula spots a node fault before the NOC declares it. Everything else is rules in plain code.</p>
+    <p><strong>What "AI" means here.</strong> There is no trained machine-learning model in this codebase. A language model reads one message into nine fields and, for router advice, chooses among the guide sections found; it is switched off by default. Retrieval filters and ranks 96 sections of router guides and quotes them word for word. One probability formula spots a node fault before the NOC declares it. Everything else is rules in plain code.</p>
     <p><strong>Make-believe, on purpose.</strong> SkyLink Telecom is a fictional company from a training brief. Its customers, network, credit policy and systems are invented stand-ins. The plain-language guide to the same code is <code>docs/HOW_IT_WORKS.md</code>.</p>
   </div>
 </footer>
@@ -3927,7 +3927,7 @@ since morning. Call me on &lt;PHONE_1&gt; or write to &lt;EMAIL_1&gt;.</dd></div
 </span><span class="l" data-n="76">    <span class="ts">r"(?:developer|debug|maintenance|admin|god)\s+mode\b"</span>
 </span><span class="l" data-n="77">)
 </span></code></pre></details></div></template>
-<template id="t-second-look"><div class="logic"><p>A model reads better than keywords do, and a model can be wrong or talked round. So whoever read the message, the rules note four plain facts about it: a plain fault report, words of denial, words aimed at the assistant's instructions, and abuse.</p><p>These facts travel with the reading (<code>intent["rules"]</code>) and guard the two places where a reading alone would end a conversation: declining it and closing it.</p></div><ul class="points"><li>The attack suite plays 18 attacks against an "obedient model" that answers whatever the attacker wants within the nine fields. All 58 runs pass.</li></ul><div class="codes"><p class="label">The code</p><details class="snip" data-position="0" open><summary><span class="snip__name">SecondLook and second_look()</span><span class="snip__path">src/skylink_care/llm/offline.py<b>:149–178</b></span></summary><pre class="code" tabindex="0" aria-label="SecondLook and second_look(): src/skylink_care/llm/offline.py, lines 149–178"><code><span class="l" data-n="149"><span class="tb">@dataclass</span>(frozen=<span class="tk">True</span>)
+<template id="t-second-look"><div class="logic"><p>A model reads better than keywords do, and a model can be wrong or talked round. So whoever read the message, the rules note four plain facts about it: a plain fault report, words of denial, words aimed at the assistant's instructions, and abuse.</p><p>These facts travel with the reading (<code>intent["rules"]</code>) and guard the two places where a reading alone would end a conversation: declining it and closing it.</p></div><ul class="points"><li>The attack suite plays 18 attacks against an "obedient model" that answers whatever the attacker wants within the nine fields. All 61 runs pass.</li></ul><div class="codes"><p class="label">The code</p><details class="snip" data-position="0" open><summary><span class="snip__name">SecondLook and second_look()</span><span class="snip__path">src/skylink_care/llm/offline.py<b>:149–178</b></span></summary><pre class="code" tabindex="0" aria-label="SecondLook and second_look(): src/skylink_care/llm/offline.py, lines 149–178"><code><span class="l" data-n="149"><span class="tb">@dataclass</span>(frozen=<span class="tk">True</span>)
 </span><span class="l" data-n="150"><span class="tk">class</span> <span class="tf">SecondLook</span>:
 </span><span class="l" data-n="151">    <span class="tc">"""What the keyword rules see in a message, kept beside whoever read it.</span>
 </span><span class="l" data-n="152">

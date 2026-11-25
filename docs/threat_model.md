@@ -129,14 +129,14 @@ D9).
 
 | Control | Where | Shown by |
 |---|---|---|
-| Dependencies pinned with hashes | `uv.lock` (78 packages with hashes, and the project itself) | The file |
+| Dependencies pinned with hashes | `uv.lock` (91 packages with hashes, and the project itself) | The file |
 | The model is reached through the vendor's own SDK (Anthropic's or OpenAI's), behind one gateway; the audit trail records the model and the prompt version of every reading | `llm/gateway.py` | `audit_log.model`, `prompt_version` |
 | Traces of the workflow go to LangSmith only when switched on, and then with inputs and outputs hidden unless a setting says otherwise on purpose: the run tree, timings, errors and metadata (the contact's id, the step, the git revision) leave, no state or message | `observability/tracing.py`, called by `build_graph`; `LANGSMITH_*` in `.env.example` and `docker-compose.yml`; only the orchestrator is given them (`scripts/dev_stack.sh`) | `tests/unit/test_tracing.py`; checked by hand on the traces of the live attack-suite run, 16 Nov |
 | The guide index is built by a local hashing embedder: no model download, no embedding service | `rag/embedding.py` | `evals/reports/retrieval.md` |
 | Guides are typed documents with access roles; untrusted material is kept in a folder the index build never opens, and the parser refuses it if it is copied in | `pipelines/guide_index.py`, `rag/documents.py` | B1, B2 |
 
 *What is left.* CI (GitHub Actions, D6) scans the image on every push and fails on anything
-HIGH or CRITICAL that has a fix; there is none, and 101 findings in the base image have no fix
+HIGH or CRITICAL that has a fix; there is none, and 102 findings in the base image have no fix
 (`docs/evidence/image_scan.md`). The GitLab.com pipeline runs the same scan before a release,
 ECR scans the image again when it is pushed, and the host starts a release only by its commit
 tag, which never moves. The image is not signed; no software bill of materials; no signature

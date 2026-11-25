@@ -43,9 +43,9 @@ function checkAgainstChecklistsDocument() {
   }
 }
 
-// The test suite, as run on one laptop on the code of this submission, commit 772467c, on
-// 25 November 2026 (presentation/G3_Telco_Evaluation.pdf, section 2.3). The last pipeline,
-// GitLab 3106633060 of 24 November, ran the 2,689 tests there were before the review's changes.
-const TESTS = { count: "2,902", failed: 0, coverage: "96%", gate: "80%", where: "one laptop", commit: "772467c", date: "25 November 2026" };
+// The test suite, as run by the GitLab pipeline that released this code to the AWS host
+// (3116487891, commit 797ab92, 25 November 2026: 2,902 passed, 95.78% with branches counted), and
+// the same day on one laptop on commit 772467c (presentation/G3_Telco_Evaluation.pdf, section 2.3).
+const TESTS = { count: "2,902", failed: 0, coverage: "96%", gate: "80%", where: "GitLab pipeline 3116487891", commit: "797ab92", date: "25 November 2026" };
 
 module.exports = { CHECKLISTS, checklistTotals, checkAgainstChecklistsDocument, TESTS };

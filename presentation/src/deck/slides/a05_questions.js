@@ -188,7 +188,7 @@ const SOURCES = [
     lines: ["presentation/G3_Telco_Problem_Statement.pdf", "presentation/G3_Telco_Architecture.pdf", "presentation/G3_Telco_Evaluation.pdf", "presentation/G3_Telco_Checklists.pdf", "presentation/G3_Telco_ROI.xlsx"],
   },
   {
-    head: "The repository, branch dev, commit 772467c",
+    head: "The repository, branch dev, release 797ab92",
     lines: [
       "README.md, with the declaration of the AI assistant used",
       "docs/HOW_IT_WORKS.md, docs/EXECUTION_PLAN.md",
@@ -203,7 +203,7 @@ const SOURCES = [
       "evals/reports/: seven evaluations and two live-model runs, 25 November 2026 (UTC)",
       "loadtest/reports/: three surge reports, 16 November 2026 (UTC)",
       "reports/data_profile.md, 15 November 2026",
-      "2,902 tests on one laptop, 25 November 2026 (pipeline 3106633060, 24 November: 2,689)",
+      "2,902 tests: GitLab pipeline 3116487891 and one laptop, 25 November 2026",
       "presentation/src/assets/screens/manifest.json: 35 screenshots",
     ],
   },

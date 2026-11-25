@@ -84,7 +84,7 @@ async function previewSlide(pres) {
       "Now the live demonstration. It runs on AWS against our simulator of SkyLink's six systems: mock APIs, nothing hard-coded. OpenAI's gpt-5.4-mini reads the messages.",
       "Three paths. A happy path: the network team declares an outage and a customer on that node writes in. A failure: the Network Monitoring API goes down. And a human approval: a credit above 500 dollars waits for a supervisor.",
       "You may change an input: shorten the third outage to 300 minutes, and the credit is applied without review.",
-      "For the presenter, not to be read out: the console has four more scenes in reserve (\"It's my router\", router steps from the guide, a failing line and a booked visit, a prompt injection). The screenshots in this deck are from the local stack with the offline keyword rules.",
+      "For the presenter, not to be read out: the console has four more scenes in reserve (\"It's my router\", router steps from the guide, a failing line and a booked visit, a prompt injection). The screenshots in this deck are from the local stack with the offline keyword rules, except the guide scene (gpt-5.4-mini).",
     ],
     sources: "README.md, \"The demo console\" (seven scenes, free play, a mentor can name another customer) and \"The demo on AWS\" (gpt-5.4-mini reads the messages); src/mock_oss/console/scenes.js; docs/EXECUTION_PLAN.md, section 12, client decision D3 (a credit up to $500 is applied without review); the brief, p.3 and p.4 (the demo rules).",
   });

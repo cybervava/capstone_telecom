@@ -73,7 +73,7 @@
   <dl class="meta">
     <div><dt>Client</dt><dd>SkyLink Telecom (fictional)</dd></div>
     <div><dt>Owners</dt><dd>R3 Data &amp; RAG · R5 Platform &amp; Trust</dd></div>
-    <div><dt>Version</dt><dd>24 November 2026 · commit <code>b9c70ef</code></dd></div>
+    <div><dt>Version</dt><dd>25 November 2026 · commit <code>772467c</code></dd></div>
     <div><dt>Data</dt><dd>Synthetic stand-in data, in simulation</dd></div>
   </dl>
 </header>
@@ -198,7 +198,7 @@
     <tr><th><code>contact_mix.json</code></th><td>The 20,000 labelled contacts, counted once on 15 November: 9,000 outage contacts in 16 kinds, the NOC's delay, 4,450 past visits</td><td>Counts only, with the SHA-256 of the transcript file. The replay runs on another pack of the same generator</td></tr>
     <tr><th><code>credit_anchors.json</code></th><td>14 amounts worked out by hand</td><td>Neither the engine nor the oracle was used to produce them</td></tr>
     <tr><th><code>retrieval_gold.json</code></th><td>27 descriptions from the transcripts; 30 paraphrases by the rules' author; 48 independent descriptions</td><td>The independent set was written without sight of the retriever. Its first score is kept with a hash of what it was scored on</td></tr>
-    <tr><th><code>evals/attacks/</code></th><td>40 attacks, 58 runs</td><td>Each attack names its critical failure before it runs. One that cannot be played out makes the target not met</td></tr>
+    <tr><th><code>evals/attacks/</code></th><td>43 attacks, 61 runs</td><td>Each attack names its critical failure before it runs. One that cannot be played out makes the target not met</td></tr>
     <tr><th>Replayed scenes</th><td>140 detection contacts; 38 visit contacts; 72 curveball contacts; 80 parity customers</td><td>Scored against the simulator's own truth, which the platform cannot read</td></tr>
   </tbody>
 </table>
@@ -206,8 +206,8 @@
 
 <h3>2.3 The unit, integration and end-to-end suite</h3>
 <p class="body"><span class="tag tag--calc">Measured</span> <b>2,902 tests, 0 failed, 0 skipped</b>: 1,992 unit tests and 910 integration, contract and end-to-end tests. Coverage of <code>skylink_care</code> is <b>96%</b>, branches counted; the pipeline fails under 80%. In the end-to-end journeys only the language model is replaced, by the offline keyword rules; some integration tests script one enterprise client to force a failure. End-to-end tests play whole conversations in process through the intake, the orchestrator (coordinator), the executor (the hands) and the feed consumer (the radio), against a real database and the simulator. The API's routes (front desk) are tested apart (<code>tests/integration/api/</code>); <code>scripts/smoke.py</code> and the load test go through the HTTP API.</p>
-<p class="body"><b>The CI gate.</b> Before every release to the AWS demonstration: lint and strict types; the suite with its coverage gate; the seven evaluations; a secret scan; the container image, built and scanned. The host then plays the eight journeys of <code>scripts/smoke.py</code> against itself, and starts the previous release again if one fails. The release of 24 November 2026 passed, and the eight journeys passed after it.</p>
-<p class="src">Source: a run on one laptop, commit <code>772467c</code>, 25 November 2026 (pipeline 3106633060, commit <code>b9c70ef</code>, 24 November: 2,689 tests); <code>pyproject.toml</code>; <code>.gitlab-ci.yml</code>.</p>
+<p class="body"><b>The CI gate.</b> Before every release to the AWS demonstration: lint and strict types; the suite with its coverage gate; the seven evaluations; a secret scan; the container image, built and scanned. The host then plays the eight journeys of <code>scripts/smoke.py</code> against itself, and starts the previous release again if one fails, as it did once on 25 November 2026, for a race in the check itself. The release with the check fixed passed all eight.</p>
+<p class="src">Source: a run on one laptop, commit <code>772467c</code>, and GitLab pipeline 3116487891, commit <code>797ab92</code> (95.78%), both 25 November 2026; <code>pyproject.toml</code>; <code>.gitlab-ci.yml</code>.</p>
 
 <h3>2.4 The rules of evidence the team set itself</h3>
 <p class="body keep">From <code>docs/EXECUTION_PLAN.md</code> (sections 8 and 13) and <code>evals/README.md</code>. (1) Expected outcomes are frozen before the final run. (2) Every report gives counts and denominators; nothing is averaged away. (3) A dropped contact counts as a failure, never as a deflected call. (4) Evaluation cases are kept apart from prompt tuning. (5) Every report names the language-model provider that produced it. (6) A missed target is fixed in the product; the scoring is left alone. (7) A suite that cannot fail proves nothing: controls are taken out and the suite must report each one. (8) Each report ends with what its result rests on.</p>
@@ -303,7 +303,7 @@
     <tr><td>The curveball scene, 8 playings; the first live journey on every release</td><td><code>evals/reports/curveball.md</code>, "Most incidents on a node"; <code>scripts/smoke.py</code>, check "one incident opened for the node"</td><td>1 in all 8; passed on 24 November</td></tr>
   </tbody>
 </table>
-<p class="src">Sources: the tests named, all among the 2,689 that pass; <code>docs/HOW_IT_WORKS.md</code> section 10.1 for the simulator.</p>
+<p class="src">Sources: the tests named, all among the 2,902 that pass; <code>docs/HOW_IT_WORKS.md</code> section 10.1 for the simulator.</p>
 <div class="note mt keep"><b>What this does not prove.</b> "Per node" is read here as per node <i>episode</i>: two outages that overlap on one node get one ticket each, opened one after the other (<code>docs/EXECUTION_PLAN.md</code>, known gaps). The load test does not count incidents; it records that all 9,759 and 9,829 complaints from the failed nodes were linked to one. A repeated write is applied once only if the receiving system treats a repeated idempotency key as the same request: the simulator does, SkyLink's systems are assumed to (A8).</div>
 
 <h3>3.5 Complaint reference issued within 2 minutes <span class="tag tag--ok">Met</span> <span class="tag tag--calc">slowest 0.253 s</span></h3>
@@ -420,7 +420,7 @@
   <thead><tr><th style="width:21%">Further proof</th><th>What it shows</th><th style="width:27%">Where</th></tr></thead>
   <tbody>
     <tr><th>The surge with the API down</th><td>14,041 contacts: all accepted, slowest reference 0.11 s, 0 messages saying the network is clear. The 9,829 on failed nodes were told of the outage on the feed's evidence; 3,361 elsewhere were told that the status cannot be verified</td><td><code>surge-brief-before-fix</code>; again in <code>surge-quick</code> (998 contacts)</td></tr>
-    <tr><th>Live journeys on every release</th><td>Journey 2: a customer on the outage node, with the API down, still gets the reference and is told of the outage. Journey 3: a customer on another node gets no all-clear and no device steps. Both passed on the AWS host on 24 November, with the live model reading the messages</td><td><code>scripts/smoke.py</code>; pipeline 3106633060</td></tr>
+    <tr><th>Live journeys on every release</th><td>Journey 2: a customer on the outage node, with the API down, still gets the reference and is told of the outage. Journey 3: a customer on another node gets no all-clear and no device steps. Both passed on the AWS host on 25 November, with the live model reading the messages</td><td><code>scripts/smoke.py</code>; pipeline 3116487891</td></tr>
     <tr><th>Each rule on its own</th><td>An all-clear the evidence does not back is stopped; a rested dependency is not called once per contact; a stale feed proves nothing. In the attack suite, a technician demanded while the API is down (D1, D2) and "just say it is fine" (F1) get no visit and no all-clear</td><td><code>tests/e2e/test_message_claims.py</code>, <code>test_resting_dependencies.py</code>, <code>test_feed_and_restoration.py</code>; <code>attack_suite</code></td></tr>
   </tbody>
 </table>
@@ -540,8 +540,8 @@
     <tr><td>Detection scored 91.44%, under the 95% target. <i>First run of the evaluation</i></td><td>Five transcript phrases answered as out of scope by the keyword rules</td><td>The rules now know them: 97.47%</td><td>A complaint the rules do not recognise is still answered as out of scope</td></tr>
     <tr><td>Restored nodes suspected again: 13 and 16 of 94; 244 and 203 waiting customers not told in time. <i>Half-hour load test, after the surge</i></td><td>A fixed count of three failing lines, where about one line in seventy fails for reasons of its own</td><td>Failures are weighed against coincidence (A17); the verdict gained two targets</td><td>The half-hour profile is not repeated after the fix. The rule can still doubt about one healthy node in a thousand until about ten lines are in</td></tr>
     <tr><td>Six of 56 attack runs failed: five gaps, none critical. <i>First run of the attack suite</i></td><td>Guide text and model readings were trusted too far (section 6.2)</td><td>All five closed; two attacks added</td><td>The checks on a guide's steps and on injection phrasing are lists: they catch what is on them</td></tr>
-    <tr><td>Tests that could not fail: attacks played where what they ask for could not happen; a masking test that looked for leaks with the masking's own rules. <i>Independent reviews; the mutation script</i></td><td>An attack played where it cannot succeed, or a test built on the control's own rules, passes whatever the control does</td><td>Attacks rebuilt, controls removed in turn (31 checks); the masking test writes its own spellings, and found three leaks the fix had missed</td><td>The suite shows that these 40 attacks fail. Masking cannot know digits spelled as words or a name in another script</td></tr>
-    <tr><td>A customer's "2", in answer to a visit offer, was called off-topic and the visit was not booked. <i>First release to AWS with the live model, 22 November</i></td><td>The live journeys had never been run with the model; on the keyword rules the same "2" books the visit</td><td>While an offer waits, an answer its own rules can read carries the conversation, whatever a model made of it</td><td>Only the attack suite and the eight journeys have been read by the live model</td></tr>
+    <tr><td>Tests that could not fail: attacks played where what they ask for could not happen; a masking test that looked for leaks with the masking's own rules. <i>Independent reviews; the mutation script</i></td><td>An attack played where it cannot succeed, or a test built on the control's own rules, passes whatever the control does</td><td>Attacks rebuilt, controls removed in turn (31 checks); the masking test writes its own spellings, and found three leaks the fix had missed</td><td>The suite shows that these 43 attacks fail. Masking cannot know digits spelled as words or a name in another script</td></tr>
+    <tr><td>A customer's "2", in answer to a visit offer, was called off-topic and the visit was not booked. <i>First release to AWS with the live model, 22 November</i></td><td>The live journeys had never been run with the model; on the keyword rules the same "2" books the visit</td><td>While an offer waits, an answer its own rules can read carries the conversation, whatever a model made of it</td><td>Only the attack suite, the guide choice and the eight journeys have met the live model</td></tr>
     <tr><td>The stack started with no settings; a first deploy tried to roll back to a release that was not there. <i>First release to AWS</i></td><td>Run by AWS Systems Manager, the command-line client wrote nothing to the file its output was redirected to, and exited 0</td><td>Both fixed; a rollback was then exercised once, back and forward</td><td>One host in one zone; a release stops the site for about 25 seconds</td></tr>
   </tbody>
 </table>
@@ -586,7 +586,7 @@
     <tr><td>Attack suite</td><td>offline keyword rules, and the scripted model that obeys the attacker</td><td>in process</td><td>25 Nov 2026</td></tr>
     <tr><td>Attack suite and retrieval, live model</td><td><code>gpt-5.4-mini</code> (29 of 29 readings; 144 of 144 answers), and the scripted model</td><td>in process</td><td>25 Nov 2026</td></tr>
     <tr><td>Surge, half-hour and two-minute</td><td>offline keyword rules; one run with a 1.5 s stand-in, no model called</td><td>local processes, 400,000 customers, one machine</td><td>16 Nov 2026</td></tr>
-    <tr><td>Test suite, 2,902 tests (2,689 in the pipeline); eight live journeys on the AWS host</td><td>offline keyword rules; <code>gpt-5.4-mini</code> for the journeys</td><td>one laptop; GitLab pipeline 3106633060 and its release</td><td>25 Nov; 24 Nov 2026</td></tr>
+    <tr><td>Test suite, 2,902 tests; eight live journeys on the AWS host</td><td>offline keyword rules; <code>gpt-5.4-mini</code> for the journeys</td><td>one laptop; GitLab pipeline 3116487891 and its release</td><td>25 Nov 2026</td></tr>
   </tbody>
 </table>
 <p class="src">Sources: the line "Written by the run of" in each report. The pipeline also runs the seven evaluations before every release; the figures quoted in this report are those of the committed reports.</p>

@@ -12,6 +12,8 @@
   .wide { page: wide; }
   .wide figure svg { width: 100%; }
   .cover { gap: 2.6mm; padding-bottom: 4mm; }
+  /* Nine identities since the MCP server's key: the rows are a little tighter, so the page still holds them. */
+  table.keys tbody th, table.keys tbody td { padding-top: .8mm; padding-bottom: .8mm; }
   .cols-2 > p { margin-top: 0; }
   .kpis.snug > div { padding-top: 2.2mm; padding-bottom: 2.2mm; }
   .cover .lead { max-width: none; font-size: 10.4pt; }
@@ -103,7 +105,7 @@
   <dl class="meta">
     <div><dt>Client</dt><dd>SkyLink Telecom (fictional)</dd></div>
     <div><dt>Owner</dt><dd>R2 Architect</dd></div>
-    <div><dt>Version</dt><dd>24 November 2026</dd></div>
+    <div><dt>Version</dt><dd>25 November 2026</dd></div>
     <div><dt>Data</dt><dd>Synthetic stand-in data only</dd></div>
   </dl>
 </header>
@@ -137,7 +139,7 @@
 
 <!-- ============================================================ 2 · THE ARCHITECTURE -->
 <h2 class="pb"><span class="n">2</span> The architecture, adapted to the case</h2>
-<p>The brief asks for an event-driven plus request-response architecture, hybrid with on-premises systems. Figure 1, on the next page, shows the system as built. Each kind of traffic has its own line.</p>
+<p>The brief asks for an event-driven plus request-response architecture, hybrid with on-premises systems. Figure 1, on the next page, shows the system as built, but for the MCP server (section 4). Each kind of traffic has its own line.</p>
 <table class="tight" style="margin-top:2mm">
   <thead><tr><th style="width:37mm">Kind of traffic</th><th style="width:52mm">Who uses it</th><th>The rule that holds it</th></tr></thead>
   <tbody>
@@ -406,14 +408,14 @@
 <table class="tight">
   <thead><tr><th style="width:37mm">System</th><th>What the platform uses it for</th><th style="width:52mm">Who reaches it</th></tr></thead>
   <tbody>
-    <tr><th>API gateway</th><td>The one door to SkyLink's systems. It checks each caller's key and its permissions: 401 for an unknown key, 403 for a missing permission.</td><td>Orchestrator, feed consumer, executor. Never the API.</td></tr>
-    <tr><th>Network Monitoring</th><td>Whether a node works, with cause, estimate and alarms. A remote test of one line, which names the node that really serves it. A numbered feed of events, with a heartbeat.</td><td>Diagnostics: status and line tests. The executor: status, before it books. The feed consumer alone: the feed.</td></tr>
+    <tr><th>API gateway</th><td>The one door to SkyLink's systems. It checks each caller's key and its permissions: 401 for an unknown key, 403 for a missing permission.</td><td>Orchestrator, feed consumer, executor, MCP server. Never the API.</td></tr>
+    <tr><th>Network Monitoring</th><td>Whether a node works, with cause, estimate and alarms. A remote test of one line, which names the node that really serves it. A numbered feed of events, with a heartbeat.</td><td>Diagnostics: status and line tests. Executor (before it books), MCP server: status. Feed consumer alone: the feed.</td></tr>
     <tr><th>CRM</th><td>A customer's profile and services, the identity check, and consent to outage messages.</td><td>Triage. The executor, for the consent flag only.</td></tr>
     <tr><th>Billing</th><td>The credits on an account, and applying a new one.</td><td>Resolution reads. The executor writes.</td></tr>
     <tr><th>Field Service</th><td>Technician slots and appointments.</td><td>Dispatch reads. The executor writes.</td></tr>
     <tr><th>Incident Management</th><td>Complaints and repair tickets: one open ticket for a fault on a node, with every complaint linked to it.</td><td>The executor only.</td></tr>
     <tr><th>Text messages <small>notification gateway</small></th><td>Outage texts. Recorded and never really sent in this build. The team added this API: the brief lists five.</td><td>The executor only.</td></tr>
-    <tr><th>Language model provider</th><td>Fills in the nine-field form. In the demonstration: OpenAI's <code>gpt-5.4-mini</code>, pinned to <code>gpt-5.4-mini-2026-03-17</code>. By default no model is called and keyword rules read every message. Claude is one setting away and has not been run live.</td><td>The orchestrator, for triage, and only for an identified customer.</td></tr>
+    <tr><th>Language model provider</th><td>Fills in the nine-field form; picks a guide section. In the demonstration: OpenAI's <code>gpt-5.4-mini</code>, pinned to <code>gpt-5.4-mini-2026-03-17</code>. By default no model is called: keyword rules read every message. Claude is one setting away, not run live.</td><td>The orchestrator, for triage, and only for an identified customer.</td></tr>
   </tbody>
 </table>
 <p class="src">One program, <code>mock-oss</code>, plays the gateway and SkyLink's six systems, to the contract in <code>docs/contracts/mock_oss_api.md</code>, and is reached only over the network. The agents' rules are pure functions in <code>domain/</code>, and the guide index is in <code>rag/</code>. Optional and off by default: LangSmith tracing of the orchestrator's steps, with contents hidden. Sources: <code>docs/HOW_IT_WORKS.md</code> sections 3 and 6.2; <code>README.md</code> ("How it is put together").</p>
@@ -587,7 +589,7 @@
     <ol class="tightp">
       <li><b>Filter by the customer's own router,</b> as named on the service record, never by the customer.</li>
       <li><b>Filter by section.</b> Four of a guide's eight sections are safe to follow alone: no internet, Wi-Fi, slow speed, power cycle.</li>
-      <li><b>Rank</b> by keyword rules for the kind of fault, matching words, and closeness of the vectors. At most four rows are left, so each is compared exactly.</li>
+      <li><b>Rank</b> by keyword rules for the fault, matching words and vector closeness. At most four rows are left, each compared exactly; <b>a model,</b> if on, picks one.</li>
       <li><b>Quote, never rewrite,</b> with guide, section and version.</li>
     </ol>
   </div>
@@ -600,11 +602,11 @@
     </ul>
   </div>
 </div>
-<p class="src"><span class="tag tag--ok">Built</span> <span class="tag tag--sim">Stand-in</span> The pipelines are built; the data pack and the twelve guides are synthetic. <span class="tag tag--calc">Measured</span> Right section for 468 of 576 independent descriptions, 81.25%, as first scored (48 descriptions on each of 12 router models; always answering "no internet" would score 47.92%). Sources: <code>docs/architecture_design.html</code> (Data); <code>README.md</code> ("Guide retrieval"); <code>evals/reports/retrieval.md</code>.</p>
+<p class="src"><span class="tag tag--ok">Built</span> <span class="tag tag--sim">Stand-in</span> The pipelines are built; the data pack and the twelve guides are synthetic. <span class="tag tag--calc">Measured</span> Right section for 468 of 576 independent descriptions, 81.25%, as first scored (48 on each of 12 router models; always "no internet": 47.92%); with gpt-5.4-mini choosing, 144 of 144 on three. Sources: <code>README.md</code> ("Guide retrieval"); <code>evals/reports/retrieval.md</code>, <code>retrieval_openai.md</code>.</p>
 
 <!-- ============================================================ 7 · CLOUD -->
 <h2><span class="n">7</span> Cloud: what runs where, the choice, the cost and the release</h2>
-<p>SkyLink's core systems stay on its premises, and the care platform runs in the cloud. Three programs may cross the boundary between them: the orchestrator to read, the feed consumer to listen, the executor to act. Figure 5 sets what runs today beside the design for a pilot.</p>
+<p>SkyLink's core systems stay on its premises, and the care platform runs in the cloud. Four programs may cross the boundary between them: the orchestrator and the MCP server to read, the feed consumer to listen, the executor to act. Figure 5 sets what runs today beside the design for a pilot.</p>
 <figure class="mt">
   <svg class="dia" viewBox="0 0 760 318" role="img" aria-label="Two deployments side by side. Today: one EC2 host in AWS Mumbai runs the five care programs and a simulator of SkyLink's systems behind Caddy, with a managed PostgreSQL database, a secrets store, an image registry and a release bucket; SkyLink's premises are not connected. Target for a pilot, on paper: a load balancer with a web firewall, containers on ECS Fargate across two zones, a database with a standby, a queue, a stream, monitoring, and a private link to SkyLink's API gateway and six systems on-premises.">
     <!-- ================= today ================= -->
@@ -701,7 +703,7 @@
       <li><b>Deploy.</b> One command on the server starts the release from a clean state and plays eight customer journeys against it.</li>
       <li><b>Roll back.</b> If the release is not healthy or a journey fails, the previous release is started again and the job fails.</li>
     </ol>
-    <p class="src"><span class="tag tag--calc">Measured</span> First passing release, 22 November 2026: 15 minutes from push to live, 24 seconds of downtime. A rollback was tried once, in about two minutes each way. Commit <code>b9c70ef</code> was deployed on 24 November 2026 by pipeline 3106633060. This is stop-and-replace on one server. Blue-green or canary needs a second copy, which a pilot would have. Sources: <code>README.md</code>, <code>.gitlab-ci.yml</code>, <code>deploy/aws/host/deploy.sh</code>.</p>
+    <p class="src"><span class="tag tag--calc">Measured</span> First passing release, 22 November 2026: 15 minutes from push to live, 24 seconds of downtime. A rollback was tried once, in about two minutes each way; on 25 November 2026 one ran by itself, for a release that failed a check. This is stop-and-replace on one server. Blue-green or canary needs a second copy, which a pilot would have. Sources: <code>README.md</code>, <code>.gitlab-ci.yml</code>, <code>deploy/aws/host/deploy.sh</code>.</p>
   </div>
 </div>
 
@@ -723,6 +725,7 @@
     <tr><th>Dispatch</th><td class="sep"></td><td></td><td></td><td class="sep"></td><td></td><td></td><td class="sep"></td><td></td><td class="sep"><i class="dot"></i></td><td></td><td class="sep"></td><td></td><td class="sep"></td></tr>
     <tr><th>Feed consumer</th><td class="sep"></td><td></td><td></td><td class="sep"></td><td></td><td><i class="dot dot--e"></i></td><td class="sep"></td><td></td><td class="sep"></td><td></td><td class="sep"></td><td></td><td class="sep"></td></tr>
     <tr><th>Executor</th><td class="sep"></td><td></td><td><i class="dot"></i></td><td class="sep"><i class="dot"></i></td><td></td><td></td><td class="sep"><i class="dot"></i></td><td><i class="dot dot--w"></i></td><td class="sep"><i class="dot"></i></td><td><i class="dot dot--w"></i></td><td class="sep"><i class="dot"></i></td><td><i class="dot dot--w"></i></td><td class="sep"><i class="dot dot--w"></i></td></tr>
+    <tr><th>MCP server</th><td class="sep"></td><td></td><td></td><td class="sep"><i class="dot"></i></td><td></td><td></td><td class="sep"></td><td></td><td class="sep"></td><td></td><td class="sep"></td><td></td><td class="sep"></td></tr>
     <tr><th>API, language model</th><td colspan="13" class="sep" style="text-align:left;color:var(--ink-2)">No key at all. The API never talks to SkyLink's systems, and the model has no tools.</td></tr>
   </tbody>
 </table>
@@ -749,13 +752,13 @@
     <table class="tight">
       <thead><tr><th style="width:25mm">To</th><th>What goes, and the rule</th></tr></thead>
       <tbody>
-        <tr><th>The language model's provider</th><td>Only when a model is switched on, and only for an identified customer: the messages, with personal details replaced by placeholders. The provider is asked not to keep a copy.</td></tr>
+        <tr><th>The language model's provider</th><td>Only when a model is switched on, and only for an identified customer: the messages and guide sections, with personal details replaced by placeholders. The provider is asked not to keep a copy.</td></tr>
         <tr><th>The tracing service</th><td>Only when switched on: each step's name, timing and any error, with the contact's id and the code revision. No message, profile or working notes.</td></tr>
         <tr><th>SkyLink's systems</th><td>Registrations, texts, credits and bookings, by the executor only, each under its idempotency key. A text only with consent. A credit above $500 only after approval.</td></tr>
         <tr><th>Logs</th><td>Events with their identifiers. Contact details and secrets are removed first.</td></tr>
       </tbody>
     </table>
-    <p class="src">Nothing else leaves. The guide index is built inside the platform's own database with no outside service.</p>
+    <p class="src">Nothing else leaves but the MCP server's answers, none about a customer. The guide index is built inside the platform's own database with no outside service.</p>
   </div>
 </div>
 
@@ -763,7 +766,7 @@
 <table class="tight">
   <thead><tr><th style="width:39mm">Control</th><th>What stands</th><th style="width:55mm">The limit, stated</th></tr></thead>
   <tbody>
-    <tr><th>A model that can only describe</th><td>Masked text in, nine fields out, no tools, 8 seconds. An unidentified visitor's message is never sent to it.</td><td>Masking cannot catch digits written as words, a name in another script, or details CRM does not hold.</td></tr>
+    <tr><th>A model that can only describe</th><td>Masked text in, fields out, no tools, 8 seconds. An unidentified visitor's message is never sent to it.</td><td>Masking cannot catch digits written as words, a name in another script, or details CRM does not hold.</td></tr>
     <tr><th>An audit log that cannot be rewritten</th><td>Every step leaves an entry: who or what acted, on what, with which model, prompt and policy version. The database refuses to change or delete one.</td><td>All programs share one database role, which could switch that rule off.</td></tr>
     <tr><th>Encrypted in transit and at rest</th><td>On AWS: HTTPS at the front door, an encrypted disk and database, a checked certificate on the database connection, secrets in Secrets Manager, no remote-login port.</td><td>Inside the server the programs talk plain HTTP. One shared sign-in guards the edge.</td></tr>
     <tr><th>A pipeline with no stored cloud key</th><td>The release pipeline proves who it is to AWS on every run and gets short-lived access, for one branch of one project: push the image, upload the release bundle, run one deploy command.</td><td>Whoever can push to that branch can release to the demonstration server.</td></tr>
@@ -773,7 +776,7 @@
 
 <!-- ============================================================ 9 · DECISION RECORDS -->
 <h2><span class="n">9</span> Decision records</h2>
-<p>Seven records in the brief's five fields, with the chosen option in bold. Record 2 is a formal file in the repository, <code>docs/adr/0001-degraded-mode-when-the-network-api-fails.md</code>, accepted on 16 November 2026. The other six are recorded in the execution plan as design rules, assumptions and decisions, and are written up in record form here. Their files are still to be written.</p>
+<p>Seven records in the brief's five fields, with the chosen option in bold. Record 2 is a formal file in the repository, <code>docs/adr/0001-degraded-mode-when-the-network-api-fails.md</code>, accepted on 16 November 2026, as are ADRs 0002 and 0003 of the project review. The other six are recorded in the execution plan as design rules, assumptions and decisions, and are written up in record form here.</p>
 
 <section class="adr">
   <header><h3>Reference first: the API answers before anything is checked</h3><p class="adr__id">RECORD 1 · DESIGN RULE 1</p></header>

@@ -28,7 +28,7 @@ const WHY_NOT = [
   {
     icon: "LuBot",
     head: "The language model has no tools",
-    body: "It reads a message with personal details masked and fills in nine fields. A conversation uses 35 pre-written messages.",
+    body: "It reads masked text and fills in nine fields or picks a guide section. A conversation uses 35 pre-written messages.",
     tag: { kind: "built", text: "BUILT · KEYWORD RULES ARE THE FALLBACK" },
   },
   {
@@ -101,7 +101,7 @@ async function splitSlide(pres) {
     talk: [
       "Your brief sets the principle: the language model reasons and talks, rules compute amounts and eligibility, and only the Action agent writes, after a human gate for high-impact actions. We enforce that in code.",
       "A contact has sixteen steps. Fixed rules lead eleven. Retrieval, the language model, one statistical test and a person lead one each. The sixteenth, churn scoring, is not built.",
-      "Three choices to defend. No model computes a credit: a formula in code matched an independent calculation in 4,050 of 4,050 cases. The language model has no tools: it fills in nine fields, and a conversation uses 35 pre-written messages. And no churn model: the data has no record of who left, and treating customers by predicted churn risks unfair offers by segment.",
+      "Three choices to defend. No model computes a credit: a formula in code matched an independent calculation in 4,050 of 4,050 cases. The language model has no tools: it fills in nine fields or picks a guide section, and a conversation uses 35 pre-written messages. And no churn model: the data has no record of who left, and treating customers by predicted churn risks unfair offers by segment.",
     ],
     sources: "the brief, p.5 (the principle of the reference architecture); presentation/G3_Telco_Architecture.pdf, sections 1 and 3 (sixteen steps: rules 11, RAG, language model, statistics and a person 1 each, machine learning none; nine fields) and decision record 7; src/skylink_care/guardrails/claims.py (35 message templates); evals/reports/credit_policy.md (4,050 of 4,050); docs/EXECUTION_PLAN.md, A10.",
   });
@@ -117,17 +117,17 @@ async function architectureSlide(pres) {
     role: ROLE,
     seconds: 80,
     talk: [
-      "This is the system as built. On the left, customers, the contact centre and staff. In the middle, our care platform in the cloud. On the right, SkyLink's six systems behind a gateway, simulated here because the supplied mock APIs were not received.",
+      "This is the system as built, apart from the MCP server on slide A21. On the left, customers, the contact centre and staff. In the middle, our care platform in the cloud. On the right, SkyLink's six systems behind a gateway, simulated here because the supplied mock APIs were not received.",
       "Two worlds meet. Customer contacts are request and response, the blue lines. The network speaks as a stream of numbered events, the orange dashes. They meet in one database, and every hand-over between the parts is a row in it.",
       "Four things to notice. One: the API gives the complaint reference after one database write, before any model or SkyLink system is called. Two: the feed consumer applies each network event once. Three: the executor is the only writer; the specialist agents hold read-only keys and can only propose. Four: the staff desk is the human gate for a credit above 500 dollars.",
-      "The language model sits outside. It gets masked text, returns nine fields, and is off by default.",
+      "The language model sits outside. It gets masked text, returns nine fields or a guide section it can point to, and is off by default.",
     ],
     sources: "presentation/G3_Telco_Architecture.pdf, sections 1, 2 and 4 and Figure 1; docs/EXECUTION_PLAN.md, section 3; README.md, \"Two things that are stand-ins\" and \"How it is put together\".",
   });
 }
 
 const TODAY = [
-  { head: "One EC2 host, t3.medium", body: "API · orchestrator · feed consumer · executor, and mock-oss, the stand-in for SkyLink's six systems" },
+  { head: "One EC2 host, t3.medium", body: "API · orchestrator · feed consumer · executor · MCP server (closed), and mock-oss, the stand-in for SkyLink's six systems" },
   { head: "Amazon RDS, PostgreSQL 17", body: "db.t4g.micro, encrypted, reached over TLS; the one vector table is in it" },
   { head: "Around them", body: "Secrets Manager · ECR · HTTPS with one shared sign-in · a pipeline with no stored cloud key" },
 ];
@@ -252,7 +252,7 @@ async function decisionsSlide(pres) {
   }
   kit.text(
     slide,
-    "The other four records are on slides 4, 6 and 17. All seven are in the appendix, each with its options and its reasons.",
+    "The other four records are on slides 4, 6 and 17. All seven are in the appendix with their options and reasons; 8 and 9 on A21.",
     { x: G.MX, y: top + cardH + 0.14, w: G.CW, h: 0.3, fontSize: 14, color: S.ink2, valign: "middle", objectName: "The other records" },
   );
   kit.sourceLine(slide, "Sources: presentation/G3_Telco_Architecture.pdf, section 9 (records 1, 3 and 4); loadtest/reports/surge-brief-before-fix.md; evals/reports/attack_suite.md, attack I2. Measured in simulation, on stand-in data.");
@@ -261,7 +261,7 @@ async function decisionsSlide(pres) {
     role: ROLE,
     seconds: 55,
     talk: [
-      "We recorded seven decisions. Here are three you are likely to question, each with its cost.",
+      "We recorded seven decisions, and two more after the project review. Here are three you are likely to question, each with its cost.",
       "Reference first. The API files the case and replies at once, so the two-minute rule depends on our database alone. Slowest reference in the surge: 0.253 seconds. The cost: the answer arrives separately, and the reference is not yet confirmed as the official complaint number.",
       "One writer. Specialists propose and the executor acts, so one key is guarded and 'exactly once' is enforced in one place. The cost: the outcome comes in a second message.",
       "The database is the queue. A note and its case are one write. The cost: a single point of failure and a ceiling on volume.",

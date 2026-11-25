@@ -57,12 +57,12 @@ async function reviewSlide(pres) {
       { text: "MEASURED ON THE CHANGED CODE, 25 NOVEMBER 2026  ", options: { bold: true, fontSize: 10.5, charSpacing: 1, color: HEX.tealInk, breakLine: true } },
       { text: "2,902 tests passed" },
       { text: " · attack suite 61 of 61 runs, offline and with gpt-5.4-mini, three attacks added for a model that answers badly about a guide · " },
-      { text: "31 of 31 checks that the suite can fail · nine of nine live journeys on the local stack, the MCP server's among them. Not yet on the AWS host." },
+      { text: "31 of 31 checks that the suite can fail · nine of nine live journeys on the local stack, the MCP server's among them; on the AWS host, the eight it may run." },
     ],
     { x: G.MX + 0.2, y: y + 0.08, w: G.CW - 0.4, h: G.BODY_B - y - 0.16, fontSize: 14, valign: "middle", objectName: "Measured on the change" },
   );
   kit.sourceLine(slide, "Sources: docs/adr/0002 and 0003; docs/EXECUTION_PLAN.md, section 12 (D12 to D14) and the progress log of 25 November; evals/reports/retrieval_openai.md; evals/reports/attack_suite.md and attack_suite_openai.md.");
-  sourceNote(slide, "docs/adr/0002-a-language-model-beside-the-guide-search.md and docs/adr/0003-read-only-tools-over-mcp.md (accepted 25 November 2026); docs/EXECUTION_PLAN.md, section 12, client decisions D12 to D14, and section 13, the progress log of 25 November (with what the code reviews changed); evals/reports/retrieval_openai.md (25 November 2026: 144 of 144 with gpt-5.4-mini-2026-03-17 on three router models, 129 of 144 by the search and the rules alone, 1.4 s median); evals/reports/attack_suite.md and attack_suite_openai.md (25 November 2026: 43 attacks, 61 runs, 61 passed, offline and live); scripts/attack_suite_can_fail.py (31 of 31); scripts/smoke.py (journey 9, the MCP server over HTTP). The changes are not on the AWS demonstration until they are pushed.");
+  sourceNote(slide, "docs/adr/0002-a-language-model-beside-the-guide-search.md and docs/adr/0003-read-only-tools-over-mcp.md (accepted 25 November 2026); docs/EXECUTION_PLAN.md, section 12, client decisions D12 to D14, and section 13, the progress log of 25 November (with what the code reviews changed); evals/reports/retrieval_openai.md (25 November 2026: 144 of 144 with gpt-5.4-mini-2026-03-17 on three router models, 129 of 144 by the search and the rules alone, 1.4 s median); evals/reports/attack_suite.md and attack_suite_openai.md (25 November 2026: 43 attacks, 61 runs, 61 passed, offline and live); scripts/attack_suite_can_fail.py (31 of 31); scripts/smoke.py (journey 9, the MCP server over HTTP). On the AWS host since release 797ab92 (GitLab pipeline 3116487891, 25 November 2026). The release before it, d686b41, failed journey 7 on a race in the check itself and the host went back by itself; 797ab92 fixes the check.");
 }
 
 const GUIDE_POINTS = [

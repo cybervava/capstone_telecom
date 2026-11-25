@@ -63,7 +63,7 @@
   <dl class="meta">
     <div><dt>Client</dt><dd>SkyLink Telecom (fictional)</dd></div>
     <div><dt>Owner</dt><dd>R5 Platform &amp; Trust; signed by all five members</dd></div>
-    <div><dt>State as of</dt><dd>24 November 2026, commit <code>b9c70ef</code> on branch <code>dev</code></dd></div>
+    <div><dt>State as of</dt><dd>25 November 2026, commit <code>772467c</code> on branch <code>dev</code></dd></div>
     <div><dt>Data</dt><dd>Synthetic stand-in data only</dd></div>
   </dl>
 </header>
@@ -101,7 +101,7 @@
     <ul>
       <li>A file with a line or a named section, a test written as <code>file::test_name</code>, a configuration line, a report under <code>evals/reports/</code> or <code>loadtest/reports/</code>, or a pipeline run.</li>
       <li>Every path is in the repository <code>github.com/cybervava/capstone_telecom</code>, branch <code>dev</code>, at commit <code>772467c</code>, except the brief and the team's action plan, which are kept out of the public repository. A path that begins <code>…/</code> is under <code>src/skylink_care/</code>. Attack keys such as A1 or C2 are rows of <code>evals/reports/attack_suite.md</code>.</li>
-      <li>The tests named here ran on that commit on a laptop on 25 November 2026: 2,902 tests, 0 failed, 0 skipped, 96% coverage with branches counted, against a gate of 80%. The last pipeline, GitLab.com 3106633060 of 24 November (commit <code>b9c70ef</code>, 2,689 tests), released the AWS demo; the changes of 25 November are not on that host.</li>
+      <li>The tests named here ran on that commit on a laptop on 25 November 2026: 2,902 tests, 0 failed, 0 skipped, 96% coverage with branches counted, against a gate of 80%. The same day GitLab.com pipeline 3116487891 ran them again on commit <code>797ab92</code> (95.78%) and released it to the AWS demo.</li>
       <li>"Limit" is a boundary on a ticked item. "Met" and "Not met" split an item that is met in part.</li>
     </ul>
   </div>
@@ -263,7 +263,7 @@
 <ul class="check">
   <li><span class="box box--yes">✓</span><div>
     <p class="item"><span class="no">4.1</span>CI/CD pipeline builds, tests and deploys the container; prompts and configs are versioned</p>
-    <p class="ev"><b>Evidence.</b> <code class="nb">.gitlab-ci.yml</code> has five stages: verify (lint and strict types, the test suite with its coverage gate, the seven evaluations, a secret scan), build, scan, publish, deploy. Pipeline 3106633060 released commit <code>b9c70ef</code> to the AWS demo on 24 November 2026, and the host's eight smoke journeys passed after it. <code>.github/workflows/ci.yml</code> runs the same checks on every push to <code>dev</code>. Prompts: a prompt is a file in the repository, and its version is its name with the first 12 characters of its SHA-256 (<code>…/llm/prompts.py</code>), written with every model reading to <code>audit_log.prompt_version</code>. Configs: the credit policy file carries its version (<code>data/policies/credit_policy.v0.yaml</code>) and every credit names it; settings are in <code>.env.example</code> and <code class="nb">docker-compose.yml</code>; the infrastructure is Terraform.</p>
+    <p class="ev"><b>Evidence.</b> <code class="nb">.gitlab-ci.yml</code> has five stages: verify (lint and strict types, the test suite with its coverage gate, the seven evaluations, a secret scan), build, scan, publish, deploy. Pipeline 3116487891 released commit <code>797ab92</code> to the AWS demo on 25 November 2026, and the host's eight smoke journeys passed after it. <code>.github/workflows/ci.yml</code> runs the same checks on every push to <code>dev</code>. Prompts: a prompt is a file in the repository, and its version is its name with the first 12 characters of its SHA-256 (<code>…/llm/prompts.py</code>), written with every model reading to <code>audit_log.prompt_version</code>. Configs: the credit policy file carries its version (<code>data/policies/credit_policy.v0.yaml</code>) and every credit names it; settings are in <code>.env.example</code> and <code class="nb">docker-compose.yml</code>; the infrastructure is Terraform.</p>
     <p class="ev"><b>Limit.</b> The host's live settings are one secret in Secrets Manager. They are changed with <code>deploy/aws/operate.sh</code>, not through a commit.</p>
   </div></li>
   <li><span class="box box--part">~</span><div>
@@ -370,7 +370,7 @@
     <li>Item 4.6: the half-hour load test is of 16 November 2026 and has not been repeated on the final code.</li>
   </ul>
 </div>
-<p class="declare mt">We, the five members of Group 3, have each reviewed every item of the four checklists above and opened the evidence named for it. Each box shows the state of the submission at commit <code>b9c70ef</code>, and every item that is not fully ticked is listed in section 6 with its reason.</p>
+<p class="declare mt">We, the five members of Group 3, have each reviewed every item of the four checklists above and opened the evidence named for it. Each box shows the state of the submission at commit <code>772467c</code>, and every item that is not fully ticked is listed in section 6 with its reason.</p>
 <div class="sign">
   <div><div class="line"></div><p class="cap">Signature</p><p class="role">R1 · FDE Lead</p><p class="who">Name <span class="blank">&nbsp;</span></p><p class="who">Date <span class="blank">&nbsp;</span></p></div>
   <div><div class="line"></div><p class="cap">Signature</p><p class="role">R2 · Architect</p><p class="who">Name <span class="blank">&nbsp;</span></p><p class="who">Date <span class="blank">&nbsp;</span></p></div>

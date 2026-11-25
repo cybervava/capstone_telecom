@@ -187,7 +187,7 @@ function architectureDiagram(slide) {
     slide,
     [
       { text: "Language model · off by default", options: { bold: true, fontSize: 12, breakLine: true } },
-      { text: "masked text in, nine fields out, no tools", options: { fontSize: 10.5, color: S.ink2 } },
+      { text: "masked text in, fields out, no tools", options: { fontSize: 10.5, color: S.ink2 } },
     ],
     { x: 10.28, y: 2.12, w: 2.4, h: 0.58, valign: "middle", objectName: "Language model" },
   );

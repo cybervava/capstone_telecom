@@ -7,7 +7,7 @@ This guide explains what the platform in this repository does, how its parts fit
 Two things to keep in mind throughout:
 
 - **Everything here is make-believe, on purpose.** SkyLink Telecom is a fictional company from a training brief. Its customers, its network, its credit policy and its computer systems are invented stand-ins built for this project. No real customer data is used anywhere.
-- **This describes the code as it stands on 16 November 2026**, after milestones M0 to M4 of the project plan (`docs/EXECUTION_PLAN.md`), with what came after: the AI model chosen for the demonstration (section 6) and, on 22 November, the demonstration server on AWS (section 12). Section 13 lists what is not built yet.
+- **This describes the code as it stands on 16 November 2026**, after milestones M0 to M4 of the project plan (`docs/EXECUTION_PLAN.md`), with what came after: the AI model chosen for the demonstration (section 6), on 22 November the demonstration server on AWS (section 12), and on 25 November, after the project review, amounts in dollars, the model's second job (section 6.5) and the enquiry window (section 3.7). Section 13 lists what is not built yet.
 
 ## Contents
 
@@ -602,7 +602,7 @@ If the radio's stream misses an announcement, the radio's record stops counting 
 
 ### 9.1 Automated tests
 
-There are **2,902 automated tests**. At the last full run, on a laptop on 25 November with the three changes that followed the project review, all of them passed, and together they exercised 96% of the platform's code. (The GitLab pipeline that released the demonstration to AWS on 24 November ran the 2,689 there were then.) They come in kinds:
+There are **2,902 automated tests**. At the last full run, on a laptop on 25 November with the three changes that followed the project review, all of them passed, and together they exercised 96% of the platform's code. (The GitLab pipeline that released them to the demonstration on AWS the same day ran all 2,902 too.) They come in kinds:
 
 | Kind | Proves |
 |---|---|
@@ -637,7 +637,7 @@ In the half-hour runs, every one of 13,941 and 14,041 contacts was accepted, wit
 ### 9.4 What the numbers do not prove
 
 - They are measured on invented data against a simulator that answers in milliseconds, not on SkyLink's real systems or customers.
-- Little has been read by a live AI model. Only the attack suite has been run with one (OpenAI's, once). Every other evaluation used the keyword rules.
+- Little has been read by a live AI model. Only the attack suite and the choice of a guide section have been run with one (OpenAI's). Every other evaluation used the keyword rules.
 - The load test ran on one laptop, with one copy of each program. It shows the design holds at ten contacts a second; it is not a capacity figure for a real deployment.
 - A suite of attacks shows that *those* attacks fail, not that nothing could succeed. The threat model (`docs/threat_model.md`) lists what was not tried.
 
@@ -679,7 +679,7 @@ The past transcripts are written to show the old way of working that the brief d
 
 | Folder | What lives there |
 |---|---|
-| `src/skylink_care/` | The care platform itself (about 105 Python files) |
+| `src/skylink_care/` | The care platform itself (about 110 Python files) |
 | ‣ `api/` | The front desk: routes, passes and roles, limits, staff actions, takeover |
 | ‣ `orchestrator/` | The coordinator: the steps, the "what next?" rules, the loop that picks up cases |
 | ‣ `agents/` | The specialists, the identity guard, and the message templates |

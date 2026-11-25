@@ -329,11 +329,11 @@ async function evaluationSlide(pres) {
     role: ROLE,
     seconds: 70,
     talk: [
-      "Two evaluations, both on synthetic stand-in data, with keyword rules reading the messages.",
+      "Two evaluations, both on synthetic stand-in data, with keyword rules reading the messages, except the last bar.",
       "Detection. Of customers whose node is truly in outage, 97.47 per cent are told of it, against a target of 95. That is 140 contacts replayed on 32 nodes, weighted by the mix of 9,000 labelled contacts. 2.53 per cent are missed, all mobile, which has no remote test here: before the NOC declares, such a customer can be told that no outage is reported.",
       "Retrieval. Trust the third bar. A separate model instance, which never saw the retriever, wrote 48 descriptions. Over twelve router models that is 576 answers, and 468 were the right section: 81.25 per cent, as first scored, out of sample, against our floor of 70. We then reworked the rules and the same set scores 89.58, which is no longer out of sample. The last bar is the model the review asked for: choosing among the sections the search found, it got 144 of 144 on three router models. No answer ever came from another router's guide.",
     ],
-    sources: "evals/reports/outage_detection.md (run of 17 November 2026: 97.47%, 140 contacts, 32 nodes, weights from 9,000 contacts); presentation/G3_Telco_Evaluation.pdf, section 3.1 (79.33% told at contact, 18.13% held then told, 2.53% missed, all mobile) and section 7; evals/reports/retrieval_openai.md (25 November 2026: 144 of 144 with gpt-5.4-mini on three router models, 129 of 144 by the rules alone); evals/reports/retrieval.md (run of 25 November 2026: 99.07%, 96.67%, 81.25% = 468 of 576 as first scored, 89.58% on today's rules; constant answer 81.48%, 50.0%, 47.92%; floor 70%; none from another router's guide).",
+    sources: "evals/reports/outage_detection.md (run of 25 November 2026: 97.47%, 140 contacts, 32 nodes, weights from 9,000 contacts); presentation/G3_Telco_Evaluation.pdf, section 3.1 (79.33% told at contact, 18.13% held then told, 2.53% missed, all mobile) and section 7; evals/reports/retrieval_openai.md (25 November 2026: 144 of 144 with gpt-5.4-mini on three router models, 129 of 144 by the rules alone); evals/reports/retrieval.md (run of 25 November 2026: 99.07%, 96.67%, 81.25% = 468 of 576 as first scored, 89.58% on today's rules; constant answer 81.48%, 50.0%, 47.92%; floor 70%; none from another router's guide).",
   });
 }
 

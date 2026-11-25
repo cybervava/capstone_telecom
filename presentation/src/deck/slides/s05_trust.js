@@ -10,7 +10,7 @@ const ROLE = "R5";
 
 const LOCKS = [
   { icon: "LuEyeOff", name: "Input", body: "Personal details are masked before a model reads a message; wording aimed at the assistant is flagged." },
-  { icon: "LuBot", name: "Model", body: "No tools. Nine fields come back, and nothing it writes reaches a customer." },
+  { icon: "LuBot", name: "Model", body: "No tools. Nine fields or a guide choice come back; nothing it writes reaches a customer." },
   { icon: "LuQuote", name: "Output", body: "35 pre-written conversation messages, steps quoted with their source, a reply's claim about the network checked." },
   { icon: "LuKeyRound", name: "Action", body: "One key for each agent identity. Only the executor writes. Amounts and limits are in code." },
   { icon: "LuUserCheck", name: "Human gate", body: "A supervisor approves the exact frozen credit above $500.", purple: true },
@@ -297,7 +297,7 @@ async function drillSlide(pres) {
     fontSize: 14,
     objectName: "Proof reading",
   });
-  kit.sourceLine(slide, "Sources: docs/adr/0001-degraded-mode-when-the-network-api-fails.md (16 November 2026); evals/reports/curveball.md (17 November 2026); loadtest/reports/surge-brief-before-fix.md.");
+  kit.sourceLine(slide, "Sources: docs/adr/0001-degraded-mode-when-the-network-api-fails.md (16 November 2026); evals/reports/curveball.md (25 November 2026); loadtest/reports/surge-brief-before-fix.md.");
 
   speakerNotes(slide, {
     role: ROLE,
@@ -308,7 +308,7 @@ async function drillSlide(pres) {
       "The proof: eight playings, 72 contacts. Nobody in an outage was told the network is clear, and nobody at all while the status could not be read. Under load, all 14,041 contacts were accepted.",
       "The cost: a long failure fills the staff queue.",
     ],
-    sources: "docs/adr/0001-degraded-mode-when-the-network-api-fails.md (accepted 16 November 2026: the rules, the trade-off); evals/reports/curveball.md (run of 17 November 2026: 8 playings, 72 contacts, no reference missing after 2 minutes, nobody in an outage told clear, no visit without a status read); loadtest/reports/surge-brief-before-fix.md (14,041 of 14,041; 0 clear messages; 2,693 of 3,361 handed to a person); docs/EXECUTION_PLAN.md, section 12, D11 (open); screenshots manifest, image 07.",
+    sources: "docs/adr/0001-degraded-mode-when-the-network-api-fails.md (accepted 16 November 2026: the rules, the trade-off); evals/reports/curveball.md (run of 25 November 2026: 8 playings, 72 contacts, no reference missing after 2 minutes, nobody in an outage told clear, no visit without a status read); loadtest/reports/surge-brief-before-fix.md (14,041 of 14,041; 0 clear messages; 2,693 of 3,361 handed to a person); docs/EXECUTION_PLAN.md, section 12, D11 (open); screenshots manifest, image 07.",
   });
 }
 

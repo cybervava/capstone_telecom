@@ -833,7 +833,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       <figcaption>The case study asks the architect to link these two worlds. Everything else on this page follows from how that link is made. <span class="tag tag--case">Case fact</span></figcaption>
     </figure>
 
-    <h3>The office, in six parts</h3>
+    <h3>The office, in seven parts</h3>
     <p class="prose">Think of the platform as a small, very disciplined customer-care office, in which each part has one job.</p>
     <ul class="office">
       <li><strong>Front desk</strong><span>Takes every message, hands back a complaint reference at once, and does nothing else.</span></li>
@@ -842,6 +842,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       <li><strong>The hands</strong><span>The only part allowed to change anything in SkyLink's systems, after checking again. The case study calls it the Action agent.</span></li>
       <li><strong>The radio</strong><span>Listens to the network team's announcements and wakes any conversation waiting for that news.</span></li>
       <li><strong>Staff desk</strong><span>Where a supervisor approves credits above $500, and staff pick up what the assistant hands over.</span></li>
+      <li><strong>Enquiry window</strong><span>Lets somebody else's AI assistant ask four things, read-only. It changes nothing and tells nothing of a customer.</span></li>
     </ul>
     <div><a class="btn btn--ghost btn--small" href="#flows">See them work together <svg class="ico" aria-hidden="true"><use href="#i-next"/></svg></a></div>
 
@@ -875,7 +876,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     <div class="pair">
       <div class="note">
         <h3>What is real here</h3>
-        <p>The software is real and it runs: six programs, 2,662 automated tests, seven scored evaluations, and a demonstration deployed on Amazon Web Services on 22 November 2026. The world around it is make-believe. SkyLink's customers, network, credit policy and back-office systems are invented stand-ins, because the real ones were never supplied. The design for a real pilot goes further than what is built, and this page marks the difference each time.</p>
+        <p>The software is real and it runs: six programs, 2,902 automated tests, seven scored evaluations, and a demonstration deployed on Amazon Web Services on 22 November 2026. The world around it is make-believe. SkyLink's customers, network, credit policy and back-office systems are invented stand-ins, because the real ones were never supplied. The design for a real pilot goes further than what is built, and this page marks the difference each time.</p>
       </div>
       <div class="note">
         <h3>How to read the tags</h3>
@@ -963,7 +964,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     <header class="stage__head">
       <p class="eyebrow">Stop 3 of 9 · Parts</p>
       <h2 id="parts-h" tabindex="-1">Every part, and what happens when one fails</h2>
-      <p class="lead">Six parts make up the platform, and six specialists do the thinking inside it. Around them sit the systems it depends on. Pick a part to see its job, what it is allowed to touch, and what the platform does when it stops answering.</p>
+      <p class="lead">Seven parts make up the platform, and six specialists do the thinking inside it. Around them sit the systems it depends on. Pick a part to see its job, what it is allowed to touch, and what the platform does when it stops answering.</p>
     </header>
 
     <div class="parts">
@@ -990,7 +991,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     <p class="src"><span class="tag tag--case">Case fact</span> The left column comes from the case study's reference architecture and its list of agents for the telecom case. Most of the specialists here are fixed rules, with no AI inside. The <a href="#tools">Tools</a> stop says which, and why.</p>
 
     <details class="more">
-      <summary>All twenty-two parts as one table</summary>
+      <summary>All twenty-three parts as one table</summary>
       <div class="scroll-x">
         <table>
           <thead><tr><th scope="col">Part</th><th scope="col">Its job</th><th scope="col">What it holds</th><th scope="col">If it fails</th></tr></thead>
@@ -1141,10 +1142,11 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       <li><strong>Filter by the customer's own router</strong><span>The router model comes from the customer's service record, never from what they wrote. A customer can only ever be shown the guide for the router they have.</span></li>
       <li><strong>Filter by section</strong><span>Of a guide's eight sections, only four are safe to follow alone: no internet, Wi-Fi, slow speed and power cycle. At most four rows are left to rank.</span></li>
       <li><strong>Rank by words, then by closeness</strong><span>A section scores when the customer's words name its topic, when they appear in its text, and by how close its vector is to the vector of the customer's message. Keyword rules about the kind of fault add weight to the section they expect.</span></li>
-      <li><strong>Quote, never rewrite</strong><span>The best section's numbered steps are sent word for word, with the guide, section and version they came from. The passage is checked for unsafe instructions once more before it goes.</span></li>
+      <li><strong>A model may choose</strong><span>When one is switched on, it names one of the sections found and points at the words that show why. Code finds those words in their sources before anything is said; if it cannot, the ranking's choice stands.</span></li>
+      <li><strong>Quote, never rewrite</strong><span>The chosen section's numbered steps are sent word for word, with the guide, section and version they came from. The passage is checked for unsafe instructions once more before it goes.</span></li>
     </ol>
     <p class="aside-line">With so few rows left after the filters, every one is compared exactly. No approximate vector index is needed, and none is built. The index records which embedder built it and refuses a search made with a different one.</p>
-    <p class="src"><span class="tag tag--calc">Measured</span> On descriptions the keyword rules were not built on, the right section is found 81.25% of the time. The report lists what is still got wrong. A wrong section still comes from the customer's own guide and is safe to follow.</p>
+    <p class="src"><span class="tag tag--calc">Measured</span> On descriptions the keyword rules were not built on, the right section is found 81.25% of the time. With gpt-5.4-mini choosing among the sections found, 144 of 144 on three router models, against 129 by the rules alone. The reports list what is still got wrong. A wrong section still comes from the customer's own guide and is safe to follow.</p>
 
     <h3>What is kept where</h3>
     <div class="scroll-x">
@@ -1311,7 +1313,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     <h3>Rules at the boundary</h3>
     <p class="prose">Whatever the link is made of, these rules already govern every call across it.</p>
     <ul class="differs">
-      <li><b>Three programs may cross</b>The coordinator to read, the radio to listen, the hands to act. The front desk never calls SkyLink's side.</li>
+      <li><b>Four programs may cross</b>The coordinator and the enquiry window to read, the radio to listen, the hands to act. The front desk never calls SkyLink's side.</li>
       <li><b>Every call has a deadline</b>One second to connect and nine seconds in all. A line test may take ten.</li>
       <li><b>A failing system is rested</b>After five failures in a row it is not called for 10 seconds, then tried once.</li>
       <li><b>A failed call is a failure</b>It is never turned into "nothing found", and never into "all clear".</li>
@@ -1395,10 +1397,11 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       <table>
         <thead><tr><th scope="col">To</th><th scope="col">What goes</th><th scope="col">Under which rule</th></tr></thead>
         <tbody>
-          <tr><th scope="row">The AI model's provider <small>only when a model is switched on</small></th><td data-label="What goes">The customer's messages, with personal details replaced by placeholders.</td><td data-label="Under which rule">Only for a customer who has been identified. The provider is asked not to keep a copy.</td></tr>
+          <tr><th scope="row">The AI model's provider <small>only when a model is switched on</small></th><td data-label="What goes">The customer's messages, with personal details replaced by placeholders, and for router advice the guide sections the search found.</td><td data-label="Under which rule">Only for a customer who has been identified. The provider is asked not to keep a copy.</td></tr>
           <tr><th scope="row">The tracing service <small>only when switched on</small></th><td data-label="What goes">The name of each step, its timing and any error.</td><td data-label="Under which rule">No message, profile or working notes. Contents stay hidden unless someone unhides them on purpose.</td></tr>
           <tr><th scope="row">SkyLink's systems</th><td data-label="What goes">Complaint and ticket registrations, text messages, credits and bookings.</td><td data-label="Under which rule">By the hands only, each with a unique label. A text only with consent. A credit above $500 only after a supervisor's approval.</td></tr>
           <tr><th scope="row">Logs</th><td data-label="What goes">Events with their identifiers.</td><td data-label="Under which rule">Contact details and secrets are removed first.</td></tr>
+          <tr><th scope="row">Another AI assistant <small>only with the enquiry window's key</small></th><td data-label="What goes">A node's status, a guide's steps, a credit quoted, how the platform is doing.</td><td data-label="Under which rule">Nothing of a customer. Every call is logged. Shut on the AWS server, where no key is set.</td></tr>
         </tbody>
       </table>
     </div>
@@ -1420,7 +1423,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
 
     <div><button type="button" class="btn btn--ghost btn--small" id="open-records">Open all seven records</button></div>
     <div class="calls" id="calls"></div>
-    <p class="src">One of the seven is a formal file in the repository: ADR 0001, accepted on 16 November 2026. The other six are recorded in the build plan as design rules and decisions, and are written up in record form here. Their files are still to be written.</p>
+    <p class="src">One of the seven is a formal file in the repository: ADR 0001, accepted on 16 November 2026. The other six are recorded in the build plan as design rules and decisions, and are written up in record form here; their files are still to be written. The project review of 25 November added two decisions as files from the start: ADR 0002, a model beside the guide search, and ADR 0003, read-only tools over MCP.</p>
 
     <h3>Still waiting for the client</h3>
     <div class="scroll-x">
@@ -1862,7 +1865,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
         { route: ['files', 'coord'], strand: 'file', kind: 'info', spec: 'troubleshooting', title: 'The right page of the right manual',
           text: 'The troubleshooting specialist searches the guide index, which lives in the case files. It looks only in the guide for Ravi’s router model, and the model comes from SkyLink’s service record, never from anything Ravi typed. The search finds the sections of that guide a customer may follow. Where an AI model is switched on, it is shown Ravi’s words beside them and names the one that fits “wifi keeps dropping”; code checks that it named a section it was shown. The steps are taken word for word.',
           carries: 'A search goes in. One section of one guide comes back.',
-          decides: 'A filter by router model, then keyword rules and text matching. No AI writes or rewrites a step.' },
+          decides: 'A filter by router model, then keyword rules and text matching; when a model is on, it names the section and code checks its quotes. No AI writes or rewrites a step.' },
         { route: ['files', 'desk', 'customer'], strand: 'ask', kind: 'ok', title: 'Ravi reads the steps, with their source',
           text: 'The reply quotes the steps and ends with where they came from, such as “Source: guide-al-r12 §wifi v1.2”. It asks Ravi to reply to say whether that fixed it. If it did, the case closes.',
           carries: 'The quoted steps and their source.',
@@ -1876,7 +1879,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
         { kind: 'ok', label: 'The customer', text: 'The right page of their own router’s manual, quoted with its source.' },
         { kind: 'plain', label: 'SkyLink’s systems', text: 'Nothing changed. No ticket, no visit and no credit.' },
         { kind: 'human', label: 'People', text: 'Only if the steps do not help.' },
-        { kind: 'proof', label: 'How we know', text: 'The right section for 81.25% of independently written descriptions, and never a section from another router’s guide.' },
+        { kind: 'proof', label: 'How we know', text: 'The right section for 81.25% of independently written descriptions by the rules alone, 144 of 144 with a model choosing, and never a section from another router’s guide.' },
       ],
     },
     {
@@ -1960,7 +1963,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
         { kind: 'ok', label: 'The customer', text: 'Told about the real outage, and owed exactly what the policy says: $50.00.' },
         { kind: 'plain', label: 'SkyLink’s systems', text: 'Nothing changed because of the instruction. The only credit is the policy’s own.' },
         { kind: 'human', label: 'People', text: 'Nobody. The attempt is in the logbook for anyone to count.' },
-        { kind: 'proof', label: 'How we know', text: '58 of 58 attack runs pass, with no critical failure.' },
+        { kind: 'proof', label: 'How we know', text: '61 of 61 attack runs pass, with no critical failure.' },
       ],
     },
   ];
@@ -1989,7 +1992,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
   'use strict';
 
   const partGroups = [
-    { id: 'platform', name: 'The care platform', note: 'Four programs we built, the database they share, and the desk that staff work at. They run in the cloud.' },
+    { id: 'platform', name: 'The care platform', note: 'Five programs we built, the database they share, and the desk that staff work at. They run in the cloud.' },
     { id: 'specialists', name: 'The six specialists', note: 'The case study’s specialist agents. Five work inside the coordinator. The sixth words the outage texts.' },
     { id: 'skylink', name: 'SkyLink’s own systems', note: 'On SkyLink’s premises in a real deployment. Here, one simulator plays them all.' },
     { id: 'outside', name: 'Outside services', note: 'Run by other companies. The platform works without them.' },
@@ -2329,7 +2332,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       why: 'The same situation must always lead to the same next step, and a test must be able to prove it.',
       whyNot: 'An AI that steers itself is harder to test and easier to misdirect.',
       cost: 'Situations nobody planned for end with a person. About two dozen reasons hand a conversation over.',
-      proof: '2,662 automated tests. The routing rules are tested on their own, with nothing external.',
+      proof: '2,902 automated tests. The routing rules are tested on their own, with nothing external.',
     },
     {
       q: 'Who is likely to leave?', picks: [], none: 'Not built',
@@ -2554,7 +2557,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
       choice: 'The model describes and code decides. It returns nine fields, has no tools, and writes nothing a customer reads.',
       why: 'The model’s worst possible mistake becomes a wrong tick on a form. It cannot name an amount, declare the network healthy or put a sentence in front of a customer.',
       cost: 'Conversations are less flexible. 34 fixed messages cannot answer everything, and unusual requests go to a person. Keyword rules, the fallback, are cruder than the model.',
-      proof: '58 of 58 attack runs pass, 18 of them with a scripted model that obeys the attacker.',
+      proof: '61 of 61 attack runs pass, 18 of them with a scripted model that obeys the attacker.',
       source: 'Design rule 2 of the build plan, and the threat model.',
     },
     {
@@ -2696,7 +2699,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     },
     {
       topic: 'A link between the cloud and the data centre',
-      built: 'Nothing yet: the on-premises side is simulated on the same server. The design does set rules for the boundary: a deadline on every call, a rest for failing systems, and three programs allowed across.',
+      built: 'Nothing yet: the on-premises side is simulated on the same server. The design does set rules for the boundary: a deadline on every call, a rest for failing systems, and four programs allowed across.',
       outside: 'AWS offers a dedicated line (Direct Connect) and an encrypted tunnel over the internet (Site-to-Site VPN). It publishes a Hybrid Networking Lens for its Well-Architected Framework and, since November 2026, a Telco Lens. Azure’s equivalent of the dedicated line is ExpressRoute.',
       meaning: 'The choice between a line and a tunnel belongs to SkyLink’s network team. No private link has been built or tested here, and this page does not claim one.',
       links: [
@@ -2708,9 +2711,9 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     },
     {
       topic: 'Writing decisions down',
-      built: 'Seven decision records on this page, one of them a formal file in the repository. The map on the Flows stop shows programs and data stores.',
+      built: 'Seven decision records on this page, one of them a formal file in the repository, and two more files from the project review (ADRs 0002 and 0003). The map on the Flows stop shows programs and data stores.',
       outside: 'Michael Nygard proposed the short decision-record format in 2011: title, context, decision, status and consequences. AWS publishes guidance on running the process. The C4 model names four levels of architecture diagram. The map here is closest to its second level, the container diagram.',
-      meaning: 'The records follow the case study’s five headings: decision, options, choice, why and trade-off. Six of them still need writing up as files beside ADR 0001.',
+      meaning: 'The records follow the case study’s five headings: decision, options, choice, why and trade-off. Six of them still need writing up as files beside ADRs 0001 to 0003.',
       links: [
         { label: 'Michael Nygard, Documenting Architecture Decisions', url: 'https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions' },
         { label: 'AWS, the decision-record process', url: 'https://docs.aws.amazon.com/prescriptive-guidance/latest/architectural-decision-records/adr-process.html' },
@@ -2721,9 +2724,9 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
 
   const inPlace = [
     'Six programs from one container image, each started with only its own keys',
-    '2,662 automated tests, exercising 96% of the platform’s code',
+    '2,902 automated tests, exercising 96% of the platform’s code',
     'Seven scored evaluations, and a load test of the tenfold surge',
-    'An attack suite of 40 attacks, and a check that the suite itself can fail',
+    'An attack suite of 43 attacks, and a check that the suite itself can fail',
     'A demonstration on AWS, released by a pipeline that rolls back by itself',
     'A managed, encrypted database with daily backups',
   ];
@@ -2736,7 +2739,7 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
     'A stronger identity check for visitors, such as a one-time code',
     'A job that deletes old records, and handling of requests to see or erase data',
     'Replies to the customer from the staff desk',
-    'The evaluations run with the live AI model. Only the attack suite has been.',
+    'The evaluations run with the live AI model. Only the attack suite and the choice of a guide section have been.',
     'A cost estimate for a pilot',
     'Six of the seven decision records as formal files',
   ];
@@ -3878,8 +3881,9 @@ td small { display: block; margin-top: .15rem; font-size: .85rem; color: var(--i
         ['Troubleshooting', 'sky', 'Uses', 'The router model on the service record, which triage read from customer records earlier in the turn. What the customer writes can never change which guide is used.'],
         ['Troubleshooting', 'none', 'Reads the words', 'Keyword rules name the kind of fault: no service, Wi-Fi or slow speed. That is the section to prefer.'],
         ['Troubleshooting', 'vec', 'Reads', 'guide_index: which build is live and which embedder made it. guide_chunks: the rows for this router model, the four safe sections only, ranked by matching words and by closeness of their vectors to the vector of the customer’s message.'],
+        ['Troubleshooting', 'ai', 'Asks', 'Only when a model is switched on: the customer’s words, masked, beside the sections found. It names the one that fits and quotes the words that show why. Code finds those words in their sources first; if it cannot, the ranking’s choice stands.'],
         ['Troubleshooting', 'none', 'Checks', 'The passage is checked again for unsafe instructions, and that it comes from the guide for this customer’s router.'],
-        ['Coordinator', 'sql', 'Writes', 'contact_messages: the numbered steps word for word, with their source, such as “guide-tg-fg7 §wifi v1.3”. audit_log: the search and what it found.'],
+        ['Coordinator', 'sql', 'Writes', 'contact_messages: the numbered steps word for word, with their source, such as “guide-tg-fg7 §wifi v1.3”. audit_log: the search, what it found and, with a model, its choice.'],
       ],
     },
     {

@@ -77,7 +77,7 @@
   <dl class="meta">
     <div><dt>Client</dt><dd>SkyLink Telecom (fictional)</dd></div>
     <div><dt>Led by</dt><dd>R1 FDE Lead, with R2 to R5</dd></div>
-    <div><dt>Version</dt><dd>24 November 2026</dd></div>
+    <div><dt>Version</dt><dd>25 November 2026</dd></div>
     <div><dt>Data</dt><dd>Synthetic stand-ins (note under section 5)</dd></div>
   </dl>
 </header>
@@ -165,7 +165,7 @@
       <td class="framed">Link two worlds: network events (streaming) and customer contacts (request-response). Decide what is rules (credit eligibility), ML (churn risk), LLM (conversation, diagnosis summary). AWS vs Azure, hybrid with on-prem OSS.</td>
       <td>
         <p class="ask">How does a contact learn what the stream knows, and what decides each step?</p>
-        <p><span class="tag tag--ok">Built</span> One network decision with three states (active, confirmed clear, unknown), from the live status and a read model fed by the NOC event feed. <span class="tag">Decision</span> Rules decide credits, visits and what may be said; the language model only reads a message; no churn model. AWS, Mumbai (client decision D4); the private link to on-premises systems exists on paper only. Seven decision records: <code>docs/architecture_design.html</code>.</p>
+        <p><span class="tag tag--ok">Built</span> One network decision with three states (active, confirmed clear, unknown), from the live status and a read model fed by the NOC event feed. <span class="tag">Decision</span> Rules decide credits, visits and what may be said; the language model reads a message and picks a guide section; no churn model. AWS, Mumbai (client decision D4); the private link to on-premises systems exists on paper only. Records: <code>docs/architecture_design.html</code>, <code>docs/adr/</code>.</p>
       </td>
     </tr>
     <tr>
@@ -173,7 +173,7 @@
       <td class="framed">Index troubleshooting guides by device model, service credit policy and regulatory complaint rules; join customer → service address → network node.</td>
       <td>
         <p class="ask">Is each contact on the right node, each customer sent steps for their own router?</p>
-        <p><span class="tag tag--calc">Measured</span> The address map alone places 96.86% of 180,052 broadband and 96.78% of 327,952 mobile services on a node (<code>reports/data_profile.md</code>); a line test names the node for the broadband rest. 96 sections of 12 guides, filtered by router model: right section in 468 of 576 answers (81.25% as first scored), none from another's guide (<code>evals/reports/retrieval.md</code>). <span class="tag tag--sim">Stand-in</span> Policy and complaint rules: placeholders, not indexed.</p>
+        <p><span class="tag tag--calc">Measured</span> The address map alone places 96.86% of 180,052 broadband and 96.78% of 327,952 mobile services on a node (<code>reports/data_profile.md</code>); a line test names the node for the broadband rest. 96 sections of 12 guides, filtered by router model: right section in 468 of 576 answers (81.25% as first scored; 144 of 144 with a model choosing), none from another's guide (<code>evals/reports/retrieval.md</code>). <span class="tag tag--sim">Stand-in</span> Policy and complaint rules: placeholders, not indexed.</p>
       </td>
     </tr>
     <tr>
@@ -181,7 +181,7 @@
       <td class="framed">Orchestrate contact intake → identify customer and node → check live outage → guided troubleshooting or outage message → credit → ticket or truck dispatch, all async-safe.</td>
       <td>
         <p class="ask">Can the whole journey run with no write made twice, whatever fails or repeats?</p>
-        <p><span class="tag tag--ok">Built</span> Reference first: contact, reference and wake-up commit in one transaction. The orchestrator's agents propose; only the executor writes to SkyLink's systems, replaying the identical frozen request when an outcome is unknown (<code>README.md</code>). <span class="tag tag--calc">Tested</span> One incident for every customer of a node, a reference each (<code>tests/e2e/test_outage_journey.py</code>). Eight smoke journeys passed on the AWS host after the release of 24 November 2026.</p>
+        <p><span class="tag tag--ok">Built</span> Reference first: contact, reference and wake-up commit in one transaction. The orchestrator's agents propose; only the executor writes to SkyLink's systems, replaying the identical frozen request when an outcome is unknown (<code>README.md</code>). <span class="tag tag--calc">Tested</span> One incident for every customer of a node, a reference each (<code>tests/e2e/test_outage_journey.py</code>). Eight smoke journeys passed on the AWS host after the release of 25 November 2026.</p>
       </td>
     </tr>
     <tr>

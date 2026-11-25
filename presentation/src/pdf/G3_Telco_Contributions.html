@@ -81,7 +81,7 @@
   <dl class="meta">
     <div><dt>Client</dt><dd>SkyLink Telecom (fictional)</dd></div>
     <div><dt>Owner</dt><dd>All five members</dd></div>
-    <div><dt>Version</dt><dd>24 November 2026</dd></div>
+    <div><dt>Version</dt><dd>25 November 2026</dd></div>
     <div><dt>Status</dt><dd>Form, not yet signed</dd></div>
   </dl>
 </header>
@@ -133,7 +133,7 @@
     </ol>
   </div>
   <div class="note ai">
-    <b>2 · The AI coding assistant, as declared.</b> The brief's rule: "Any AI coding assistant used must be declared in the README." The declaration is in <code>README.md</code>, section "AI assistance" (line 399): "This repository was written with Claude Code (Anthropic), model Claude Fable 5.2; the documentation pass of 16 November (docs/HOW_IT_WORKS.md and the audits of the documents against the code) used Claude Opus 5.5. Claude Code produced the execution plan, the code and the tests in this repository." The same section says that the brief and the team's action plan were written by people. This form was drafted with the same assistant, from the repository's documents, so section 3 lists what exists in each role's area and each member states their own part.
+    <b>2 · The AI coding assistant, as declared.</b> The brief's rule: "Any AI coding assistant used must be declared in the README." The declaration is in <code>README.md</code>, section "AI assistance" (line 441): "This repository was written with Claude Code (Anthropic), model Claude Fable 5.2; the documentation pass of 16 November (docs/HOW_IT_WORKS.md and the audits of the documents against the code) used Claude Opus 5.5. Claude Code produced the execution plan, the code and the tests in this repository." The same section says that the brief and the team's action plan were written by people. This form was drafted with the same assistant, from the repository's documents, so section 3 lists what exists in each role's area and each member states their own part.
   </div>
 </div>
 
@@ -149,7 +149,7 @@
         <ul>
           <li>The team's action plan, 13 November 2026: scope, discovery questions for the six stakeholders, value case (<code>G3_Telco_FDE_Action_Plan.pdf</code>).</li>
           <li>The discovery workshop report, 22 November 2026 (a simulated workshop): stakeholder positions, scope, cost model, decisions D1 to D30 (<code>discovery-samples/</code>); its interactive page (<code>docs/discovery_workshop.html</code>).</li>
-          <li>Eleven client decisions and their defaults (<code>docs/EXECUTION_PLAN.md</code>, section 12).</li>
+          <li>Fourteen client decisions and their defaults (<code>docs/EXECUTION_PLAN.md</code>, section 12).</li>
         </ul>
       </td>
       <td class="own"><span class="rule"></span><span class="rule"></span><span class="rule"></span></td>
@@ -160,7 +160,7 @@
         <p class="sub">Link two worlds: network events (streaming) and customer contacts (request-response). Decide what is rules (credit eligibility), ML (churn risk), LLM (conversation, diagnosis summary). AWS vs Azure, hybrid with on-prem OSS.</p>
         <ul>
           <li>The architecture as built: an event path and a request path that meet in one network decision of three states (<code>docs/EXECUTION_PLAN.md</code>, section 3).</li>
-          <li>Seven decision records (<code>docs/architecture_design.html</code>); one is ADR 0001 (<code>docs/adr/</code>).</li>
+          <li>Seven decision records (<code>docs/architecture_design.html</code>); ADRs 0001 to 0003 (<code>docs/adr/</code>).</li>
           <li>Contracts of the stand-in data pack and mock APIs (<code>docs/contracts/</code>).</li>
           <li>The demonstration on AWS in Mumbai: one host, one managed database, in Terraform (<code>deploy/aws/terraform/</code>).</li>
         </ul>
@@ -175,7 +175,7 @@
           <li>A synthetic data pack at the brief's scale, 400,000 customers, with deliberate mapping defects (<code>src/skylink_datagen/</code>).</li>
           <li>The mapping-quality profile: 96.86% of broadband and 96.78% of mobile services resolve from the address map (<code>reports/data_profile.md</code>).</li>
           <li>The guide index: 96 sections of 12 guides, one pgvector table (<code>src/skylink_care/rag/</code>).</li>
-          <li>Retrieval: right section in 468 of 576 answers, 81.25% as first scored (<code>evals/reports/retrieval.md</code>).</li>
+          <li>Retrieval: right section in 468 of 576 answers, 81.25% as first scored; 144 of 144 with a model choosing (<code>evals/reports/retrieval.md</code>, <code>retrieval_openai.md</code>).</li>
         </ul>
       </td>
       <td class="own"><span class="rule"></span><span class="rule"></span><span class="rule"></span></td>
@@ -188,7 +188,7 @@
           <li>The orchestrator, its specialist agents, and the executor, the only process that writes to SkyLink's systems (<code>src/skylink_care/orchestrator/</code>, <code>agents/</code>, <code>executor/</code>).</li>
           <li>The mock OSS/BSS gateway with fault injection, and typed adapters to it (<code>src/mock_oss/</code>, <code>src/skylink_care/adapters/</code>).</li>
           <li>The customer desk, the staff desk, a demo console of seven scenes (<code>src/skylink_care/web/</code>, <code>src/mock_oss/console/</code>).</li>
-          <li>End-to-end journey tests and eight smoke journeys (<code>tests/e2e/</code>, <code>scripts/smoke.py</code>).</li>
+          <li>End-to-end journey tests and nine smoke journeys (<code>tests/e2e/</code>, <code>scripts/smoke.py</code>).</li>
         </ul>
       </td>
       <td class="own"><span class="rule"></span><span class="rule"></span><span class="rule"></span></td>

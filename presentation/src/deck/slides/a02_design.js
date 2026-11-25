@@ -104,7 +104,7 @@ async function recordsTwoSlide(pres) {
     ],
     { x: G.MX + 0.2, y: y + 0.08, w: G.CW - 0.4, h: G.BODY_B - y - 0.16, fontSize: 14, valign: "middle", objectName: "Open client decisions" },
   );
-  kit.sourceLine(slide, "Sources: presentation/G3_Telco_Architecture.pdf, sections 9 and 10; docs/EXECUTION_PLAN.md, section 12 (the client decisions D1 to D11; the workshop's register numbers its decisions differently).");
+  kit.sourceLine(slide, "Sources: presentation/G3_Telco_Architecture.pdf, sections 9 and 10; docs/EXECUTION_PLAN.md, section 12 (the client decisions D1 to D14; the workshop's register numbers its decisions differently).");
   sourceNote(slide, "presentation/G3_Telco_Architecture.pdf, section 9, records 5 to 7, and section 10 (open questions D3, D5, D9, D10, D11); docs/EXECUTION_PLAN.md, section 12 and assumption A10; evals/reports/attack_suite.md; evals/reports/segment_parity.md; README.md, \"The demo on AWS\" (about $1.90 a day; 24 s of downtime on 22 November 2026); src/skylink_care/guardrails/claims.py (35 templates).");
 }
 
@@ -136,7 +136,7 @@ const STEPS = [
   ["5", "Is there an outage for them? · Diagnostics", "Rules"],
   ["6", "Is an undeclared outage starting? · Diagnostics", "Statistics"],
   ["7", "What may the customer be told? · Orchestrator", "Rules"],
-  ["8", "Which router steps fit this fault? · Troubleshooting", "Retrieval (RAG)"],
+  ["8", "Which router steps fit this fault? · Troubleshooting", "Retrieval (RAG), then a model"],
   ["9", "Is a credit owed, and how much? · Resolution", "Rules"],
   ["10", "Pay a credit above $500? · Supervisor, executor", "A person"],
   ["11", "Does a technician need to come? · Dispatch, executor", "Rules"],
