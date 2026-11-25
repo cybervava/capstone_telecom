@@ -113,7 +113,7 @@ def customers(datapack: Path, service_type: str, defect: str) -> list[dict[str, 
             "customer_id": service["customer_id"],
             "service_id": service["service_id"],
             "service_type": service["service_type"],
-            "monthly_fee_inr": service["monthly_fee_inr"],
+            "monthly_fee_usd": service["monthly_fee_usd"],
             "true_node_id": truth[service["service_id"]]["true_node_id"],
         }
         for service in services

@@ -41,7 +41,7 @@ def test_an_outage_is_started_backdated_listed_and_resolved(
 
     active = command(client, capsys, "outages", "--active")["outages"]
     assert [outage["outage_id"] for outage in active] == [outage_id]
-    # Backdated: the longer outage that a credit above INR 500 needs, without waiting for it.
+    # Backdated: the longer outage that a credit above $500 needs, without waiting for it.
     assert active[0]["started_at"] == iso(clock.now() - timedelta(minutes=300))
 
     command(client, capsys, "outage-resolve", outage_id)

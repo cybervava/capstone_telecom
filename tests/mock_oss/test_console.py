@@ -136,7 +136,7 @@ def test_activity_of_a_customer_a_line_and_a_node(client: TestClient) -> None:
     found = _activity(client, "customer_id=C0000001&service_id=S0000001&node_id=BLR-OLT-0001")
 
     assert found["outage"] is None
-    assert [c["amount_inr"] for c in found["customer"]["credits"]] == ["812.50"]
+    assert [c["amount_usd"] for c in found["customer"]["credits"]] == ["812.50"]
     assert [m["template_id"] for m in found["customer"]["messages"]] == ["OUTAGE_ACK"]
     assert [a["slot_id"] for a in found["service"]["appointments"]] == ["SL-560038-20261116-AM"]
     assert [(i["incident_id"], i["complaint_refs"]) for i in found["node"]["incidents"]] == [

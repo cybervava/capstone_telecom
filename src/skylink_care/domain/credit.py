@@ -79,7 +79,7 @@ class Tier(_Frozen):
 class ServiceRule(_Frozen):
     min_outage_minutes: int = Field(gt=0)
     tiers: tuple[Tier, ...] = Field(min_length=1)
-    minimum_credit_inr: Decimal = Field(ge=0)
+    minimum_credit_usd: Decimal = Field(ge=0)
     cap_fraction_of_monthly_fee: Decimal = Field(gt=0)
 
     @model_validator(mode="after")
@@ -102,7 +102,7 @@ class Rounding(_Frozen):
 
 
 class Approval(_Frozen):
-    supervisor_above_inr: Decimal = Field(ge=0)
+    supervisor_above_usd: Decimal = Field(ge=0)
 
 
 class CreditPolicy(_Frozen):
@@ -110,7 +110,7 @@ class CreditPolicy(_Frozen):
     version: str
     status: str
     effective_from: date
-    currency: Literal["INR"]
+    currency: Literal["USD"]
     rounding: Rounding
     approval: Approval
     hours_in_month: int = Field(gt=0)
@@ -135,13 +135,13 @@ class CreditInput:
     """Verified facts about one service and one outage. Nothing here comes from free text."""
 
     service_type: ServiceType
-    monthly_fee_inr: Decimal
+    monthly_fee_usd: Decimal
     service_active: bool
     affected: bool
     planned: bool
     started_at: datetime
     resolved_at: datetime | None
-    prior_outage_credits_in_cycle_inr: Decimal
+    prior_outage_credits_in_cycle_usd: Decimal
     already_credited_for_outage: bool
 
 
@@ -152,8 +152,8 @@ class CreditCalculation:
     outage_minutes: int | None = None
     billable_hours: int | None = None
     multiplier: Decimal | None = None
-    computed_inr: Decimal | None = None
-    cap_remaining_inr: Decimal | None = None
+    computed_usd: Decimal | None = None
+    cap_remaining_usd: Decimal | None = None
     floor_applied: bool = False
     cap_applied: bool = False
 
@@ -162,7 +162,7 @@ class CreditCalculation:
 class CreditDecision:
     eligible: bool
     reason: CreditReason
-    amount_inr: Decimal
+    amount_usd: Decimal
     requires_supervisor: bool
     policy_id: str
     policy_version: str
@@ -201,14 +201,14 @@ def approval_level(decision: CreditDecision, *, review_all: bool) -> ApprovalLev
 
 
 def required_approval(
-    policy: CreditPolicy, amount_inr: Decimal, *, review_all: bool
+    policy: CreditPolicy, amount_usd: Decimal, *, review_all: bool
 ) -> ApprovalLevel:
     """Who must have approved a credit of this amount, worked out from the amount alone.
 
     The executor asks this immediately before it applies a credit, so that the answer does not
     rest on what was recorded when the credit was proposed.
     """
-    if amount_inr > policy.approval.supervisor_above_inr:
+    if amount_usd > policy.approval.supervisor_above_usd:
         return ApprovalLevel.SUPERVISOR
     return ApprovalLevel.AGENT if review_all else ApprovalLevel.NONE
 
@@ -217,9 +217,9 @@ def within_cycle_cap(
     policy: CreditPolicy,
     *,
     service_type: ServiceType,
-    monthly_fee_inr: Decimal,
-    credited_in_cycle_inr: Decimal,
-    amount_inr: Decimal,
+    monthly_fee_usd: Decimal,
+    credited_in_cycle_usd: Decimal,
+    amount_usd: Decimal,
 ) -> bool:
     """Does a credit of this amount still fit under the billing-cycle cap of the service.
 
@@ -229,8 +229,8 @@ def within_cycle_cap(
     rule = policy.services.get(service_type)
     if rule is None:
         return False
-    remaining = _cap_remaining(rule, monthly_fee_inr, credited_in_cycle_inr)
-    return amount_inr <= _round(policy, remaining)
+    remaining = _cap_remaining(rule, monthly_fee_usd, credited_in_cycle_usd)
+    return amount_usd <= _round(policy, remaining)
 
 
 def cycle_start(today: date, cycle_day: int) -> date:
@@ -247,10 +247,10 @@ def billing_cycle_start(now: datetime, cycle_day: int) -> date:
 
 
 def _validate(facts: CreditInput) -> None:
-    if facts.monthly_fee_inr <= 0:
-        raise ValueError("monthly_fee_inr must be positive")
-    if facts.prior_outage_credits_in_cycle_inr < 0:
-        raise ValueError("prior_outage_credits_in_cycle_inr must not be negative")
+    if facts.monthly_fee_usd <= 0:
+        raise ValueError("monthly_fee_usd must be positive")
+    if facts.prior_outage_credits_in_cycle_usd < 0:
+        raise ValueError("prior_outage_credits_in_cycle_usd must not be negative")
     stamps = [facts.started_at] + ([facts.resolved_at] if facts.resolved_at else [])
     if any(stamp.tzinfo is None for stamp in stamps):
         raise ValueError("outage timestamps must carry a timezone")
@@ -289,11 +289,11 @@ def _price(
     hours = -(-minutes // policy.billable_unit_minutes)  # ceiling division
     multiplier = rule.multiplier_for(minutes)
     # Multiply before the single division so that exact results (and exact .xx5 ties) stay exact.
-    computed = facts.monthly_fee_inr * hours * multiplier / policy.hours_in_month
+    computed = facts.monthly_fee_usd * hours * multiplier / policy.hours_in_month
 
-    floored = max(computed, rule.minimum_credit_inr)
+    floored = max(computed, rule.minimum_credit_usd)
     cap_remaining = _cap_remaining(
-        rule, facts.monthly_fee_inr, facts.prior_outage_credits_in_cycle_inr
+        rule, facts.monthly_fee_usd, facts.prior_outage_credits_in_cycle_usd
     )
     capped = min(floored, cap_remaining)
     amount = _round(policy, capped)
@@ -302,8 +302,8 @@ def _price(
         outage_minutes=minutes,
         billable_hours=hours,
         multiplier=multiplier,
-        computed_inr=_round(policy, computed),
-        cap_remaining_inr=_round(policy, cap_remaining),
+        computed_usd=_round(policy, computed),
+        cap_remaining_usd=_round(policy, cap_remaining),
         floor_applied=floored > computed,
         cap_applied=capped < floored,
     )
@@ -312,7 +312,7 @@ def _price(
     return CreditDecision(
         eligible=True,
         reason=CreditReason.ELIGIBLE,
-        amount_inr=amount,
+        amount_usd=amount,
         requires_supervisor=required_approval(policy, amount, review_all=False)
         is ApprovalLevel.SUPERVISOR,
         policy_id=policy.policy_id,
@@ -321,10 +321,10 @@ def _price(
     )
 
 
-def _cap_remaining(rule: ServiceRule, monthly_fee_inr: Decimal, credited_inr: Decimal) -> Decimal:
+def _cap_remaining(rule: ServiceRule, monthly_fee_usd: Decimal, credited_usd: Decimal) -> Decimal:
     """What outage credits on the service may still total in the billing cycle."""
-    cap_total = monthly_fee_inr * rule.cap_fraction_of_monthly_fee
-    return max(cap_total - credited_inr, Decimal(0))
+    cap_total = monthly_fee_usd * rule.cap_fraction_of_monthly_fee
+    return max(cap_total - credited_usd, Decimal(0))
 
 
 def _refuse(
@@ -333,7 +333,7 @@ def _refuse(
     return CreditDecision(
         eligible=False,
         reason=reason,
-        amount_inr=ZERO,
+        amount_usd=ZERO,
         requires_supervisor=False,
         policy_id=policy.policy_id,
         policy_version=policy.version,

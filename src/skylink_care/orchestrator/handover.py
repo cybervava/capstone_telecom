@@ -66,7 +66,7 @@ def _credit_lines(state: ContactState) -> list[str]:
     lines = []
     for credit in state.get("credits") or []:
         lines.append(
-            f"Service credit: INR {credit.get('amount_inr')} ({credit.get('action_key')}),"
+            f"Service credit: ${credit.get('amount_usd')} ({credit.get('action_key')}),"
             f" {credit.get('status') or 'pending'}, approval {credit.get('approval')}."
         )
         if credit.get("status") == UNCONFIRMED:

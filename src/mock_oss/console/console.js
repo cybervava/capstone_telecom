@@ -546,7 +546,7 @@ function castCard(scene, play) {
     ["Node", c.true_node_id],
     ...(mapped === c.true_node_id ? [] : [["Node on record", mapped || "none"]]),
     ["Router", c.router_model],
-    ["Plan", `INR ${c.monthly_fee_inr} a month`],
+    ["Plan", `$${c.monthly_fee_usd} a month`],
     ["Outage notices", c.consent ? "agreed" : "declined"],
   ];
   const warnings = [];
@@ -641,7 +641,7 @@ function optionsOf(scene, play) {
         input,
         node("span", {
           className: "hint",
-          text: "3,000 minutes at INR 4,999 a month: INR 520.73, a supervisor's. 300 minutes: INR 50, the policy's minimum, applied without review.",
+          text: "3,000 minutes at $4,999 a month: $520.73, a supervisor's. 300 minutes: $50, the policy's minimum, applied without review.",
         }),
       ),
     );
@@ -852,7 +852,7 @@ function renderEvidence() {
   }
   if (data.customer) {
     const credits = data.customer.credits.map((c) =>
-      fact(c.credit_id, `INR ${c.amount_inr} · ${c.status.toLowerCase()}${c.approved_by ? ` · ${c.approved_by}` : ""}`),
+      fact(c.credit_id, `$${c.amount_usd} · ${c.status.toLowerCase()}${c.approved_by ? ` · ${c.approved_by}` : ""}`),
     );
     parts.push(proof(`Credits on ${data.customer.customer_id}'s account`, credits, "None."));
   }
@@ -925,7 +925,7 @@ function foundRow(c) {
     node("span", { className: "mono", text: `${c.customer_id} · ${c.service_id}` }),
     node("span", {
       className: "found__meta",
-      text: `${c.true_node_id} · ${c.router_model ?? "no router"} · INR ${c.monthly_fee_inr} · notices ${c.consent ? "agreed" : "declined"}${address}${line}`,
+      text: `${c.true_node_id} · ${c.router_model ?? "no router"} · $${c.monthly_fee_usd} · notices ${c.consent ? "agreed" : "declined"}${address}${line}`,
     }),
     node(
       "span",
@@ -955,7 +955,7 @@ function finder() {
       field("Router model", entry("router_model", { placeholder: "AL-AX18" })),
       field("Node", entry("node_id", { placeholder: "BLR-OLT-0001" })),
       field("Customer", entry("customer_id", { placeholder: "C0001234" })),
-      field("Plan from INR", entry("min_monthly_fee", { type: "number", min: "0", step: "1" })),
+      field("Plan from $", entry("min_monthly_fee", { type: "number", min: "0", step: "1" })),
     ],
     [submitButton("Find")],
     async (data) => {

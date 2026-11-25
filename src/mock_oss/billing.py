@@ -33,9 +33,9 @@ CENT = Decimal("0.01")
 def validate_amount(amount: Decimal) -> Decimal:
     """``0 < amount <= 5000.00`` with at most two decimal places."""
     if not amount.is_finite() or amount <= 0 or amount > MAX_CREDIT:
-        raise ApiError(422, "INVALID_AMOUNT", "amount_inr must satisfy 0 < amount <= 5000.00")
+        raise ApiError(422, "INVALID_AMOUNT", "amount_usd must satisfy 0 < amount <= 5000.00")
     if amount != amount.quantize(CENT):
-        raise ApiError(422, "INVALID_AMOUNT", "amount_inr has more than two decimal places")
+        raise ApiError(422, "INVALID_AMOUNT", "amount_usd has more than two decimal places")
     return amount.quantize(CENT)
 
 
@@ -51,7 +51,7 @@ def credit_view(row: sqlite3.Row) -> dict[str, Any]:
         "created_at",
         "idempotency_key",
     ]
-    return {**{k: row[k] for k in keys}, "amount_inr": row["amount"], **{k: row[k] for k in rest}}
+    return {**{k: row[k] for k in keys}, "amount_usd": row["amount"], **{k: row[k] for k in rest}}
 
 
 def _get_credit(conn: sqlite3.Connection, credit_id: str) -> sqlite3.Row:
@@ -64,7 +64,7 @@ def _get_credit(conn: sqlite3.Connection, credit_id: str) -> sqlite3.Row:
 
 
 def _create_credit(body: CreditIn, ctx: WriteContext) -> Created:
-    amount = validate_amount(body.amount_inr)
+    amount = validate_amount(body.amount_usd)
     customer = require_customer(ctx.conn, body.customer_id)
     require_service_of(ctx.conn, body.customer_id, body.service_id)
     if customer["status"] == "suspended":

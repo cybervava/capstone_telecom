@@ -6,7 +6,7 @@
 
 **Result (met for the visits the workflow books; end to end it depends on decisions by people that a replay cannot measure).** The workflow booked a visit for 0 of 18 outage contacts and 0 of 10 contacts with a fault the customer could fix: at the baseline's volumes 0 of 3225 unnecessary visits, a cut of 100.0% in what the workflow itself books. The simulated customer went on asking, and 28 of 28 ended with a person, who decides with the evidence in front of them. If every customer went on asking like that, the target holds while those people send a technician to at most 50.0% of them. Needed visits: booked for 100.0% of cases, a median of 10.0 minutes after the contact.
 
-Written by the run of 2026-11-17T01:28:48+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: offline (keyword rules stand in for the language model; none was called).
+Written by the run of 2026-11-25T17:35:02+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: offline (keyword rules stand in for the language model; none was called).
 
 ## End to end: what is left if customers go on asking and people give in
 

@@ -8,7 +8,7 @@ const state = { token: null, role: null, who: null, timer: null, open: null };
 const REFRESH_MS = 3000;
 
 const call = (path, options = {}) => api(path, { ...options, token: state.token });
-const money = (amount) => `INR ${amount}`;
+const money = (amount) => `$${amount}`;
 const clock = (iso) => new Date(iso).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
 
 function ago(iso) {
@@ -27,11 +27,11 @@ function fact(term, value) {
 function workingOf(request) {
   const working = request.working ?? {};
   const rows = [
-    ["Monthly fee", working.monthly_fee_inr && money(working.monthly_fee_inr)],
+    ["Monthly fee", working.monthly_fee_usd && money(working.monthly_fee_usd)],
     ["Outage", working.outage_minutes !== undefined && `${working.outage_minutes} min`],
     ["Billable hours", working.billable_hours],
     ["Multiplier", working.multiplier && `× ${working.multiplier}`],
-    ["By the formula", working.computed_inr && money(working.computed_inr)],
+    ["By the formula", working.computed_usd && money(working.computed_usd)],
     ["Raised to the minimum", working.floor_applied ? "yes" : "no"],
     ["Cut to the cycle cap", working.cap_applied ? "yes" : "no"],
   ];
@@ -44,7 +44,7 @@ function slip(approval) {
   const note = node("input", { className: "slip__note" });
   note.maxLength = 500;
   note.placeholder = "Note (a reason is needed to reject)";
-  note.setAttribute("aria-label", `Note for the decision on ${money(request.amount_inr)}`);
+  note.setAttribute("aria-label", `Note for the decision on ${money(request.amount_usd)}`);
   const status = node("p", { className: "status" });
   status.setAttribute("role", "status");
   const decide = async (decision) => {
@@ -74,7 +74,7 @@ function slip(approval) {
   return node(
     "li",
     { className: "slip", dataset: { level: approval.required_role } },
-    node("p", { className: "slip__amount", text: money(request.amount_inr) }),
+    node("p", { className: "slip__amount", text: money(request.amount_usd) }),
     node("span", { className: "chip", dataset: { state: approval.required_role }, text: `needs ${approval.required_role === "supervisor" ? "a supervisor" : "an agent"}` }),
     node(
       "dl",

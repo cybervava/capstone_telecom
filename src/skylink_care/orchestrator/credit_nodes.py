@@ -67,7 +67,7 @@ def credit_outcome(complaint_ref: str, action: Action | None) -> CreditOutcome:
     status = action.status if action else None
     if action is not None and status is ActionStatus.SUCCEEDED:
         reply = replies.credit_applied(
-            complaint_ref, amount_inr=frozen_amount(action), credit_ref=action.external_ref
+            complaint_ref, amount_usd=frozen_amount(action), credit_ref=action.external_ref
         )
         return CreditOutcome(reply, status.value)
     if status is ActionStatus.SKIPPED:
@@ -87,13 +87,13 @@ def credit_outcome(complaint_ref: str, action: Action | None) -> CreditOutcome:
 
 def frozen_amount(action: Action) -> str:
     """The amount of a credit as it was frozen in its proposal, which is what can be applied."""
-    return str(action.request_body.get("amount_inr"))
+    return str(action.request_body.get("amount_usd"))
 
 
 def outcome_note(reason: str, action: Action) -> str:
     """What a person needs to follow a credit up, when no conversation state is at hand."""
     note = (
-        f"Reason: {reason}. Service credit INR {frozen_amount(action)} ({action.action_key})"
+        f"Reason: {reason}. Service credit ${frozen_amount(action)} ({action.action_key})"
         f" ended {action.status.value}: {action.last_error or 'no detail'}."
     )
     if reason == CREDIT_UNCONFIRMED:
@@ -168,7 +168,7 @@ class CreditNodes(NodeSupport):
             outcome=outcome.status,
             outputs={
                 "action_key": credit.get("action_key"),
-                "amount_inr": credit.get("amount_inr"),
+                "amount_usd": credit.get("amount_usd"),
             },
         )
         return settled, outcome.follow_up
@@ -229,8 +229,8 @@ class CreditNodes(NodeSupport):
             await self._review(
                 contact,
                 state,
-                f" On record: INR {amount} ({action.action_key}, {action.status.value});"
-                f" worked out now: INR {decision.amount_inr}.",
+                f" On record: ${amount} ({action.action_key}, {action.status.value});"
+                f" worked out now: ${decision.amount_usd}.",
             )
             note = replies.CREDIT_AMOUNT_REVIEW
         if action.status in OPEN:
@@ -279,7 +279,7 @@ class CreditNodes(NodeSupport):
         body = _request(contact, facts, outage, decision)
         # The working, with what the executor needs to check the billing-cycle cap again.
         shown = working(decision) | {
-            "monthly_fee_inr": str(facts.monthly_fee_inr),
+            "monthly_fee_usd": str(facts.monthly_fee_usd),
             "service_type": facts.service_type,
             "billing_cycle_day": facts.billing_cycle_day,
         }
@@ -318,7 +318,7 @@ def _request(
     return {
         "customer_id": facts.customer_id,
         "service_id": facts.service_id,
-        "amount_inr": str(decision.amount_inr),
+        "amount_usd": str(decision.amount_usd),
         "reason_code": OUTAGE_CREDIT,
         "outage_id": outage.outage_id,
         "policy_version": decision.policy_version,
@@ -328,7 +328,7 @@ def _request(
 
 def _amount_differs(action: Action, decision: CreditDecision) -> bool:
     try:
-        return Decimal(frozen_amount(action)) != decision.amount_inr
+        return Decimal(frozen_amount(action)) != decision.amount_usd
     except InvalidOperation:
         return True
 
@@ -338,7 +338,7 @@ def _record(action: Action) -> dict[str, Any]:
     return {
         "action_id": str(action.action_id),
         "action_key": action.action_key,
-        "amount_inr": frozen_amount(action),
+        "amount_usd": frozen_amount(action),
         "approval": action.approval_level,
         "pending": True,
     }
@@ -353,7 +353,7 @@ def _service_facts(state: ContactState) -> ServiceFacts | None:
     """The verified service of this contact, or None when its fee or cycle cannot be used."""
     identity, service = state.get("identity") or {}, state.get("service") or {}
     try:
-        fee = Decimal(str(service.get("monthly_fee_inr")))
+        fee = Decimal(str(service.get("monthly_fee_usd")))
         cycle_day = int(service.get("billing_cycle_day") or FIRST_CYCLE_DAY)
     except (InvalidOperation, TypeError, ValueError):
         return None
@@ -363,7 +363,7 @@ def _service_facts(state: ContactState) -> ServiceFacts | None:
         customer_id=str(identity["customer_id"]),
         service_id=str(service["service_id"]),
         service_type=str(service.get("service_type")),
-        monthly_fee_inr=fee,
+        monthly_fee_usd=fee,
         active=bool(service.get("active")),
         billing_cycle_day=cycle_day,
     )

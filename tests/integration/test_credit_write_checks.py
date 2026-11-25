@@ -43,7 +43,7 @@ def another_outage(amount: str, **overrides: Any) -> Any:
     fields = {
         "credit_id": "CR-0",
         "outage_id": "OUT-0",
-        "amount_inr": Decimal(amount),
+        "amount_usd": Decimal(amount),
         "idempotency_key": "credit:S1:OUT-0",
     }
     return credit(**{**fields, **overrides})
@@ -141,7 +141,7 @@ async def test_stored_request_that_no_longer_matches_its_hash_is_not_sent(
     await decide(db, action)
     async with db.connection() as conn:  # the amount was changed behind the approval's back
         await conn.execute(
-            "UPDATE actions SET request_body = jsonb_set(request_body, '{amount_inr}',"
+            "UPDATE actions SET request_body = jsonb_set(request_body, '{amount_usd}',"
             " '\"480.00\"') WHERE action_id = %s",
             (action.action_id,),
         )
@@ -158,9 +158,9 @@ async def test_stored_request_that_no_longer_matches_its_hash_is_not_sent(
 async def test_amount_above_the_limit_needs_a_supervisor_whatever_the_ledger_says(
     db: Database, contacts: ContactRepository
 ) -> None:
-    """The level is worked out again from the amount: INR 900 is above the INR 500 limit, so
+    """The level is worked out again from the amount: $900 is above the $500 limit, so
     the agent's approval this row asked for is not enough."""
-    action = await proposed(db, await a_contact(contacts), level="agent", amount_inr="900.00")
+    action = await proposed(db, await a_contact(contacts), level="agent", amount_usd="900.00")
     await decide(db, action, role="agent")
     billing = ScriptedBilling()
 
@@ -218,8 +218,8 @@ async def test_credit_priced_under_another_policy_version_is_refused(
     "inputs",
     [
         {},
-        {**INPUTS, "monthly_fee_inr": "NaN"},
-        {**INPUTS, "monthly_fee_inr": "-5"},
+        {**INPUTS, "monthly_fee_usd": "NaN"},
+        {**INPUTS, "monthly_fee_usd": "-5"},
         {**INPUTS, "billing_cycle_day": 31},
         {**INPUTS, "service_type": "satellite"},
     ],
@@ -238,7 +238,7 @@ async def test_credit_whose_recorded_terms_cannot_be_read_is_blocked(
     assert (await stored(db, action)).status is ActionStatus.BLOCKED
 
 
-@pytest.mark.parametrize("missing", ["customer_id", "service_id", "outage_id", "amount_inr"])
+@pytest.mark.parametrize("missing", ["customer_id", "service_id", "outage_id", "amount_usd"])
 async def test_credit_whose_request_lacks_what_identifies_it_is_blocked(
     db: Database, contacts: ContactRepository, missing: str
 ) -> None:
@@ -272,7 +272,7 @@ async def test_without_a_policy_the_executor_applies_no_credit(
     ("already_credited", "applied"),
     [
         (MONTHLY_FEE - Decimal("120.50"), True),  # exactly reaches the cap
-        (MONTHLY_FEE - Decimal("120.49"), False),  # one paisa over
+        (MONTHLY_FEE - Decimal("120.49"), False),  # one cent over
     ],
     ids=["fits under the cap", "would pass the cap"],
 )
@@ -347,16 +347,16 @@ async def test_unsettled_credits_of_a_service_are_found_in_the_ledger(
     actions = ActionRepository(db)
     waiting = await proposed(db, await a_contact(contacts))
     approved = await proposed(
-        db, await a_contact(contacts), key="credit:S1:OUT-2", outage_id="OUT-2", amount_inr="75"
+        db, await a_contact(contacts), key="credit:S1:OUT-2", outage_id="OUT-2", amount_usd="75"
     )
     await decide(db, approved)
     rejected = await proposed(db, await a_contact(contacts), key="credit:S1:OUT-3")
     await decide(db, rejected, approve=False)
     await proposed(db, await a_contact(contacts), key="credit:S2:OUT-1", service_id="S2")
     # One whose amount cannot be read is listed and counts as nothing: it will never be applied.
-    await proposed(db, await a_contact(contacts), key="credit:S1:OUT-4", amount_inr="a lot")
+    await proposed(db, await a_contact(contacts), key="credit:S1:OUT-4", amount_usd="a lot")
 
-    found = {item.action_key: item.amount_inr for item in await actions.open_credits("S1")}
+    found = {item.action_key: item.amount_usd for item in await actions.open_credits("S1")}
 
     assert found == {
         waiting.action_key: Decimal("120.50"),

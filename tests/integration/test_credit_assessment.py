@@ -37,11 +37,11 @@ SERVICE = ServiceFacts(
     customer_id="C1",
     service_id="S1",
     service_type="broadband",
-    monthly_fee_inr=MONTHLY_FEE,
+    monthly_fee_usd=MONTHLY_FEE,
     active=True,
     billing_cycle_day=10,
 )
-# Five hours, resolved: INR 6.94 by the formula, raised to the INR 50 minimum.
+# Five hours, resolved: $6.94 by the formula, raised to the $50 minimum.
 OUTAGE = OutageInfo(
     outage_id="OUT-1",
     version=2,
@@ -84,7 +84,7 @@ async def test_credit_is_priced_against_the_cycle_that_contains_today(db: Databa
 
     assessment = await assess(db, billing)
 
-    assert assessment.decision.amount_inr == UNCAPPED
+    assert assessment.decision.amount_usd == UNCAPPED
     assert billing.asked_since == ["2026-11-10"]  # cycle day 10; it is the 15th in India
 
 
@@ -92,11 +92,11 @@ async def test_credit_waiting_for_approval_counts_towards_the_cap(
     db: Database, contacts: ContactRepository
 ) -> None:
     """Two outages in one billing cycle are not each priced as if the other did not exist."""
-    await proposed(db, await a_contact(contacts), amount_inr="960.00", **OTHER_OUTAGE)
+    await proposed(db, await a_contact(contacts), amount_usd="960.00", **OTHER_OUTAGE)
 
     assessment = await assess(db, AccountReader(account()))
 
-    assert assessment.decision.amount_inr == MONTHLY_FEE - Decimal("960.00")
+    assert assessment.decision.amount_usd == MONTHLY_FEE - Decimal("960.00")
     assert assessment.decision.calculation.cap_applied
 
 
@@ -104,7 +104,7 @@ async def test_approved_credit_on_its_way_counts_and_leaves_nothing_under_the_ca
     db: Database, contacts: ContactRepository
 ) -> None:
     on_its_way = await proposed(
-        db, await a_contact(contacts), level="supervisor", amount_inr="999.00", **OTHER_OUTAGE
+        db, await a_contact(contacts), level="supervisor", amount_usd="999.00", **OTHER_OUTAGE
     )
     await decide(db, on_its_way, role="supervisor")
 
@@ -119,17 +119,17 @@ async def test_credit_that_billing_already_shows_is_counted_once(
 ) -> None:
     """Applied, but the executor has not recorded the outcome yet: the same money is in both
     places for a moment."""
-    await proposed(db, await a_contact(contacts), amount_inr="960.00", **OTHER_OUTAGE)
+    await proposed(db, await a_contact(contacts), amount_usd="960.00", **OTHER_OUTAGE)
     applied = credit(
         credit_id="CR-0",
         outage_id="OUT-0",
-        amount_inr=Decimal("960.00"),
+        amount_usd=Decimal("960.00"),
         idempotency_key="credit:S1:OUT-0",
     )
 
     assessment = await assess(db, AccountReader(account(applied)))
 
-    assert assessment.decision.amount_inr == MONTHLY_FEE - Decimal("960.00")
+    assert assessment.decision.amount_usd == MONTHLY_FEE - Decimal("960.00")
 
 
 @pytest.mark.parametrize(
@@ -143,32 +143,32 @@ async def test_credit_that_billing_already_shows_is_counted_once(
 async def test_what_does_not_count_towards_the_cap(
     db: Database, contacts: ContactRepository, other: dict[str, str]
 ) -> None:
-    await proposed(db, await a_contact(contacts), amount_inr="960.00", **other)
+    await proposed(db, await a_contact(contacts), amount_usd="960.00", **other)
 
     assessment = await assess(db, AccountReader(account()))
 
-    assert assessment.decision.amount_inr == UNCAPPED
+    assert assessment.decision.amount_usd == UNCAPPED
 
 
 async def test_rejected_credit_no_longer_counts(db: Database, contacts: ContactRepository) -> None:
     rejected = await proposed(
-        db, await a_contact(contacts), level="supervisor", amount_inr="960.00", **OTHER_OUTAGE
+        db, await a_contact(contacts), level="supervisor", amount_usd="960.00", **OTHER_OUTAGE
     )
     await decide(db, rejected, approve=False, role="supervisor")
 
     assessment = await assess(db, AccountReader(account()))
 
-    assert assessment.decision.amount_inr == UNCAPPED
+    assert assessment.decision.amount_usd == UNCAPPED
 
 
 async def test_without_a_ledger_only_the_account_is_counted(
     db: Database, contacts: ContactRepository
 ) -> None:
-    await proposed(db, await a_contact(contacts), amount_inr="960.00", **OTHER_OUTAGE)
+    await proposed(db, await a_contact(contacts), amount_usd="960.00", **OTHER_OUTAGE)
 
     assessment = await assess(db, AccountReader(account()), with_ledger=False)
 
-    assert assessment.decision.amount_inr == UNCAPPED
+    assert assessment.decision.amount_usd == UNCAPPED
 
 
 async def test_unreadable_account_is_not_an_assessment(db: Database) -> None:

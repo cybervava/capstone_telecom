@@ -49,7 +49,7 @@ def _refused(reason: str) -> Verdict:
 
 
 def _two_places(amount: Fraction) -> str:
-    cents = (amount * 100 + Fraction(1, 2)).__floor__()  # half a paisa and above rounds up
+    cents = (amount * 100 + Fraction(1, 2)).__floor__()  # half a cent and above rounds up
     return f"{cents // 100}.{cents % 100:02d}"
 
 
@@ -83,7 +83,7 @@ def verdict(policy: dict[str, Any], case: Case) -> Verdict:
         )
     )
     by_formula = fee * hours * multiplier / policy["hours_in_month"]
-    at_least = max(by_formula, Fraction(str(rule["minimum_credit_inr"])))
+    at_least = max(by_formula, Fraction(str(rule["minimum_credit_usd"])))
     cap_left = max(
         fee * Fraction(str(rule["cap_fraction_of_monthly_fee"])) - Fraction(case.prior_credits),
         Fraction(0),
@@ -91,7 +91,7 @@ def verdict(policy: dict[str, Any], case: Case) -> Verdict:
     amount = _two_places(min(at_least, cap_left))
     if Fraction(amount) <= 0:
         return _refused("CAP_REACHED")
-    above = Fraction(amount) > Fraction(str(policy["approval"]["supervisor_above_inr"]))
+    above = Fraction(amount) > Fraction(str(policy["approval"]["supervisor_above_usd"]))
     return Verdict(
         True,
         "ELIGIBLE",

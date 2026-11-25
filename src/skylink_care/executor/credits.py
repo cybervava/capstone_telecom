@@ -156,7 +156,7 @@ class CreditApplier:
         cycle_began = billing_cycle_start(self._now(), terms.cycle_day)
         credited = sum(
             (
-                c.amount_inr
+                c.amount_usd
                 for c in on_service
                 if c.reason_code == OUTAGE_CREDIT
                 and c.created_at.astimezone(IST).date() >= cycle_began
@@ -166,9 +166,9 @@ class CreditApplier:
         if not within_cycle_cap(
             policy,
             service_type=terms.service_type,
-            monthly_fee_inr=terms.monthly_fee,
-            credited_in_cycle_inr=credited,
-            amount_inr=terms.amount,
+            monthly_fee_usd=terms.monthly_fee,
+            credited_in_cycle_usd=credited,
+            amount_usd=terms.amount,
         ):
             return Refused(CAP_EXCEEDED)
         return None
@@ -181,9 +181,9 @@ def _terms(action: Action) -> _Terms:
             customer_id=_text(body.get("customer_id")),
             service_id=_text(body.get("service_id")),
             outage_id=_text(body.get("outage_id")),
-            amount=_money(body.get("amount_inr")),
+            amount=_money(body.get("amount_usd")),
             service_type=ServiceType(str(shown.get("service_type"))),
-            monthly_fee=_money(shown.get("monthly_fee_inr")),
+            monthly_fee=_money(shown.get("monthly_fee_usd")),
             cycle_day=int(shown["billing_cycle_day"]),
         )
         if not 1 <= terms.cycle_day <= LAST_CYCLE_DAY:

@@ -160,7 +160,7 @@ class ServiceDto(Wire):
     service_id: str
     service_type: Literal["broadband", "mobile"]
     plan_name: str
-    monthly_fee_inr: Decimal = Field(gt=0)
+    monthly_fee_usd: Decimal = Field(gt=0)
     status: str
     address: AddressDto
     router_model: str | None = None
@@ -190,7 +190,7 @@ class CreditDto(Wire):
     credit_id: str
     customer_id: str
     service_id: str
-    amount_inr: Decimal
+    amount_usd: Decimal
     reason_code: str
     outage_id: str | None = None
     policy_version: str

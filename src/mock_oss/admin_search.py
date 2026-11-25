@@ -32,7 +32,7 @@ WHERE (:customer_id IS NULL OR s.customer_id = :customer_id)
   AND (:mapping_defect IS NULL OR t.mapping_defect = :mapping_defect)
   AND (:status IS NULL OR c.status = :status)
   AND (:service_status IS NULL OR s.status = :service_status)
-  AND (:min_fee IS NULL OR s.monthly_fee_paise >= :min_fee)
+  AND (:min_fee IS NULL OR s.monthly_fee_cents >= :min_fee)
   AND (:untouched = 0 OR (
         NOT EXISTS (SELECT 1 FROM appointments a WHERE a.service_id = s.service_id)
     AND NOT EXISTS (SELECT 1 FROM credits cr WHERE cr.customer_id = s.customer_id)
@@ -58,7 +58,7 @@ def _row_view(conn: sqlite3.Connection, row: sqlite3.Row) -> dict[str, Any]:
         "true_node_id": row["true_node_id"],
         "mapped_node_ids": _mapped(conn, row["address_id"], row["service_type"]),
         "router_model": row["router_model"],
-        "monthly_fee_inr": row["monthly_fee"],
+        "monthly_fee_usd": row["monthly_fee"],
         "service_status": row["service_status"],
         "consent": bool(row["consent"]),
         "mapping_defect": row["mapping_defect"],

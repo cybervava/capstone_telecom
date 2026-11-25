@@ -21,11 +21,11 @@
   },
   "credit_applied": {
     "template_id": "credit_applied.v1",
-    "text": "I'm SkyLink's automated assistant. The service credit of INR 120.50 for your outage has been applied to your account (credit reference CR-1). It will show on your next bill. Your complaint reference is SKL-261115-000001-9."
+    "text": "I'm SkyLink's automated assistant. The service credit of $120.50 for your outage has been applied to your account (credit reference CR-1). It will show on your next bill. Your complaint reference is SKL-261115-000001-9."
   },
   "credit_applied/no reference": {
     "template_id": "credit_applied.v1",
-    "text": "I'm SkyLink's automated assistant. The service credit of INR 120.50 for your outage has been applied to your account. It will show on your next bill. Your complaint reference is SKL-261115-000001-9."
+    "text": "I'm SkyLink's automated assistant. The service credit of $120.50 for your outage has been applied to your account. It will show on your next bill. Your complaint reference is SKL-261115-000001-9."
   },
   "credit_not_applied": {
     "template_id": "credit_not_applied.v1",

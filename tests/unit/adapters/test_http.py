@@ -205,7 +205,7 @@ async def test_write_sends_the_body_unchanged_with_its_idempotency_key(http: Oss
     body = {
         "customer_id": "C0000001",
         "service_id": "S0000001",
-        "amount_inr": "541.61",
+        "amount_usd": "541.61",
         "reason_code": "OUTAGE_CREDIT",
         "outage_id": "OUT-1",
         "policy_version": "v0-placeholder",
@@ -228,7 +228,7 @@ async def test_write_sends_the_body_unchanged_with_its_idempotency_key(http: Oss
 
     assert isinstance(result, Ok)
     assert result.replayed
-    assert str(result.value.amount_inr) == "541.61"
+    assert str(result.value.amount_usd) == "541.61"
     sent = route.calls.last.request
     assert sent.headers["Idempotency-Key"] == "credit:S0000001:OUT-1"
     assert httpx.Response(200, content=sent.content).json() == body

@@ -141,7 +141,7 @@ class OpenCredit:
     """A credit that is proposed and not yet settled."""
 
     action_key: str
-    amount_inr: Decimal
+    amount_usd: Decimal
 
 
 @dataclass(frozen=True)
@@ -289,7 +289,7 @@ class ActionRepository(Repository):
         """Credits on this service that are proposed and not yet settled, whoever proposed them."""
         async with self._db.connection() as conn:
             cursor = await conn.execute(
-                "SELECT action_key, request_body ->> 'amount_inr' AS amount FROM actions"
+                "SELECT action_key, request_body ->> 'amount_usd' AS amount FROM actions"
                 " WHERE action_type = %s AND request_body ->> 'service_id' = %s"
                 " AND status IN ('PENDING_APPROVAL', 'READY', 'IN_FLIGHT')",
                 (CREDIT_APPLY, service_id),

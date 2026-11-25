@@ -35,7 +35,7 @@ NODE_STATUS_OK = {
 CREDIT = {
     "customer_id": "C1",
     "service_id": "S1",
-    "amount_inr": "120.50",
+    "amount_usd": "120.50",
     "reason_code": "OUTAGE_CREDIT",
     "outage_id": "OUT-1",
     "policy_version": "v0-placeholder",

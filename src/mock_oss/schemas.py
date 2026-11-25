@@ -33,7 +33,7 @@ class VerifyIn(BaseModel):
 class CreditIn(BaseModel):
     customer_id: Text
     service_id: Text
-    amount_inr: Annotated[Decimal, Field(allow_inf_nan=True)]
+    amount_usd: Annotated[Decimal, Field(allow_inf_nan=True)]
     reason_code: Text
     outage_id: Text | None = None
     policy_version: Text

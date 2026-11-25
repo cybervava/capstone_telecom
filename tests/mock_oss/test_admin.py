@@ -50,7 +50,7 @@ def test_search_row_shape(client: TestClient) -> None:
         "true_node_id": "BLR-OLT-0002",
         "mapped_node_ids": ["BLR-OLT-0003"],
         "router_model": "NX-R2",
-        "monthly_fee_inr": "3999.00",
+        "monthly_fee_usd": "3999.00",
         "service_status": "active",
         "consent": True,
         "mapping_defect": "stale",

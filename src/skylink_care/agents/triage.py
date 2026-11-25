@@ -110,7 +110,7 @@ class ServiceChoice:
     address_id: str
     pincode: str
     router_model: str | None
-    monthly_fee_inr: str
+    monthly_fee_usd: str
     active: bool
     billing_cycle_day: int
 
@@ -463,7 +463,7 @@ def _to_choice(service: ServiceDto) -> ServiceChoice:
         address_id=service.address.address_id,
         pincode=service.address.pincode,
         router_model=service.router_model,
-        monthly_fee_inr=str(service.monthly_fee_inr),
+        monthly_fee_usd=str(service.monthly_fee_usd),
         active=service.status == "active",
         billing_cycle_day=service.billing_cycle_day,
     )

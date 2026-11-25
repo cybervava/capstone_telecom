@@ -9,7 +9,10 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-GENERATOR_VERSION = "1.0.0"
+# Changes whenever a file of the pack changes its columns: 1.1.0 names the monthly fee
+# monthly_fee_usd (amounts are in US dollars). A pack is read only by the version that wrote
+# it; the container set-up keeps one pack per version (scripts/container_setup.sh).
+GENERATOR_VERSION = "1.1.0"
 IST = timezone(timedelta(hours=5, minutes=30))
 WINDOW_START = datetime(2026, 5, 1, 0, 0, 0, tzinfo=IST)
 WINDOW_END = datetime(2026, 10, 31, 23, 59, 59, tzinfo=IST)

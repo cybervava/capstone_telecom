@@ -36,18 +36,18 @@ def test_worked_examples_in_the_document_match_the_engine(
         POLICY,
         CreditInput(
             service_type=ServiceType.BROADBAND,
-            monthly_fee_inr=Decimal(fee),
+            monthly_fee_usd=Decimal(fee),
             service_active=True,
             affected=True,
             planned=False,
             started_at=STARTED,
             resolved_at=STARTED + timedelta(hours=hours),
-            prior_outage_credits_in_cycle_inr=Decimal(prior),
+            prior_outage_credits_in_cycle_usd=Decimal(prior),
             already_credited_for_outage=False,
         ),
     )
 
-    assert decision.amount_inr == Decimal(credit)
+    assert decision.amount_usd == Decimal(credit)
     assert decision.requires_supervisor is (supervisor == "Yes")
     assert f"| {credit} | {supervisor} |" in DOCUMENT
 
@@ -60,9 +60,9 @@ def test_document_states_the_version_and_parameters_the_engine_uses() -> None:
     assert f"{broadband.min_outage_minutes} minutes for broadband" in DOCUMENT
     assert f"{mobile.min_outage_minutes:,} minutes for mobile" in DOCUMENT
     assert f"÷ {POLICY.hours_in_month} ×" in DOCUMENT  # noqa: RUF001 - as printed
-    assert f"above INR {POLICY.approval.supervisor_above_inr}" in DOCUMENT
-    assert f"INR {broadband.minimum_credit_inr} (broadband)" in DOCUMENT
-    assert f"INR {mobile.minimum_credit_inr} (mobile)" in DOCUMENT
+    assert f"above ${POLICY.approval.supervisor_above_usd}" in DOCUMENT
+    assert f"${broadband.minimum_credit_usd} (broadband)" in DOCUMENT
+    assert f"${mobile.minimum_credit_usd} (mobile)" in DOCUMENT
     for tier in broadband.tiers:
         assert f"| Broadband | {tier.from_minutes:,} | {tier.multiplier} |" in DOCUMENT
     for tier in mobile.tiers:

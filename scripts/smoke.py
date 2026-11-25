@@ -412,9 +412,7 @@ def credit_is_approved_and_applied(
     sim.post(f"/admin/v1/outages/{outage_id}/resolve").raise_for_status()
     contact = wait_for_replies(api, headers, accepted["contact_id"], count=2)
     restored = outbound(contact)[-1]
-    check(
-        "restoration message offers the credit", "you are due a service credit of INR" in restored
-    )
+    check("restoration message offers the credit", "you are due a service credit of $" in restored)
     check("credit names the policy version", "(v0-placeholder)" in restored)
     account = f"/billing/v1/accounts/{customer['customer_id']}/credits"
     say(f"\n     assistant: {restored}")
@@ -450,9 +448,9 @@ def credit_is_approved_and_applied(
     newest = credits[0]
     check(
         "the credit carries the approved amount, approver and outage",
-        (newest["amount_inr"], newest["approved_by"], newest["outage_id"])
-        == (approval["request"]["amount_inr"], "agent:smoke.run", outage_id),
-        f"INR {newest['amount_inr']} approved by {newest['approved_by']}",
+        (newest["amount_usd"], newest["approved_by"], newest["outage_id"])
+        == (approval["request"]["amount_usd"], "agent:smoke.run", outage_id),
+        f"${newest['amount_usd']} approved by {newest['approved_by']}",
     )
 
 
@@ -484,7 +482,7 @@ def applied_without_review(
     check(
         "the credit names no approver",
         bool(ours) and ours[0]["approved_by"] is None,
-        f"INR {ours[0]['amount_inr']}" if ours else "",
+        f"${ours[0]['amount_usd']}" if ours else "",
     )
 
 

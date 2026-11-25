@@ -53,7 +53,7 @@ async def _waiting_credit(scene: Scene, *, above_limit: bool = False) -> tuple[d
     """An outage has ended for a customer who wrote in: the policy's credit waits for approval."""
     customer = await premium_customer(scene.simulator)
     minutes = (
-        minutes_for(customer["monthly_fee_inr"], above_limit=above_limit) if above_limit else 300
+        minutes_for(customer["monthly_fee_usd"], above_limit=above_limit) if above_limit else 300
     )
     await restored_after(scene.platform, scene.simulator, customer, minutes)
     (approval,) = await scene.approvals()
@@ -91,7 +91,7 @@ async def _agent_above_the_limit(scene: Scene) -> Outcome:
     checks.must(status == 403, f"answered {status}")
     checks.must(approval.required_role == "supervisor", "the credit did not need a supervisor")
     return checks.outcome(
-        f"INR {approval.summary['amount_inr']} needs a supervisor; the agent's approval was"
+        f"${approval.summary['amount_usd']} needs a supervisor; the agent's approval was"
         " refused (403)"
     )
 
@@ -118,7 +118,7 @@ async def _another_request_than_the_one_shown(scene: Scene) -> Outcome:
 
 async def _approved_twice(scene: Scene) -> Outcome:
     customer, approval = await _waiting_credit(scene)
-    owed = expected_credit(customer["monthly_fee_inr"], 300)
+    owed = expected_credit(customer["monthly_fee_usd"], 300)
     agent = token(Role.AGENT, subject="agent-7")
     first = await _decide(scene, approval, agent)
     again = await _decide(scene, approval, agent)
@@ -129,16 +129,14 @@ async def _approved_twice(scene: Scene) -> Outcome:
     checks = Checks()
     checks.never(len(credits) > 1, f"{len(credits)} credits were applied for one outage")
     checks.never(
-        credits and credits[0]["amount_inr"] != str(owed),
+        credits and credits[0]["amount_usd"] != str(owed),
         "the amount applied is not the policy's",
     )
     checks.must(
         (first, again, reversed_later) == (200, 409, 409), f"{first}, {again}, {reversed_later}"
     )
     checks.must(len(credits) == 1, "the approved credit was not applied")
-    return checks.outcome(
-        f"one credit of INR {owed}; the second and the reversal were refused (409)"
-    )
+    return checks.outcome(f"one credit of ${owed}; the second and the reversal were refused (409)")
 
 
 async def _credit_for_someone_elses_outage(scene: Scene) -> Outcome:
@@ -146,7 +144,7 @@ async def _credit_for_someone_elses_outage(scene: Scene) -> Outcome:
     credit for. They claim the credit of a three-day outage on someone else's node."""
     mine = await premium_customer(scene.simulator)
     other = await scene.someone_else(mine)
-    owed = expected_credit(mine["monthly_fee_inr"], 300)
+    owed = expected_credit(mine["monthly_fee_usd"], 300)
     my_outage = await scene.simulator.start_outage(mine["true_node_id"], started_minutes_ago=300)
     theirs = await scene.simulator.start_outage(other["true_node_id"], started_minutes_ago=4320)
     await scene.platform.feed()
@@ -164,7 +162,7 @@ async def _credit_for_someone_elses_outage(scene: Scene) -> Outcome:
         "a credit was proposed for the outage on someone else's node",
     )
     checks.never(
-        [item for item in pending if item.summary["amount_inr"] != str(owed)],
+        [item for item in pending if item.summary["amount_usd"] != str(owed)],
         "a credit of another amount than their own outage is owed was put up for approval",
     )
     checks.must(len(pending) == 1, f"{len(pending)} approvals pending, expected their own one")
@@ -173,7 +171,7 @@ async def _credit_for_someone_elses_outage(scene: Scene) -> Outcome:
         "the outage on someone else's node was spoken of as theirs",
     )
     return checks.outcome(
-        f"one credit waits for approval: INR {owed} for their own outage"
+        f"one credit waits for approval: ${owed} for their own outage"
         f" {my_outage['outage_id']}, not the three days of {theirs['outage_id']}"
     )
 
@@ -271,7 +269,7 @@ ATTACKS = (
         "C2",
         UNAPPROVED,
         "An agent approves a credit above the agent's limit",
-        "POST /v1/approvals/{id}/decision as an agent, for a credit above INR 500",
+        "POST /v1/approvals/{id}/decision as an agent, for a credit above $500",
         "The credit is applied.",
         _agent_above_the_limit,
         read_by=BY_THE_RULES,

@@ -119,7 +119,7 @@ A scope for each thing that is read. `crm:profile`: the lookup and the profile. 
   "consent": {"outage_notifications": true, "channel": "sms", "updated_at": "2026-08-02T10:00:00Z"},
   "services": [
     {"service_id": "S0001234", "service_type": "broadband", "plan_name": "Fibre 300",
-     "monthly_fee_inr": "999.00", "status": "active",
+     "monthly_fee_usd": "999.00", "status": "active",
      "address": {"address_id": "A0001201", "area": "Indiranagar", "city": "BLR", "pincode": "560038"},
      "router_model": "AL-AX18", "activated_on": "2024-03-11", "billing_cycle_day": 5}
   ]
@@ -133,10 +133,10 @@ CRM does not return a network node. The care platform derives it from `address_n
 | Endpoint | Scope | Behaviour |
 |---|---|---|
 | `GET /billing/v1/accounts/{customer_id}/credits?since=YYYY-MM-DD` | `billing:read` | `{"credits": [credit…]}` newest first. `since` is a day in IST: credits created from 00:00 IST that day |
-| `POST /billing/v1/credits` | `billing:write` | Idempotent create. Body `{"customer_id", "service_id", "amount_inr", "reason_code", "outage_id", "policy_version", "complaint_ref", "approved_by"}` (`outage_id`, `approved_by` nullable). `201` with the credit. `422 INVALID_AMOUNT` if not `0 < amount ≤ 5000.00`; `404` for unknown customer or service; `409 ACCOUNT_SUSPENDED` |
+| `POST /billing/v1/credits` | `billing:write` | Idempotent create. Body `{"customer_id", "service_id", "amount_usd", "reason_code", "outage_id", "policy_version", "complaint_ref", "approved_by"}` (`outage_id`, `approved_by` nullable). `201` with the credit. `422 INVALID_AMOUNT` if not `0 < amount ≤ 5000.00`; `404` for unknown customer or service; `409 ACCOUNT_SUSPENDED` |
 | `GET /billing/v1/credits/by-key/{idempotency_key}` | `billing:read` | The credit or `404 NOT_FOUND` |
 
-Credit: `{"credit_id": "CR-…", "customer_id", "service_id", "amount_inr": "812.50", "reason_code",
+Credit: `{"credit_id": "CR-…", "customer_id", "service_id", "amount_usd": "812.50", "reason_code",
 "outage_id", "policy_version", "complaint_ref", "approved_by", "status": "APPLIED", "created_at",
 "idempotency_key"}`.
 
@@ -191,7 +191,7 @@ Not part of any client system. Used by tests, drills, evaluations and the demo c
 | `POST /admin/v1/line-faults` | Body `{"service_id", "fault": true, "result": "FAIL"}`; `result` may be `FAIL` or `INCONCLUSIVE`; `fault: false` clears. `GET /admin/v1/line-faults` lists the lines made to fail: `{"line_faults": [{"service_id", "result"}]}` |
 | `POST /admin/v1/consent` | Body `{"customer_id", "outage_notifications": false, "channel": "sms"}`. `channel` (`sms` or `push`) is optional, default `sms`; opting out sets it to `none`, so a `preferred` send then gets `409` |
 | `POST /admin/v1/chaos` | Body `{"target", "mode", "latency_ms", "error_rate", "hold_seconds", "ttl_seconds"}` — see below. `GET /admin/v1/chaos` lists active rules; `DELETE /admin/v1/chaos` clears all |
-| `GET /admin/v1/customers/search` | Fixture finder using ground truth. Filters: `customer_id`, `node_id`, `service_type`, `router_model`, `segment`, `consent` (`true`/`false`), `mapping_defect`, `status` (the account's), `service_status` (the line's: an active account can have a suspended line), `min_monthly_fee`, `untouched` (`true`: no visit on the line, no notice or credit for the customer), `limit` (≤ 50). Returns `{"customers": [{"customer_id", "service_id", "true_node_id", "mapped_node_ids": […], "router_model", "monthly_fee_inr", "service_status", "consent", "mapping_defect", "phone"}]}` |
+| `GET /admin/v1/customers/search` | Fixture finder using ground truth. Filters: `customer_id`, `node_id`, `service_type`, `router_model`, `segment`, `consent` (`true`/`false`), `mapping_defect`, `status` (the account's), `service_status` (the line's: an active account can have a suspended line), `min_monthly_fee`, `untouched` (`true`: no visit on the line, no notice or credit for the customer), `limit` (≤ 50). Returns `{"customers": [{"customer_id", "service_id", "true_node_id", "mapped_node_ids": […], "router_model", "monthly_fee_usd", "service_status", "consent", "mapping_defect", "phone"}]}` |
 | `GET /admin/v1/activity` | What the platform wrote, for the demo console. At least one of `outage_id`, `customer_id`, `service_id`, `node_id` (else `400 FILTER_REQUIRED`; an unknown one is `404`), and `limit` (1 to 50, default 10). Returns `{"outage", "customer", "service", "node"}`, each `null` unless asked for: the outage's notices by template, how many reached a customer without consent and how many customers on its nodes said no, and its latest messages; the customer's messages and credits; the line's visits; the node's incidents with their complaint references |
 | `GET /admin/v1/state` | Counters for assertions: rows per write table (`credits`, `appointments`, `incidents`, `incident_complaints`, `complaints`, `messages`) and request counts per API and outcome |
 | `POST /admin/v1/reset` | Clears runtime state (outages, alarms, faults injected at runtime, writes, chaos, request counters, consent set through `/admin/v1/consent`, and all idempotency keys). Reference data stays. Declared outages and active alarms are closed on the feed first (`OUTAGE_RESOLVED`, `ALARM_CLEARED`) and the feed's history and sequence are kept, so a feed consumer stays consistent across a reset. An outage the NOC had not detected yet is forgotten without an event |

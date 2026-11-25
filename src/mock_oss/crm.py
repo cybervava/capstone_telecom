@@ -94,7 +94,7 @@ def _service_view(row: sqlite3.Row) -> dict[str, Any]:
         "service_id": row["service_id"],
         "service_type": row["service_type"],
         "plan_name": row["plan_name"],
-        "monthly_fee_inr": row["monthly_fee"],
+        "monthly_fee_usd": row["monthly_fee"],
         "status": row["status"],
         "address": {
             "address_id": row["address_id"],

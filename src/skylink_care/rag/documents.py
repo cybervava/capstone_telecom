@@ -59,7 +59,9 @@ _OUT_OF_PLACE: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "speaks of money",
         re.compile(
-            r"\binr\b|₹|\brs\.?\s*\d|\brupees?\b|\bcredits?\b|\brefunds?\b|\bcompensat"
+            # An amount in the currency the platform shows, or in any other a guide might name.
+            r"\$\s*\d|\busd\b|\bdollars?\b|\binr\b|₹|\brs\.?\s*\d|\brupees?\b"
+            r"|\bcredits?\b|\brefunds?\b|\bcompensat"
             r"|\bowes?\b|\bbank\b|\bupi\b|\bcard number\b|\bcvv\b|\bpay(?:ments?|ing)?\b"
             r"|\bvouchers?\b|\bwallet\b",
             re.IGNORECASE,

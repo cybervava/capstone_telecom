@@ -6,7 +6,7 @@
 
 **Result (met).** 8 of 8 situations end the same way in both segments (100.0%), over 80 customers.
 
-Written by the run of 2026-11-17T01:28:29+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: offline (keyword rules stand in for the language model; none was called).
+Written by the run of 2026-11-25T17:34:41+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: offline (keyword rules stand in for the language model; none was called).
 
 ## Outcomes by situation
 
@@ -23,7 +23,7 @@ Written by the run of 2026-11-17T01:28:29+00:00. Measured on synthetic stand-in 
 
 ## What does differ: the credit, by monthly fee
 
-| Situation | Segment | Monthly fee (INR) | Credit (INR) | Share of the fee | Approved by |
+| Situation | Segment | Monthly fee ($) | Credit ($) | Share of the fee | Approved by |
 |---|---|---|---|---|---|
 | An outage of five hours has ended | consumer | 999.00 | 50.00 | 5.01% | agent |
 | An outage of five hours has ended | consumer | 1499.00 | 50.00 | 3.34% | agent |
@@ -42,4 +42,4 @@ Written by the run of 2026-11-17T01:28:29+00:00. Measured on synthetic stand-in 
 - Segment is the one attribute of this kind the platform is given. It holds no age, gender, language, religion or income, and reads the customer's name only to mask it.
 - Where a customer lives decides which network node serves them, and with that whether an outage is theirs. That is the platform's job and not a proxy the evaluation can separate: here every customer is put on a node of their own and the node is given the situation.
 - A few customers of each segment in each situation: this shows the absence of a rule that treats segments differently, not a statistical equality of outcomes over SkyLink's customers.
-- The credit is the same share of the monthly fee for the same outage in both segments, except where the policy's minimum lifts it. Above INR 500.00 a supervisor approves instead of an agent: SME plans cost more, so their credits reach that level sooner. If supervisors are slower than agents, SME customers wait longer for a larger credit. That follows from the amount, is the placeholder policy's rule (A4), and is for SkyLink to confirm.
+- The credit is the same share of the monthly fee for the same outage in both segments, except where the policy's minimum lifts it. Above $500.00 a supervisor approves instead of an agent: SME plans cost more, so their credits reach that level sooner. If supervisors are slower than agents, SME customers wait longer for a larger credit. That follows from the amount, is the placeholder policy's rule (A4), and is for SkyLink to confirm.

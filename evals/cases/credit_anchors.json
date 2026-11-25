@@ -1,5 +1,5 @@
 {
-  "what": "Credits worked out by hand from the placeholder policy v0 (fee x billable hours x multiplier / 720, at least the minimum, at most what the billing-cycle cap leaves, rounded half up to the paisa). Neither the engine nor the oracle was used to produce them.",
+  "what": "Credits worked out by hand from the placeholder policy v0 (fee x billable hours x multiplier / 720, at least the minimum, at most what the billing-cycle cap leaves, rounded half up to the cent). Neither the engine nor the oracle was used to produce them.",
   "cases": [
     {"why": "4 h on a 999 plan: 5.55 by the formula, raised to the broadband minimum", "service_type": "broadband", "monthly_fee": "999.00", "minutes": 240, "amount": "50.00", "approval": "agent"},
     {"why": "one minute short of the broadband minimum duration", "service_type": "broadband", "monthly_fee": "999.00", "minutes": 239, "reason": "BELOW_MINIMUM_DURATION"},

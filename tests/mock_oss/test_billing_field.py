@@ -15,7 +15,7 @@ def credit_body(**overrides: Any) -> dict[str, Any]:
     body: dict[str, Any] = {
         "customer_id": "C0000001",
         "service_id": "S0000001",
-        "amount_inr": "812.50",
+        "amount_usd": "812.50",
         "reason_code": "OUTAGE_CREDIT",
         "outage_id": "OUT-20261115-0001",
         "policy_version": "v0",
@@ -30,7 +30,7 @@ def test_create_credit(client: TestClient) -> None:
     assert resp.status_code == 201, resp.text
     body = resp.json()
     assert body["credit_id"].startswith("CR-")
-    assert body["amount_inr"] == "812.50"
+    assert body["amount_usd"] == "812.50"
     assert body["status"] == "APPLIED"
     assert body["created_at"] == "2026-11-15T04:00:00Z"
     assert body["idempotency_key"] == "cr-1"
@@ -40,14 +40,14 @@ def test_create_credit(client: TestClient) -> None:
 
 @pytest.mark.parametrize("amount", ["0", "0.00", "-1", "5000.01", "1.234", "NaN", 5001])
 def test_credit_invalid_amount(client: TestClient, amount: object) -> None:
-    resp = client.post("/billing/v1/credits", json=credit_body(amount_inr=amount), headers=idem())
+    resp = client.post("/billing/v1/credits", json=credit_body(amount_usd=amount), headers=idem())
     assert resp.status_code == 422
     assert resp.json()["error"]["code"] == "INVALID_AMOUNT"
 
 
 @pytest.mark.parametrize("amount", ["5000.00", "0.01", 10])
 def test_credit_boundary_amounts(client: TestClient, amount: object) -> None:
-    resp = client.post("/billing/v1/credits", json=credit_body(amount_inr=amount), headers=idem())
+    resp = client.post("/billing/v1/credits", json=credit_body(amount_usd=amount), headers=idem())
     assert resp.status_code == 201
 
 
@@ -78,15 +78,15 @@ def test_failed_create_is_not_recorded(client: TestClient) -> None:
 
 
 def test_list_credits_newest_first_and_since(client: TestClient, clock: ManualClock) -> None:
-    client.post("/billing/v1/credits", json=credit_body(amount_inr="1.00"), headers=idem())
+    client.post("/billing/v1/credits", json=credit_body(amount_usd="1.00"), headers=idem())
     clock.advance(86400 * 2)
-    client.post("/billing/v1/credits", json=credit_body(amount_inr="2.00"), headers=idem())
+    client.post("/billing/v1/credits", json=credit_body(amount_usd="2.00"), headers=idem())
     resp = client.get("/billing/v1/accounts/C0000001/credits", headers=auth("resolution"))
-    assert [c["amount_inr"] for c in resp.json()["credits"]] == ["2.00", "1.00"]
+    assert [c["amount_usd"] for c in resp.json()["credits"]] == ["2.00", "1.00"]
     since = client.get(
         "/billing/v1/accounts/C0000001/credits?since=2026-11-16", headers=auth("resolution")
     )
-    assert [c["amount_inr"] for c in since.json()["credits"]] == ["2.00"]
+    assert [c["amount_usd"] for c in since.json()["credits"]] == ["2.00"]
     other = client.get("/billing/v1/accounts/C0000002/credits", headers=auth("resolution"))
     assert other.json()["credits"] == []
 
@@ -94,13 +94,13 @@ def test_list_credits_newest_first_and_since(client: TestClient, clock: ManualCl
 def test_list_credits_since_is_a_day_in_ist(client: TestClient, clock: ManualClock) -> None:
     """The day starts at 00:00 IST, which is 18:30 UTC the day before."""
     clock.advance(14 * 3600 + 20 * 60)  # 2026-11-15T18:20:00Z, 23:50 IST on the 15th
-    client.post("/billing/v1/credits", json=credit_body(amount_inr="1.00"), headers=idem())
+    client.post("/billing/v1/credits", json=credit_body(amount_usd="1.00"), headers=idem())
     clock.advance(20 * 60)  # 2026-11-15T18:40:00Z, 00:10 IST on the 16th
-    client.post("/billing/v1/credits", json=credit_body(amount_inr="2.00"), headers=idem())
+    client.post("/billing/v1/credits", json=credit_body(amount_usd="2.00"), headers=idem())
     since = client.get(
         "/billing/v1/accounts/C0000001/credits?since=2026-11-16", headers=auth("resolution")
     )
-    assert [c["amount_inr"] for c in since.json()["credits"]] == ["2.00"]
+    assert [c["amount_usd"] for c in since.json()["credits"]] == ["2.00"]
 
 
 def test_list_credits_errors(client: TestClient) -> None:

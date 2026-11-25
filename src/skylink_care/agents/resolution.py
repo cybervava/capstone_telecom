@@ -49,7 +49,7 @@ class ServiceFacts:
     customer_id: str
     service_id: str
     service_type: str
-    monthly_fee_inr: Decimal
+    monthly_fee_usd: Decimal
     active: bool
     billing_cycle_day: int
 
@@ -117,14 +117,14 @@ class ResolutionAgent:
         )
         facts = CreditInput(
             service_type=ServiceType(service.service_type),
-            monthly_fee_inr=service.monthly_fee_inr,
+            monthly_fee_usd=service.monthly_fee_usd,
             service_active=service.active,
             # The contact was told about this outage because its node was in it.
             affected=True,
             planned=outage.planned,
             started_at=outage.started_at,
             resolved_at=outage.resolved_at,
-            prior_outage_credits_in_cycle_inr=_outage_credits(on_service) + on_its_way,
+            prior_outage_credits_in_cycle_usd=_outage_credits(on_service) + on_its_way,
             already_credited_for_outage=any(c.outage_id == outage.outage_id for c in on_service),
         )
         decision = evaluate_credit(self._policy, facts)
@@ -144,7 +144,7 @@ class ResolutionAgent:
             return Decimal("0.00")
         return sum(
             (
-                credit.amount_inr
+                credit.amount_usd
                 for credit in await self._ledger.open_credits(service_id)
                 if credit.action_key != this_credit and credit.action_key not in already_applied
             ),
@@ -168,7 +168,7 @@ class ResolutionAgent:
             inputs={
                 "service_id": service.service_id,
                 "service_type": service.service_type,
-                "monthly_fee_inr": str(service.monthly_fee_inr),
+                "monthly_fee_usd": str(service.monthly_fee_usd),
                 "outage_id": outage.outage_id,
                 "planned": outage.planned,
             },
@@ -188,12 +188,12 @@ def working(decision: CreditDecision) -> dict[str, Any]:
     return {
         "eligible": decision.eligible,
         "reason": decision.reason.value,
-        "amount_inr": str(decision.amount_inr),
+        "amount_usd": str(decision.amount_usd),
         "policy_version": decision.policy_version,
         "outage_minutes": calc.outage_minutes,
         "billable_hours": calc.billable_hours,
         "multiplier": str(calc.multiplier) if calc.multiplier is not None else None,
-        "computed_inr": str(calc.computed_inr) if calc.computed_inr is not None else None,
+        "computed_usd": str(calc.computed_usd) if calc.computed_usd is not None else None,
         "floor_applied": calc.floor_applied,
         "cap_applied": calc.cap_applied,
     }
@@ -201,6 +201,6 @@ def working(decision: CreditDecision) -> dict[str, Any]:
 
 def _outage_credits(credits: list[CreditDto]) -> Decimal:
     return sum(
-        (credit.amount_inr for credit in credits if credit.reason_code == OUTAGE_CREDIT),
+        (credit.amount_usd for credit in credits if credit.reason_code == OUTAGE_CREDIT),
         Decimal("0.00"),
     )

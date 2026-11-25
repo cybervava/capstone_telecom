@@ -160,7 +160,7 @@ def add_commands(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> No
     customers.add_argument("--consent", choices=("true", "false"))
     customers.add_argument("--status", choices=("active", "suspended"), help="the account's")
     customers.add_argument("--service-status", choices=("active", "suspended"), help="the line's")
-    customers.add_argument("--min-monthly-fee", metavar="INR")
+    customers.add_argument("--min-monthly-fee", metavar="USD")
     customers.add_argument("--limit", type=int, default=5)
     customers.set_defaults(build=_customers)
 

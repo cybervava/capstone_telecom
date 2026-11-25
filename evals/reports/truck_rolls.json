@@ -1,6 +1,6 @@
 {
   "name": "truck_rolls",
-  "written_at": "2026-11-17T01:28:48+00:00",
+  "written_at": "2026-11-25T17:35:02+00:00",
   "target": "Unnecessary visits cut by at least 50.0% (brief), judged on the visits the workflow books; needed visits still booked for at least 90.0% of cases.",
   "met": true,
   "verdict": "met for the visits the workflow books; end to end it depends on decisions by people that a replay cannot measure",

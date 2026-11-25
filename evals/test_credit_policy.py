@@ -103,20 +103,20 @@ def agrees(anchor: dict[str, Any], got: Verdict) -> bool:
 def by_the_engine(policy: CreditPolicy, case: Case) -> Verdict:
     facts = CreditInput(
         service_type=ServiceType(case.service_type),
-        monthly_fee_inr=Decimal(case.monthly_fee),
+        monthly_fee_usd=Decimal(case.monthly_fee),
         service_active=case.active,
         affected=case.affected,
         planned=case.planned,
         started_at=STARTED,
         resolved_at=None if case.minutes is None else STARTED + timedelta(minutes=case.minutes),
-        prior_outage_credits_in_cycle_inr=Decimal(case.prior_credits),
+        prior_outage_credits_in_cycle_usd=Decimal(case.prior_credits),
         already_credited_for_outage=case.already_credited,
     )
     decision = evaluate_credit(policy, facts)
     return Verdict(
         decision.eligible,
         decision.reason.value,
-        f"{decision.amount_inr:.2f}",
+        f"{decision.amount_usd:.2f}",
         approval_level(decision, review_all=True).value,
         approval_level(decision, review_all=False).value,
     )
@@ -160,7 +160,7 @@ def the_report(
         title="Credits match the policy",
         proves=(
             "For every case of a grid on the policy's boundaries the credit engine gives the"
-            " same eligibility, the same reason for a refusal, the same amount to the paisa"
+            " same eligibility, the same reason for a refusal, the same amount to the cent"
             " and the same approval level as an independent calculation in exact arithmetic,"
             " and as amounts worked out by hand."
         ),

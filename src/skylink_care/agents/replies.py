@@ -333,16 +333,16 @@ def outage_restored(
     )
 
 
-def credit_line(amount_inr: str, *, policy_version: str, needs_approval: bool) -> str:
+def credit_line(amount_usd: str, *, policy_version: str, needs_approval: bool) -> str:
     """One sentence about the credit, added to the message that reports the restoration."""
     if needs_approval:
         return (
-            f" For this outage you are due a service credit of INR {amount_inr} under our"
+            f" For this outage you are due a service credit of ${amount_usd} under our"
             f" service credit policy ({policy_version}). It has been sent for approval and I'll"
             " confirm here once it has been applied to your account."
         )
     return (
-        f" For this outage you are due a service credit of INR {amount_inr} under our service"
+        f" For this outage you are due a service credit of ${amount_usd} under our service"
         f" credit policy ({policy_version}). It is being applied to your account and I'll"
         " confirm here once that is done."
     )
@@ -380,28 +380,28 @@ CREDIT_NOT_APPLIED_EARLIER = (
 CREDIT_AMOUNT_REVIEW = " A member of our team will review the amount for this outage."
 
 
-def credit_in_progress_line(amount_inr: str) -> str:
+def credit_in_progress_line(amount_usd: str) -> str:
     return (
-        f" A service credit of INR {amount_inr} for this outage is already being processed and"
+        f" A service credit of ${amount_usd} for this outage is already being processed and"
         " I'll confirm here once it has been applied to your account."
     )
 
 
-def credit_already_applied_line(amount_inr: str) -> str:
+def credit_already_applied_line(amount_usd: str) -> str:
     return (
-        f" A service credit of INR {amount_inr} for this outage has already been applied to"
+        f" A service credit of ${amount_usd} for this outage has already been applied to"
         " your account."
     )
 
 
-def credit_applied(complaint_ref: str, *, amount_inr: str, credit_ref: str | None) -> Reply:
+def credit_applied(complaint_ref: str, *, amount_usd: str, credit_ref: str | None) -> Reply:
     reference = f" (credit reference {credit_ref})" if credit_ref else ""
     return Reply(
-        f"{AI_DISCLOSURE} The service credit of INR {amount_inr} for your outage has been"
+        f"{AI_DISCLOSURE} The service credit of ${amount_usd} for your outage has been"
         f" applied to your account{reference}. It will show on your next bill. Your complaint"
         f" reference is {complaint_ref}.",
         "credit_applied.v1",
-        {"amount_inr": amount_inr, "credit_ref": credit_ref},
+        {"amount_usd": amount_usd, "credit_ref": credit_ref},
     )
 
 

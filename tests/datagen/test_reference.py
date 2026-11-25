@@ -26,7 +26,7 @@ COLUMNS = {
         "consent_outage_notifications", "consent_channel", "consent_updated_at",
     ],
     "services.csv": [
-        "service_id", "customer_id", "service_type", "plan_name", "monthly_fee_inr", "status",
+        "service_id", "customer_id", "service_type", "plan_name", "monthly_fee_usd", "status",
         "address_id", "router_model", "router_serial", "activated_on", "billing_cycle_day",
     ],
     "address_node_map.csv": [
@@ -144,13 +144,13 @@ def test_services_fields_and_plans(data: Dataset, knowledge_dir: Path) -> None:
         assert 1 <= int(svc["billing_cycle_day"]) <= 28
         assert date.fromisoformat(svc["activated_on"]) >= date.fromisoformat(customer["created_on"])
         if svc["service_type"] == "mobile":
-            assert MOBILE[svc["plan_name"]] == svc["monthly_fee_inr"]
+            assert MOBILE[svc["plan_name"]] == svc["monthly_fee_usd"]
             assert svc["router_model"] == ""
             assert svc["router_serial"] == ""
             continue
         assert svc["service_type"] == "broadband"
         plans = SME_BB if customer["segment"] == "sme" else CONSUMER_BB
-        assert plans[svc["plan_name"]] == svc["monthly_fee_inr"]
+        assert plans[svc["plan_name"]] == svc["monthly_fee_usd"]
         assert svc["router_model"] in models
         assert svc["router_serial"]
 

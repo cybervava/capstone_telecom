@@ -43,7 +43,7 @@ SERVICE_COLUMNS = (
     "customer_id",
     "service_type",
     "plan_name",
-    "monthly_fee_inr",
+    "monthly_fee_usd",
     "status",
     "address_id",
     "router_model",

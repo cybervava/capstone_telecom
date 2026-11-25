@@ -65,7 +65,7 @@ assumption A4). The controls do not depend on its numbers.
 
 | Rule | Control | Shown by |
 |---|---|---|
-| A credit follows the policy, to the paisa | One engine computes eligibility, amount and approval level from the policy file | `evals/reports/credit_policy.md`: 4,050 of 4,050 cases |
+| A credit follows the policy, to the cent | One engine computes eligibility, amount and approval level from the policy file | `evals/reports/credit_policy.md`: 4,050 of 4,050 cases |
 | A credit above the limit needs a supervisor; at or under it, it is applied without review (decision D3, 23 Nov; one setting makes those wait for an agent too) | The approval is bound to the hash of the request that was shown; the role is checked at the API and again in the repository; a rejection must give its reason | `tests/integration/api/test_approvals_api.py`; attack suite C1 to C5 |
 | A credit is applied once | One credit per service per outage, written with an idempotency key | `tests/e2e/test_credit_lifecycle.py` |
 

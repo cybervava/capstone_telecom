@@ -2,7 +2,7 @@
 
 The expected amounts are worked out by hand from the placeholder policy
 (``data/policies/credit_policy.v0.yaml``): fee x billable hours x tier multiplier / 720, at
-least INR 50 for broadband, rounded to the paisa. They are not taken from the engine under test.
+least $50 for broadband, rounded to the cent. They are not taken from the engine under test.
 """
 
 from __future__ import annotations

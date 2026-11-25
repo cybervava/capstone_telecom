@@ -19,7 +19,7 @@ REFERENCE_TABLES: dict[str, str] = {
         consent_channel TEXT NOT NULL, consent_updated_at TEXT NOT NULL""",
     "services": """service_id TEXT PRIMARY KEY, customer_id TEXT NOT NULL,
         service_type TEXT NOT NULL, plan_name TEXT NOT NULL, monthly_fee TEXT NOT NULL,
-        monthly_fee_paise INTEGER NOT NULL, status TEXT NOT NULL, address_id TEXT NOT NULL,
+        monthly_fee_cents INTEGER NOT NULL, status TEXT NOT NULL, address_id TEXT NOT NULL,
         router_model TEXT, router_serial TEXT, activated_on TEXT NOT NULL,
         billing_cycle_day INTEGER NOT NULL""",
     "truth": """service_id TEXT PRIMARY KEY, true_node_id TEXT NOT NULL,

@@ -32,17 +32,17 @@ async def test_eligible_outage_is_offered_a_credit_that_waits_for_approval_then_
     platform: Platform, simulator: Simulator
 ) -> None:
     customer = await premium_customer(simulator)
-    amount = expected_credit(customer["monthly_fee_inr"], 300)
+    amount = expected_credit(customer["monthly_fee_usd"], 300)
 
     intake, outage, restored = await restored_after(platform, simulator, customer, 300)
 
-    assert f"service credit of INR {amount}" in restored
+    assert f"service credit of ${amount}" in restored
     assert "(v0-placeholder)" in restored
     assert "sent for approval" in restored
     assert await credits_of(simulator, customer) == []  # proposed, not applied
     (approval,) = await pending(platform, "agent")
     assert approval.required_role == "agent"
-    assert approval.summary["amount_inr"] == str(amount)
+    assert approval.summary["amount_usd"] == str(amount)
     assert approval.summary["working"]["billable_hours"] == 5
     assert approval.summary["complaint_ref"] == intake.complaint_ref
 
@@ -50,14 +50,14 @@ async def test_eligible_outage_is_offered_a_credit_that_waits_for_approval_then_
     await platform.settle()
 
     (credit,) = await credits_of(simulator, customer)
-    assert Decimal(credit["amount_inr"]) == amount
+    assert Decimal(credit["amount_usd"]) == amount
     assert (credit["outage_id"], credit["policy_version"]) == (
         outage["outage_id"],
         "v0-placeholder",
     )
     assert (credit["approved_by"], credit["complaint_ref"]) == ("staff-1", intake.complaint_ref)
     *_, confirmation = await platform.replies(intake.contact_id)
-    assert f"service credit of INR {amount}" in confirmation
+    assert f"service credit of ${amount}" in confirmation
     assert f"credit reference {credit['credit_id']}" in confirmation
     assert await handoff_reasons(platform) == []
     trail = await platform.runtime.audit.for_contact(intake.contact_id)
@@ -71,17 +71,17 @@ async def test_eligible_outage_is_offered_a_credit_that_waits_for_approval_then_
 async def test_outage_length_decides_who_must_approve_the_credit(
     platform: Platform, simulator: Simulator, above_limit: bool, role: str
 ) -> None:
-    """The third input change of the M2 gate: one hour more moves the credit past INR 500."""
+    """The third input change of the M2 gate: one hour more moves the credit past $500."""
     customer = await premium_customer(simulator)
-    minutes = minutes_for(customer["monthly_fee_inr"], above_limit=above_limit)
-    amount = expected_credit(customer["monthly_fee_inr"], minutes)
+    minutes = minutes_for(customer["monthly_fee_usd"], above_limit=above_limit)
+    amount = expected_credit(customer["monthly_fee_usd"], minutes)
     assert (amount > SUPERVISOR_ABOVE) is above_limit
 
     await restored_after(platform, simulator, customer, minutes)
 
     (approval,) = await pending(platform, "supervisor")
     assert approval.required_role == role
-    assert approval.summary["amount_inr"] == str(amount)
+    assert approval.summary["amount_usd"] == str(amount)
     assert len(await pending(platform, "agent")) == (0 if above_limit else 1)
 
 
@@ -89,7 +89,7 @@ async def test_agent_cannot_approve_what_needs_a_supervisor(
     platform: Platform, simulator: Simulator
 ) -> None:
     customer = await premium_customer(simulator)
-    minutes = minutes_for(customer["monthly_fee_inr"], above_limit=True)
+    minutes = minutes_for(customer["monthly_fee_usd"], above_limit=True)
     await restored_after(platform, simulator, customer, minutes)
     (approval,) = await pending(platform, "supervisor")
 

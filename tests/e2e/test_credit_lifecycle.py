@@ -67,7 +67,7 @@ async def on_record(
         level=level,
         key=f"credit:{customer['service_id']}:{outage['outage_id']}",
         inputs={
-            "monthly_fee_inr": customer["monthly_fee_inr"],
+            "monthly_fee_usd": customer["monthly_fee_usd"],
             "service_type": "broadband",
             "billing_cycle_day": 10,
         },
@@ -75,7 +75,7 @@ async def on_record(
         customer_id=customer["customer_id"],
         service_id=customer["service_id"],
         outage_id=outage["outage_id"],
-        amount_inr=amount,
+        amount_usd=amount,
     )
 
 
@@ -166,9 +166,9 @@ async def test_outcome_of_a_credit_is_told_after_the_contact_went_to_a_person(
     await platform.settle()  # a second pass changes nothing: the news is told once
 
     replies = await platform.replies(intake.contact_id)
-    amount = expected_credit(customer["monthly_fee_inr"], 300)
+    amount = expected_credit(customer["monthly_fee_usd"], 300)
     if approve:
-        applied = f"credit of INR {amount} for your outage has been applied"
+        applied = f"credit of ${amount} for your outage has been applied"
         assert sum(applied in reply for reply in replies) == 1
         assert "CREDIT_NOT_APPLIED" not in await handoff_reasons(platform)
         return
@@ -178,7 +178,7 @@ async def test_outcome_of_a_credit_is_told_after_the_contact_went_to_a_person(
         for item in await platform.runtime.handoffs.list_open()
         if item.reason == "CREDIT_NOT_APPLIED"
     )
-    assert f"INR {amount}" in follow_up.summary
+    assert f"${amount}" in follow_up.summary
     assert "REJECTED" in follow_up.summary
 
 
@@ -191,7 +191,7 @@ async def test_credit_on_record_with_another_amount_stands_and_the_difference_is
     """Worked out again, the credit comes to something else. What was frozen is what can be
     approved and applied, so that is the amount the customer hears, at every step."""
     customer = await premium_customer(simulator)
-    worked_out_now = expected_credit(customer["monthly_fee_inr"], 300)
+    worked_out_now = expected_credit(customer["monthly_fee_usd"], 300)
     intake, outage = await in_outage(platform, simulator, customer, 300)
     await on_record(platform, customer, outage, intake.contact_id, "75.00")
     assert worked_out_now != Decimal("75.00")
@@ -199,23 +199,23 @@ async def test_credit_on_record_with_another_amount_stands_and_the_difference_is
     await resolve(platform, simulator, outage)
 
     *_, restored = await platform.replies(intake.contact_id)
-    assert "credit of INR 75.00 for this outage is already being processed" in restored
-    assert f"INR {worked_out_now}" not in restored
+    assert "credit of $75.00 for this outage is already being processed" in restored
+    assert f"${worked_out_now}" not in restored
     assert "review the amount" in restored
     (review,) = await platform.runtime.handoffs.list_open()
     assert review.reason == "CREDIT_REVIEW"
-    assert "On record: INR 75.00" in review.summary
-    assert f"worked out now: INR {worked_out_now}" in review.summary
+    assert "On record: $75.00" in review.summary
+    assert f"worked out now: ${worked_out_now}" in review.summary
 
     (approval,) = await pending(platform, "agent")
-    assert approval.summary["amount_inr"] == "75.00"
+    assert approval.summary["amount_usd"] == "75.00"
     await decide(platform, approval, approve=True, role="agent")
     await platform.settle()
 
     (credit,) = await credits_of(simulator, customer)
-    assert Decimal(credit["amount_inr"]) == Decimal("75.00")
+    assert Decimal(credit["amount_usd"]) == Decimal("75.00")
     *_, confirmation = await platform.replies(intake.contact_id)
-    assert "credit of INR 75.00 for your outage has been applied" in confirmation
+    assert "credit of $75.00 for your outage has been applied" in confirmation
 
 
 @pytest.mark.parametrize(
@@ -224,7 +224,7 @@ async def test_credit_on_record_with_another_amount_stands_and_the_difference_is
         ("REJECTED", "looked at earlier and has not been applied", True),
         ("EXPIRED", "looked at earlier and has not been applied", True),
         ("FAILED", "looked at earlier and has not been applied", True),
-        ("SUCCEEDED", "credit of INR {amount} for this outage has already been applied", False),
+        ("SUCCEEDED", "credit of ${amount} for this outage has already been applied", False),
         ("SKIPPED", "A service credit for this outage is already on your account", False),
     ],
 )
@@ -234,7 +234,7 @@ async def test_credit_that_ended_earlier_is_reported_as_it_ended_and_not_waited_
     """An earlier conversation of the same customer got to this outage first and its credit
     has ended, one way or another. This one says what became of it and waits for nothing."""
     customer = await premium_customer(simulator)
-    amount = str(expected_credit(customer["monthly_fee_inr"], 300))
+    amount = str(expected_credit(customer["monthly_fee_usd"], 300))
     intake, outage = await in_outage(platform, simulator, customer, 300)
     earlier = await platform.contact(
         "no internet since morning", authenticated_customer_id=customer["customer_id"]
@@ -272,7 +272,7 @@ async def test_credit_applied_through_another_conversation_is_not_proposed_again
     platform: Platform, simulator: Simulator
 ) -> None:
     customer = await premium_customer(simulator)
-    amount = str(expected_credit(customer["monthly_fee_inr"], 300))
+    amount = str(expected_credit(customer["monthly_fee_usd"], 300))
     intake, outage = await in_outage(
         platform, simulator, customer, 300, text="internet down, will I get a refund?"
     )
@@ -325,7 +325,7 @@ async def test_credit_rejected_earlier_and_now_worth_something_else_is_reviewed_
         if item.reason == "CREDIT_REVIEW" and item.contact_id == intake.contact_id
     ]
     assert len(reviews) == 1
-    assert f"On record: INR 75.00 ({rejected.action_key}, REJECTED)" in reviews[0].summary
+    assert f"On record: $75.00 ({rejected.action_key}, REJECTED)" in reviews[0].summary
 
 
 # --- the customer writes as the outcome arrives --------------------------------------------------

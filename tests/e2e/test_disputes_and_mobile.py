@@ -213,7 +213,7 @@ async def test_mobile_customer_on_a_working_tower_goes_to_a_person_without_route
 async def test_mobile_outage_is_credited_by_the_mobile_rule(
     platform: Platform, simulator: Simulator, minutes: int, credited: bool
 ) -> None:
-    """A day at least, INR 25 at least, by the placeholder policy: not the broadband rule."""
+    """A day at least, $25 at least, by the placeholder policy: not the broadband rule."""
     person = await customer(simulator, "mobile")
     intake, outage, _ = await in_an_outage(
         platform,
@@ -237,11 +237,11 @@ async def test_mobile_outage_is_credited_by_the_mobile_rule(
         assert await pending(platform, "supervisor") == []
         return
     hours = -(-minutes // 60)
-    amount = max(Decimal(person["monthly_fee_inr"]) * hours / 720, Decimal("25.00"))
+    amount = max(Decimal(person["monthly_fee_usd"]) * hours / 720, Decimal("25.00"))
     expected = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    assert f"service credit of INR {expected}" in restored
+    assert f"service credit of ${expected}" in restored
     (approval,) = await pending(platform, "agent")
     await decide(platform, approval, approve=True, role="agent")
     await platform.settle()
     (credit,) = await credits_of(simulator, person)
-    assert Decimal(credit["amount_inr"]) == expected
+    assert Decimal(credit["amount_usd"]) == expected

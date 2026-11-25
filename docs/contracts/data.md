@@ -60,7 +60,7 @@ address is truly served by.
 | `customer_id` | str | FK |
 | `service_type` | enum | `broadband`, `mobile` |
 | `plan_name` | str | See plan table |
-| `monthly_fee_inr` | decimal(2) | e.g. `799.00` |
+| `monthly_fee_usd` | decimal(2) | e.g. `799.00` |
 | `status` | enum | `active`, `suspended` |
 | `address_id` | str | FK; installation address (broadband) or home address (mobile) |
 | `router_model` | str | One of the 12 `model_id`s in `router_models.json`; empty for mobile |

@@ -50,13 +50,13 @@ def make_input(
 ) -> CreditInput:
     base = CreditInput(
         service_type=service_type,
-        monthly_fee_inr=Decimal(fee),
+        monthly_fee_usd=Decimal(fee),
         service_active=True,
         affected=True,
         planned=False,
         started_at=STARTED,
         resolved_at=None if minutes is None else STARTED + timedelta(minutes=minutes),
-        prior_outage_credits_in_cycle_inr=Decimal(prior),
+        prior_outage_credits_in_cycle_usd=Decimal(prior),
         already_credited_for_outage=False,
     )
     return replace(base, **overrides)  # type: ignore[arg-type]
@@ -93,14 +93,14 @@ def test_amount_matches_hand_calculation(
 
     assert decision.eligible
     assert decision.reason is CreditReason.ELIGIBLE
-    assert decision.amount_inr == Decimal(expected)
+    assert decision.amount_usd == Decimal(expected)
     assert decision.requires_supervisor is supervisor
 
 
-def test_amount_is_always_quantised_to_the_paisa(policy: CreditPolicy) -> None:
+def test_amount_is_always_quantised_to_the_cent(policy: CreditPolicy) -> None:
     decision = evaluate_credit(policy, make_input(fee="1234.56", minutes=777))
 
-    assert decision.amount_inr == decision.amount_inr.quantize(Decimal("0.01"))
+    assert decision.amount_usd == decision.amount_usd.quantize(Decimal("0.01"))
 
 
 def test_mobile_uses_its_own_threshold_tiers_and_floor(policy: CreditPolicy) -> None:
@@ -109,7 +109,7 @@ def test_mobile_uses_its_own_threshold_tiers_and_floor(policy: CreditPolicy) -> 
         policy, make_input(fee="499.00", minutes=1500, service_type=ServiceType.MOBILE)
     )
 
-    assert decision.amount_inr == Decimal("25.00")
+    assert decision.amount_usd == Decimal("25.00")
 
 
 def test_mobile_outage_shorter_than_a_day_earns_nothing(policy: CreditPolicy) -> None:
@@ -128,14 +128,14 @@ def test_cycle_cap_reduces_the_credit_by_what_was_already_paid(policy: CreditPol
     # 100 h, tier 2.0: 999 / 720 * 100 * 2 = 277.50; cap 999.00 - prior 800.00 leaves 199.00
     decision = evaluate_credit(policy, make_input(fee="999.00", minutes=6000, prior="800.00"))
 
-    assert decision.amount_inr == Decimal("199.00")
+    assert decision.amount_usd == Decimal("199.00")
     assert decision.calculation.cap_applied
 
 
 def test_cap_wins_over_the_minimum_credit(policy: CreditPolicy) -> None:
     decision = evaluate_credit(policy, make_input(fee="999.00", minutes=240, prior="969.00"))
 
-    assert decision.amount_inr == Decimal("30.00")
+    assert decision.amount_usd == Decimal("30.00")
     assert decision.calculation.floor_applied
     assert decision.calculation.cap_applied
 
@@ -145,7 +145,7 @@ def test_exhausted_cap_makes_the_outage_ineligible(policy: CreditPolicy) -> None
 
     assert not decision.eligible
     assert decision.reason is CreditReason.CAP_REACHED
-    assert decision.amount_inr == Decimal("0.00")
+    assert decision.amount_usd == Decimal("0.00")
 
 
 # --- eligibility -------------------------------------------------------------------------------
@@ -172,7 +172,7 @@ def test_ineligible_cases_pay_nothing_and_say_why(
 
     assert not decision.eligible
     assert decision.reason is reason
-    assert decision.amount_inr == Decimal("0.00")
+    assert decision.amount_usd == Decimal("0.00")
     assert not decision.requires_supervisor
 
 
@@ -299,7 +299,7 @@ def test_both_ways_of_asking_who_must_approve_agree(policy: CreditPolicy, review
 
         assert decision.eligible
         assert approval_level(decision, review_all=review_all) is required_approval(
-            policy, decision.amount_inr, review_all=review_all
+            policy, decision.amount_usd, review_all=review_all
         )
 
 
@@ -329,9 +329,9 @@ def test_cap_check_at_application_matches_the_cap_used_for_pricing(
         within_cycle_cap(
             policy,
             service_type=ServiceType.BROADBAND,
-            monthly_fee_inr=Decimal("999.00"),
-            credited_in_cycle_inr=Decimal(credited),
-            amount_inr=Decimal(amount),
+            monthly_fee_usd=Decimal("999.00"),
+            credited_in_cycle_usd=Decimal(credited),
+            amount_usd=Decimal(amount),
         )
         is fits
     )
@@ -346,9 +346,9 @@ def test_credit_priced_at_what_the_cap_leaves_fits_under_it(policy: CreditPolicy
     assert within_cycle_cap(
         policy,
         service_type=facts.service_type,
-        monthly_fee_inr=facts.monthly_fee_inr,
-        credited_in_cycle_inr=facts.prior_outage_credits_in_cycle_inr,
-        amount_inr=decision.amount_inr,
+        monthly_fee_usd=facts.monthly_fee_usd,
+        credited_in_cycle_usd=facts.prior_outage_credits_in_cycle_usd,
+        amount_usd=decision.amount_usd,
     )
 
 
@@ -358,9 +358,9 @@ def test_service_the_policy_does_not_cover_fits_under_no_cap(policy: CreditPolic
     assert not within_cycle_cap(
         uncovered,
         service_type=ServiceType.BROADBAND,
-        monthly_fee_inr=Decimal("999.00"),
-        credited_in_cycle_inr=Decimal("0.00"),
-        amount_inr=Decimal("1.00"),
+        monthly_fee_usd=Decimal("999.00"),
+        credited_in_cycle_usd=Decimal("0.00"),
+        amount_usd=Decimal("1.00"),
     )
 
 

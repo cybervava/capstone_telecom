@@ -85,7 +85,7 @@ def test_profile(client: TestClient) -> None:
         "service_id": "S0000001",
         "service_type": "broadband",
         "plan_name": "Fibre 300",
-        "monthly_fee_inr": "999.00",
+        "monthly_fee_usd": "999.00",
         "status": "active",
         "address": {
             "address_id": "A0000001",

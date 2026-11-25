@@ -44,7 +44,7 @@ CUSTOMER_COLUMNS = (
     "consent_outage_notifications", "consent_channel", "consent_updated_at",
 )  # fmt: skip
 SERVICE_COLUMNS = (
-    "service_id", "customer_id", "service_type", "plan_name", "monthly_fee_inr", "status",
+    "service_id", "customer_id", "service_type", "plan_name", "monthly_fee_usd", "status",
     "address_id", "router_model", "router_serial", "activated_on", "billing_cycle_day",
 )  # fmt: skip
 

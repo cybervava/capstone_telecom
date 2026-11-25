@@ -1,12 +1,12 @@
 # Credits match the policy
 
-**What this proves.** For every case of a grid on the policy's boundaries the credit engine gives the same eligibility, the same reason for a refusal, the same amount to the paisa and the same approval level as an independent calculation in exact arithmetic, and as amounts worked out by hand.
+**What this proves.** For every case of a grid on the policy's boundaries the credit engine gives the same eligibility, the same reason for a refusal, the same amount to the cent and the same approval level as an independent calculation in exact arithmetic, and as amounts worked out by hand.
 
 **Target.** 100% of cases match (brief: credits match policy 100%).
 
 **Result (met).** 4050 of 4050 grid cases match (100.0%); 14 of 14 hand-worked amounts match.
 
-Written by the run of 2026-11-17T01:25:07+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: none (no language model takes part in this measurement).
+Written by the run of 2026-11-25T17:31:12+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: none (no language model takes part in this measurement).
 
 ## Grid, by expected outcome
 

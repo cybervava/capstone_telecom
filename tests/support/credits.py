@@ -33,7 +33,7 @@ KEY = "credit:S1:OUT-1"
 BODY = {
     "customer_id": "C1",
     "service_id": "S1",
-    "amount_inr": "120.50",
+    "amount_usd": "120.50",
     "reason_code": "OUTAGE_CREDIT",
     "outage_id": "OUT-1",
     "policy_version": "v0-placeholder",
@@ -42,7 +42,7 @@ BODY = {
 # What the proposal records beside the request: the service the cap is worked out for. The
 # placeholder policy caps a cycle's outage credits at one monthly fee.
 MONTHLY_FEE = Decimal("999.00")
-INPUTS = {"monthly_fee_inr": "999.00", "service_type": "broadband", "billing_cycle_day": 10}
+INPUTS = {"monthly_fee_usd": "999.00", "service_type": "broadband", "billing_cycle_day": 10}
 
 
 def policy() -> CreditPolicy:
@@ -54,7 +54,7 @@ def credit(**overrides: Any) -> CreditDto:
         "credit_id": "CR-1",
         "customer_id": "C1",
         "service_id": "S1",
-        "amount_inr": Decimal("120.50"),
+        "amount_usd": Decimal("120.50"),
         "reason_code": "OUTAGE_CREDIT",
         "outage_id": "OUT-1",
         "policy_version": "v0-placeholder",

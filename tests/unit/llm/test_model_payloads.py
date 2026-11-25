@@ -130,7 +130,7 @@ def profile(index: int, rng: random.Random, **changed: Any) -> CustomerProfile:
                 "service_id": service_id(index),
                 "service_type": "broadband",
                 "plan_name": "Fibre 100",
-                "monthly_fee_inr": "599.00",
+                "monthly_fee_usd": "599.00",
                 "status": "active",
                 "address": address,
                 "router_model": "AL-AX18",

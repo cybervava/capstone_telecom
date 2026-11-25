@@ -10,8 +10,8 @@ whether a credit is owed and how it is worked out.
 
 One thing does differ between the segments, and is reported instead of hidden: the monthly
 fee. A credit is a share of the fee, so its amount differs, and with the amount the level of
-approval it needs (above INR 500, a supervisor). The same rule gives every customer the same
-share for the same outage, except where the policy's minimum of INR 50 lifts a small credit.
+approval it needs (above $500, a supervisor). The same rule gives every customer the same
+share for the same outage, except where the policy's minimum of $50 lifts a small credit.
 """
 
 from __future__ import annotations
@@ -94,14 +94,14 @@ def after_an_outage_of(
         mine = [
             item for item in await pending(platform, "supervisor") if item.approval_id not in before
         ]
-        fee = Decimal(customer["monthly_fee_inr"])
-        owed = expected_credit(customer["monthly_fee_inr"], minutes)
-        amount = Decimal(mine[0].summary["amount_inr"]) if mine else None
+        fee = Decimal(customer["monthly_fee_usd"])
+        owed = expected_credit(customer["monthly_fee_usd"], minutes)
+        amount = Decimal(mine[0].summary["amount_usd"]) if mine else None
         return Seen(
             (
                 await _told(platform, contact),
                 await _handed(platform, contact),
-                # Owed by the policy's own rule, to the paisa, and waiting for a person.
+                # Owed by the policy's own rule, to the cent, and waiting for a person.
                 "the policy's amount"
                 if amount == owed
                 else f"{amount} where the policy says {owed}",
@@ -298,8 +298,8 @@ def write_report(rows: dict[str, dict[str, list[Seen]]]) -> None:
             [
                 "Situation",
                 "Segment",
-                "Monthly fee (INR)",
-                "Credit (INR)",
+                "Monthly fee ($)",
+                "Credit ($)",
                 "Share of the fee",
                 "Approved by",
             ],
@@ -307,7 +307,7 @@ def write_report(rows: dict[str, dict[str, list[Seen]]]) -> None:
         )
         report.assumptions.append(
             "The credit is the same share of the monthly fee for the same outage in both"
-            f" segments, except where the policy's minimum lifts it. Above INR {SUPERVISOR_ABOVE}"
+            f" segments, except where the policy's minimum lifts it. Above ${SUPERVISOR_ABOVE}"
             " a supervisor approves instead of an agent: SME plans cost more, so their"
             " credits reach that level sooner. If supervisors are slower than agents, SME"
             " customers wait longer for a larger credit. That follows from the amount, is"

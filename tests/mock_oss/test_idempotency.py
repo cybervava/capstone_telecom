@@ -43,7 +43,7 @@ CREATORS = [
         "credit",
         lambda _: "/billing/v1/credits",
         credit_body,
-        lambda: credit_body(amount_inr="1.00"),
+        lambda: credit_body(amount_usd="1.00"),
         201,
         "credits",
         lambda k: f"/billing/v1/credits/by-key/{k}",

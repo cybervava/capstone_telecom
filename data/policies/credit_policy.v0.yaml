@@ -11,16 +11,18 @@ policy_id: skylink-service-credit
 version: v0-placeholder
 status: placeholder
 effective_from: 2026-04-01
-currency: INR
+currency: USD
 
-# Amounts are rounded once, at the end, to the paisa.
+# Amounts are rounded once, at the end, to the cent.
 rounding:
   quantum: "0.01"
   mode: ROUND_HALF_UP
 
 approval:
-  # Brief: "credits above INR 500 need supervisor approval". Exactly 500.00 does not.
-  supervisor_above_inr: "500.00"
+  # The brief's limit: a credit above 500 needs supervisor approval. Exactly 500.00 does not.
+  # (The brief gives its amounts in INR. Since the project review of 25 Nov 2026 the same
+  # figures are shown in US dollars; nothing is converted.)
+  supervisor_above_usd: "500.00"
 
 # hourly rate = monthly fee / hours_in_month
 hours_in_month: 720
@@ -40,7 +42,7 @@ services:
       - {from_minutes: 1440, multiplier: "1.5"}
       - {from_minutes: 4320, multiplier: "2.0"}
     # An eligible outage never earns less than this (unless the cycle cap is lower).
-    minimum_credit_inr: "50.00"
+    minimum_credit_usd: "50.00"
     # Outage credits in one billing cycle never exceed this share of the monthly fee.
     cap_fraction_of_monthly_fee: "1.0"
   mobile:
@@ -48,5 +50,5 @@ services:
     tiers:
       - {from_minutes: 1440, multiplier: "1.0"}
       - {from_minutes: 4320, multiplier: "1.5"}
-    minimum_credit_inr: "25.00"
+    minimum_credit_usd: "25.00"
     cap_fraction_of_monthly_fee: "1.0"

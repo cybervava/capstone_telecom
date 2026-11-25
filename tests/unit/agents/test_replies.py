@@ -262,7 +262,7 @@ def test_credit_sentence_states_amount_policy_and_what_happens_next() -> None:
     waiting = replies.credit_line("120.50", policy_version="v0-placeholder", needs_approval=True)
     direct = replies.credit_line("50.00", policy_version="v0-placeholder", needs_approval=False)
 
-    assert "service credit of INR 120.50" in waiting
+    assert "service credit of $120.50" in waiting
     assert "(v0-placeholder)" in waiting
     assert "sent for approval" in waiting
     assert "It is being applied to your account" in direct
@@ -295,15 +295,15 @@ def test_restored_reply_carries_the_credit_sentence_before_the_reference() -> No
         REF, outage_id="OUT-1", resolved_at=NOW, service_type="broadband", about_credit=line
     )
 
-    assert reply.text.index("service credit of INR 120.50") < reply.text.index(REF)
+    assert reply.text.index("service credit of $120.50") < reply.text.index(REF)
 
 
 @pytest.mark.parametrize(
     ("build", "phrase"),
     [
         (
-            lambda: replies.credit_applied(REF, amount_inr="120.50", credit_ref="CR-9"),
-            "INR 120.50 for your outage has been applied to your account (credit reference CR-9)",
+            lambda: replies.credit_applied(REF, amount_usd="120.50", credit_ref="CR-9"),
+            "$120.50 for your outage has been applied to your account (credit reference CR-9)",
         ),
         (lambda: replies.credit_already_there(REF), "already on your account"),
         (lambda: replies.credit_not_applied(REF), "has not been applied"),
@@ -328,10 +328,10 @@ def test_unconfirmed_credit_is_not_said_to_be_applied_or_not_applied() -> None:
 
 
 def test_credit_already_on_record_is_described_by_its_own_amount() -> None:
-    assert "INR 75.00 for this outage is already being processed" in (
+    assert "$75.00 for this outage is already being processed" in (
         replies.credit_in_progress_line("75.00")
     )
-    assert "INR 75.00 for this outage has already been applied" in (
+    assert "$75.00 for this outage has already been applied" in (
         replies.credit_already_applied_line("75.00")
     )
     for line in (

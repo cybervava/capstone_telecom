@@ -110,9 +110,9 @@ def _network_replies() -> dict[str, Reply]:
 
 def _other_replies() -> dict[str, Reply]:
     said: dict[str, Reply] = {
-        "credit_applied": replies.credit_applied(REF, amount_inr="120.50", credit_ref="CR-1"),
+        "credit_applied": replies.credit_applied(REF, amount_usd="120.50", credit_ref="CR-1"),
         "credit_applied/no reference": replies.credit_applied(
-            REF, amount_inr="120.50", credit_ref=None
+            REF, amount_usd="120.50", credit_ref=None
         ),
         "credit_already_there": replies.credit_already_there(REF),
         "credit_not_applied": replies.credit_not_applied(REF),

@@ -57,7 +57,7 @@ async def test_approver_is_shown_the_frozen_request_and_its_hash(
 
     assert item["required_role"] == "agent"
     assert item["request_hash"] == action.request_hash
-    assert item["request"]["amount_inr"] == "120.50"
+    assert item["request"]["amount_usd"] == "120.50"
     assert item["request"]["outage_id"] == "OUT-1"
     assert item["status"] == "PENDING"
 
@@ -157,7 +157,7 @@ async def test_decision_must_quote_the_hash_that_was_shown_and_can_be_taken_only
         {"decision": "maybe", "request_hash": "0" * 64},
         {"decision": "approve", "request_hash": "not-a-hash"},
         {"decision": "approve"},
-        {"decision": "approve", "request_hash": "0" * 64, "amount_inr": "9999.00"},
+        {"decision": "approve", "request_hash": "0" * 64, "amount_usd": "9999.00"},
         {"decision": "approve", "request_hash": "0" * 64, "note": "x" * 501},
     ],
     ids=["unknown decision", "malformed hash", "no hash", "extra field", "note too long"],

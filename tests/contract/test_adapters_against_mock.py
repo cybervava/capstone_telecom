@@ -30,7 +30,7 @@ async def test_triage_identity_can_read_crm(gateway: OssGateway, simulator: Simu
     assert "*" in lookup.value.matches[0].phone_masked
     assert isinstance(profile, Ok)
     assert any(s.service_id == customer["service_id"] for s in profile.value.services)
-    assert profile.value.services[0].monthly_fee_inr > 0
+    assert profile.value.services[0].monthly_fee_usd > 0
 
 
 async def test_diagnostics_identity_cannot_read_crm(
@@ -293,7 +293,7 @@ async def test_write_lost_on_the_way_back_is_ambiguous_and_safe_to_replay(
     body = {
         "customer_id": customer["customer_id"],
         "service_id": customer["service_id"],
-        "amount_inr": "120.50",
+        "amount_usd": "120.50",
         "reason_code": "OUTAGE_CREDIT",
         "outage_id": "OUT-1",
         "policy_version": "v0-placeholder",
@@ -311,7 +311,7 @@ async def test_write_lost_on_the_way_back_is_ambiguous_and_safe_to_replay(
     assert lost.outcome_unknown
     assert isinstance(replay, Ok)
     assert replay.replayed
-    assert str(replay.value.amount_inr) == "120.50"
+    assert str(replay.value.amount_usd) == "120.50"
     assert (await simulator.state())["tables"]["credits"] == 1
 
 
@@ -325,7 +325,7 @@ async def test_same_key_with_a_changed_body_is_a_conflict(
     body = {
         "customer_id": customer["customer_id"],
         "service_id": customer["service_id"],
-        "amount_inr": "100.00",
+        "amount_usd": "100.00",
         "reason_code": "OUTAGE_CREDIT",
         "outage_id": "OUT-2",
         "policy_version": "v0-placeholder",
@@ -335,7 +335,7 @@ async def test_same_key_with_a_changed_body_is_a_conflict(
 
     await billing.apply_credit(body, idempotency_key="credit:k", correlation_id=CORR)
     changed = await billing.apply_credit(
-        {**body, "amount_inr": "900.00"}, idempotency_key="credit:k", correlation_id=CORR
+        {**body, "amount_usd": "900.00"}, idempotency_key="credit:k", correlation_id=CORR
     )
 
     assert isinstance(changed, Err)

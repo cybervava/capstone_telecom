@@ -49,7 +49,10 @@ def _rows(path: Path, columns: Sequence[str]) -> Iterator[dict[str, str]]:
         reader = csv.DictReader(fh)
         missing = set(columns) - set(reader.fieldnames or [])
         if missing:
-            raise SeedError(f"{path.name}: missing columns {sorted(missing)}")
+            raise SeedError(
+                f"{path.name}: missing columns {sorted(missing)} (a pack written by another"
+                " version of the generator is not read: write it again with `make data`)"
+            )
         try:
             yield from reader
         except csv.Error as exc:
@@ -141,7 +144,7 @@ SERVICE_COLS = [
     "customer_id",
     "service_type",
     "plan_name",
-    "monthly_fee_inr",
+    "monthly_fee_usd",
     "status",
     "address_id",
     "router_model",
@@ -169,7 +172,7 @@ class _ServiceLoader:
         self.faults: list[Row] = []
 
     def __call__(self, r: dict[str, str]) -> Row:
-        fee, paise = _money(r["monthly_fee_inr"])
+        fee, cents = _money(r["monthly_fee_usd"])
         if r["service_type"] == "broadband" and is_line_faulted(
             r["service_id"], seed=self.seed, rate=self.rate
         ):
@@ -180,7 +183,7 @@ class _ServiceLoader:
             r["service_type"],
             r["plan_name"],
             fee,
-            paise,
+            cents,
             r["status"],
             r["address_id"],
             r["router_model"] or None,

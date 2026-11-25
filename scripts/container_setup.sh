@@ -8,7 +8,11 @@
 # step, otherwise it would refuse the restarted feed and write to tickets that no longer exist.
 set -eu
 
-DATA_DIR=/data/generated
+# The pack is kept under the version of the generator that wrote it. A release whose generator
+# writes other columns generates its own pack, and a release that is rolled back to still
+# finds the one it wrote (releases before 1.1.0 kept theirs at the top of the volume).
+PACK_VERSION="$(python -c 'from skylink_datagen.config import GENERATOR_VERSION; print(GENERATOR_VERSION)')"
+DATA_DIR="/data/generated/$PACK_VERSION"
 
 if [ ! -f "$DATA_DIR/manifest.json" ]; then
   skylink-datagen generate --out "$DATA_DIR" --customers "${CUSTOMERS:-40000}" --seed 42

@@ -230,7 +230,7 @@ async def _agent_keys_past_their_scopes(scene: Scene) -> Outcome:
     credit = {
         "customer_id": customer["customer_id"],
         "service_id": customer["service_id"],
-        "amount_inr": "5000.00",
+        "amount_usd": "5000.00",
         "reason_code": "OUTAGE_CREDIT",
         "policy_version": "none",
         "complaint_ref": "SKL-ATTACK-SUITE",

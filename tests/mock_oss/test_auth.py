@@ -28,7 +28,7 @@ ENDPOINTS: list[tuple[str, str, dict[str, object] | None, str, bool]] = [
         {
             "customer_id": "C0000001",
             "service_id": "S0000001",
-            "amount_inr": "10.00",
+            "amount_usd": "10.00",
             "reason_code": "OUTAGE",
             "outage_id": None,
             "policy_version": "v0",

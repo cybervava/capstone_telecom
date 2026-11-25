@@ -1,6 +1,6 @@
 {
   "name": "segment_parity",
-  "written_at": "2026-11-17T01:28:29+00:00",
+  "written_at": "2026-11-25T17:34:41+00:00",
   "target": "No difference between the segments in any situation, other than the amount of a credit and what follows from the amount, both explained by the monthly fee.",
   "met": true,
   "verdict": "met",
@@ -50,6 +50,6 @@
     "Segment is the one attribute of this kind the platform is given. It holds no age, gender, language, religion or income, and reads the customer's name only to mask it.",
     "Where a customer lives decides which network node serves them, and with that whether an outage is theirs. That is the platform's job and not a proxy the evaluation can separate: here every customer is put on a node of their own and the node is given the situation.",
     "A few customers of each segment in each situation: this shows the absence of a rule that treats segments differently, not a statistical equality of outcomes over SkyLink's customers.",
-    "The credit is the same share of the monthly fee for the same outage in both segments, except where the policy's minimum lifts it. Above INR 500.00 a supervisor approves instead of an agent: SME plans cost more, so their credits reach that level sooner. If supervisors are slower than agents, SME customers wait longer for a larger credit. That follows from the amount, is the placeholder policy's rule (A4), and is for SkyLink to confirm."
+    "The credit is the same share of the monthly fee for the same outage in both segments, except where the policy's minimum lifts it. Above $500.00 a supervisor approves instead of an agent: SME plans cost more, so their credits reach that level sooner. If supervisors are slower than agents, SME customers wait longer for a larger credit. That follows from the amount, is the placeholder policy's rule (A4), and is for SkyLink to confirm."
   ]
 }
