@@ -802,8 +802,8 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     <dl class="figures">
       <div><dt>broadband customers, plus 8 million on mobile <span class="tag tag--case">Case fact</span></dt><dd>3.5 million</dd></div>
       <div><dt>of outage calls end in an unnecessary technician visit <span class="tag tag--case">Case fact</span></dt><dd>30%</dd></div>
-      <div><dt>the cost of each unnecessary visit <span class="tag tag--case">Case fact</span></dt><dd>INR 650</dd></div>
-      <div class="figures__sum"><dt>wasted on every 1,000 outage calls, or 1.95 lakh. That is 1,000 × 30% × INR 650. <span class="tag tag--calc">Worked out</span></dt><dd>INR 195,000</dd></div>
+      <div><dt>the cost of each unnecessary visit <span class="tag tag--case">Case fact</span></dt><dd>$650</dd></div>
+      <div class="figures__sum"><dt>wasted on every 1,000 outage calls. That is 1,000 × 30% × $650. <span class="tag tag--calc">Worked out</span></dt><dd>$195,000</dd></div>
     </dl>
 
     <div class="verdict">
@@ -899,7 +899,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
           <tr><th scope="row">Looked-up documents <small><button type="button" class="term" data-term="rag">RAG</button>, like a librarian</small></th><td data-label="Its job">Fetch router guides, policy and complaint rules, each with its version and a citation.</td><td data-label="Never allowed to">Offer unverified steps, or steps for the wrong router.</td></tr>
           <tr><th scope="row">Language AI <small><button type="button" class="term" data-term="llm">LLM</button>, like an interpreter</small></th><td data-label="Its job">Understand the request, hold the conversation, summarise, and explain from the facts it is given.</td><td data-label="Never allowed to">Calculate a credit, or declare the network healthy.</td></tr>
           <tr><th scope="row">Machine learning <small><button type="button" class="term" data-term="ml">ML</button>, a pattern spotter</small></th><td data-label="Its job">Sort contacts, support confidence in the address match, and study churn in aggregate.</td><td data-label="Never allowed to">Give different rights or credits to different customers.</td></tr>
-          <tr><th scope="row">Human approval <small>the supervisor</small></th><td data-label="Its job">Approve credits above INR 500, low-confidence cases, exceptions and overrides.</td><td data-label="Never allowed to">Be bypassed silently, with no log.</td></tr>
+          <tr><th scope="row">Human approval <small>the supervisor</small></th><td data-label="Its job">Approve credits above $500, low-confidence cases, exceptions and overrides.</td><td data-label="Never allowed to">Be bypassed silently, with no log.</td></tr>
           <tr><th scope="row">Action layer <small>the only keyholder</small></th><td data-label="Its job">Make typed, authorised, repeat-safe changes in company systems.</td><td data-label="Never allowed to">Run free-form tools that nobody approved.</td></tr>
         </tbody>
       </table>
@@ -916,7 +916,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
           <li>Fresh outage status and <button type="button" class="term" data-term="remote-line-test">remote line tests</button></li>
           <li>An early complaint reference, linked to the outage incident</li>
           <li>Router-specific steps from the official guide, when there is no outage</li>
-          <li>Credits by fixed rule, with approval above INR 500</li>
+          <li>Credits by fixed rule, with approval above $500</li>
           <li>Checks before any technician visit, and no duplicates</li>
           <li>Safe behaviour when a system is down, an audit trail, and readiness for a 10x <button type="button" class="term" data-term="surge">surge</button></li>
           <li>Proactive outage texts, shown in the capstone demo</li>
@@ -979,8 +979,8 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
       </div>
       <fieldset class="seg" id="ctl-fee">
         <legend>The customer's plan</legend>
-        <label><input type="radio" name="fee" id="fee-home" value="999" checked><span>Home, INR 999 a month</span></label>
-        <label><input type="radio" name="fee" id="fee-business" value="4999"><span>Business, INR 4,999 a month</span></label>
+        <label><input type="radio" name="fee" id="fee-home" value="999" checked><span>Home, $999 a month</span></label>
+        <label><input type="radio" name="fee" id="fee-business" value="4999"><span>Business, $4,999 a month</span></label>
       </fieldset>
       <div class="ctl" id="ctl-repeat">
         <label class="check"><input type="checkbox" id="repeat" name="repeat"><span>This request was already made once</span></label>
@@ -1051,18 +1051,18 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
         </div>
         <dl class="fixed">
           <div><dt>Outage calls ending in an unnecessary visit</dt><dd>30%</dd></div>
-          <div><dt>Cost of each visit</dt><dd>INR 650</dd></div>
+          <div><dt>Cost of each visit</dt><dd>$650</dd></div>
         </dl>
       </div>
       <div class="calc__out" aria-live="polite">
         <div class="money">
           <p class="money__label">Spent each year on visits that fix nothing</p>
-          <p class="money__value" id="waste">INR 23.40m</p>
+          <p class="money__value" id="waste">$23.40m</p>
           <p class="money__sub" id="waste-sub"></p>
         </div>
         <div class="money money--save">
           <p class="money__label">Saved each year at this level</p>
-          <p class="money__value" id="saving">INR 11.70m</p>
+          <p class="money__value" id="saving">$11.70m</p>
           <p class="money__sub" id="saving-sub"></p>
         </div>
         <div class="bar" id="bar" role="img" aria-label="">
@@ -1071,7 +1071,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
         <p class="bar__key"><span><i class="key key--save"></i>Saved</span><span><i class="key key--left"></i>Still spent on unnecessary visits</span></p>
       </div>
     </form>
-    <p class="src"><span class="tag tag--calc">Worked out</span> Yearly contacts × 30% × the share prevented × INR 650. At 1,000, 5,000, 10,000, 25,000 and 50,000 contacts a month this reproduces the table in the report.</p>
+    <p class="src"><span class="tag tag--calc">Worked out</span> Yearly contacts × 30% × the share prevented × $650. At 1,000, 5,000, 10,000, 25,000 and 50,000 contacts a month this reproduces the table in the report.</p>
 
     <ul class="cautions">
       <li>Yearly savings cannot be claimed until real outage-contact volumes and real results are measured.</li>
@@ -1093,7 +1093,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     <ul class="gates gates--zero">
       <li><b>0</b><strong>False all-clears on missing or stale data</strong></li>
       <li><b>0</b><strong>Visits booked on unknown or stale status</strong></li>
-      <li><b>0</b><strong>Credits above INR 500 without approval</strong></li>
+      <li><b>0</b><strong>Credits above $500 without approval</strong></li>
       <li><b>0</b><strong>Unlogged overrides or duplicate writes</strong></li>
     </ul>
     <p class="src"><span class="tag tag--case">Case fact</span> The six targets. <span class="tag tag--ok">Approved</span> The four safety gates.</p>
@@ -1296,8 +1296,8 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
   /* Figures stated in the case study. */
   const CASE = Object.freeze({
     unnecessaryVisitPercent: 30,
-    visitCostInr: 650,
-    supervisorAboveInr: 500,
+    visitCostUsd: 650,
+    supervisorAboveUsd: 500,
   });
 
   /* Illustration only: the capstone's placeholder credit policy for broadband.
@@ -1310,7 +1310,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
       Object.freeze({ fromHours: 24, multiplier: 1.5 }),
       Object.freeze({ fromHours: 4, multiplier: 1 }),
     ]),
-    minimumCreditInr: 50,
+    minimumCreditUsd: 50,
     capShareOfMonthlyFee: 1,
   });
 
@@ -1324,28 +1324,17 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
 
   /* ---------- formatting ---------- */
 
-  function formatInr(amount, withPaise) {
-    const digits = withPaise ? 2 : 0;
-    return 'INR ' + Number(amount).toLocaleString('en-US', {
+  function formatUsd(amount, withCents) {
+    const digits = withCents ? 2 : 0;
+    return '$' + Number(amount).toLocaleString('en-US', {
       minimumFractionDigits: digits,
       maximumFractionDigits: digits,
     });
   }
 
-  /* The report writes large sums as "INR 2.34m". */
-  function formatInrMillions(amount) {
-    return 'INR ' + (amount / 1e6).toFixed(2) + 'm';
-  }
-
-  /* The same sum the way it is usually said in India. */
-  function formatLakhCrore(amount) {
-    if (amount >= 1e7) return trimZeros((amount / 1e7).toFixed(2)) + ' crore';
-    if (amount >= 1e5) return trimZeros((amount / 1e5).toFixed(2)) + ' lakh';
-    return Number(amount).toLocaleString('en-US');
-  }
-
-  function trimZeros(text) {
-    return text.replace(/\.?0+$/, '');
+  /* The report writes large sums as "$2.34m". */
+  function formatUsdMillions(amount) {
+    return '$' + (amount / 1e6).toFixed(2) + 'm';
   }
 
   function plural(count, word) {
@@ -1382,15 +1371,15 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     return Math.round((amount + Number.EPSILON) * 100) / 100;
   }
 
-  function creditFor(monthlyFeeInr, outageHours) {
+  function creditFor(monthlyFeeUsd, outageHours) {
     const hours = Math.ceil(outageHours);
     if (hours < CREDIT_POLICY.minOutageHours) {
       return { eligible: false, hours, amount: 0, needsSupervisor: false };
     }
     const tier = CREDIT_POLICY.tiers.find((t) => hours >= t.fromHours);
-    const formulaAmount = (monthlyFeeInr * hours * tier.multiplier) / CREDIT_POLICY.hoursInMonth;
-    const cap = monthlyFeeInr * CREDIT_POLICY.capShareOfMonthlyFee;
-    const withMinimum = Math.max(formulaAmount, CREDIT_POLICY.minimumCreditInr);
+    const formulaAmount = (monthlyFeeUsd * hours * tier.multiplier) / CREDIT_POLICY.hoursInMonth;
+    const cap = monthlyFeeUsd * CREDIT_POLICY.capShareOfMonthlyFee;
+    const withMinimum = Math.max(formulaAmount, CREDIT_POLICY.minimumCreditUsd);
     const amount = roundToPaise(Math.min(withMinimum, cap));
     return {
       eligible: true,
@@ -1398,34 +1387,34 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
       multiplier: tier.multiplier,
       formulaAmount: roundToPaise(formulaAmount),
       amount,
-      minimumApplied: formulaAmount < CREDIT_POLICY.minimumCreditInr,
+      minimumApplied: formulaAmount < CREDIT_POLICY.minimumCreditUsd,
       capApplied: withMinimum > cap,
-      needsSupervisor: amount > CASE.supervisorAboveInr,
+      needsSupervisor: amount > CASE.supervisorAboveUsd,
     };
   }
 
-  function creditWorking(monthlyFeeInr, credit) {
-    const sum = formatInr(monthlyFeeInr) + ' a month × ' + plural(credit.hours, 'hour') + ' × ' +
+  function creditWorking(monthlyFeeUsd, credit) {
+    const sum = formatUsd(monthlyFeeUsd) + ' a month × ' + plural(credit.hours, 'hour') + ' × ' +
       credit.multiplier + ' ÷ ' + CREDIT_POLICY.hoursInMonth + ' hours in a month = ' +
-      formatInr(credit.formulaAmount, true);
+      formatUsd(credit.formulaAmount, true);
     if (credit.minimumApplied) {
-      return sum + ', raised to the policy minimum of ' + formatInr(credit.amount, true) + '.';
+      return sum + ', raised to the policy minimum of ' + formatUsd(credit.amount, true) + '.';
     }
     if (credit.capApplied) {
-      return sum + ', limited to one month\'s fee: ' + formatInr(credit.amount, true) + '.';
+      return sum + ', limited to one month\'s fee: ' + formatUsd(credit.amount, true) + '.';
     }
     return sum + '.';
   }
 
   /* ---------- return on investment ---------- */
 
-  /* Report model: annual outage contacts × unnecessary-visit rate × reduction achieved × INR 650. */
+  /* Report model: annual outage contacts × unnecessary-visit rate × reduction achieved × $650. */
   function roi(contactsPerMonth, reductionPercent) {
     const annualContacts = contactsPerMonth * 12;
     const unnecessaryVisits = Math.round((annualContacts * CASE.unnecessaryVisitPercent) / 100);
-    const baselineWaste = unnecessaryVisits * CASE.visitCostInr;
+    const baselineWaste = unnecessaryVisits * CASE.visitCostUsd;
     const visitsAvoided = Math.round((unnecessaryVisits * reductionPercent) / 100);
-    const savings = visitsAvoided * CASE.visitCostInr;
+    const savings = visitsAvoided * CASE.visitCostUsd;
     return {
       annualContacts,
       unnecessaryVisits,
@@ -1536,14 +1525,14 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
       credit,
       outcome: [
         referenceTile(),
-        { label: 'Technician visit', value: 'Not sent', note: 'Today about 30% of calls like this end in a visit costing INR 650.', tone: 'ok' },
+        { label: 'Technician visit', value: 'Not sent', note: 'Today about 30% of calls like this end in a visit costing $650.', tone: 'ok' },
         creditTile(credit),
         { label: 'Tickets', value: 'One shared incident', note: input.repeat ? 'The repeat request made no second ticket.' : 'This complaint is linked to it.', tone: 'ok' },
         credit.needsSupervisor
-          ? { label: 'People', value: 'A supervisor approves', note: 'The credit is above INR 500.', tone: 'human' }
+          ? { label: 'People', value: 'A supervisor approves', note: 'The credit is above $500.', tone: 'human' }
           : { label: 'People', value: 'No hand-off needed', note: 'The care agent stays in the conversation.', tone: 'info' },
       ],
-      today: 'Today the agent cannot see the outage. The customer gets the restart script, and about 30% of these calls end with a technician sent for nothing, at INR 650 a visit.',
+      today: 'Today the agent cannot see the outage. The customer gets the restart script, and about 30% of these calls end with a technician sent for nothing, at $650 a visit.',
     });
   }
 
@@ -1560,22 +1549,22 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     if (credit.needsSupervisor) {
       return {
         kind: 'human',
-        title: 'A credit of ' + formatInr(credit.amount, true) + ' waits for a supervisor',
-        text: working + ' Anything above INR 500 needs a supervisor\'s approval before it is applied.',
+        title: 'A credit of ' + formatUsd(credit.amount, true) + ' waits for a supervisor',
+        text: working + ' Anything above $500 needs a supervisor\'s approval before it is applied.',
         rules: ['D10'],
       };
     }
     return {
       kind: 'ok',
-      title: 'A credit of ' + formatInr(credit.amount, true) + ' is worked out by fixed rule',
-      text: working + ' At or below INR 500, no supervisor is needed. The credit counts as done only when the billing ledger confirms it.',
+      title: 'A credit of ' + formatUsd(credit.amount, true) + ' is worked out by fixed rule',
+      text: working + ' At or below $500, no supervisor is needed. The credit counts as done only when the billing ledger confirms it.',
       rules: ['D10', 'D27'],
     };
   }
 
   function restoredMessage(credit) {
     if (!credit.eligible) return 'Your service has been restored. Tell us here if it is still not working.';
-    const amount = formatInr(credit.amount, true);
+    const amount = formatUsd(credit.amount, true);
     return credit.needsSupervisor
       ? 'Your service has been restored. A credit of ' + amount + ' for the outage has been sent for approval. We will confirm it here.'
       : 'Your service has been restored. A credit of ' + amount + ' for the outage is being applied to your account. We will confirm it here.';
@@ -1705,7 +1694,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     if (!credit.eligible) {
       return { label: 'Credit', value: 'None', note: 'Under 4 hours earns no credit in the placeholder policy.', tone: 'info' };
     }
-    const amount = formatInr(credit.amount, true);
+    const amount = formatUsd(credit.amount, true);
     return credit.needsSupervisor
       ? { label: 'Credit', value: amount, note: 'By fixed rule. Waits for a supervisor.', tone: 'human' }
       : { label: 'Credit', value: amount, note: 'By fixed rule. No supervisor needed.', tone: 'ok' };
@@ -1715,9 +1704,8 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     CASE,
     CREDIT_POLICY,
     NODE_ID,
-    formatInr,
-    formatInrMillions,
-    formatLakhCrore,
+    formatUsd,
+    formatUsdMillions,
     luhnCheckDigit,
     formatReference,
     creditFor,
@@ -1756,7 +1744,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
       id: 'f3', askRole: 'Field Operations Lead',
       plain: 'Technicians are sent without checks',
       formal: 'Ungated dispatch',
-      leadsTo: 'Avoidable visits at INR 650 each',
+      leadsTo: 'Avoidable visits at $650 each',
       response: 'A visit needs a fresh no-outage result, a failed remote test and a duplicate check',
     },
     {
@@ -1841,7 +1829,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
       qa: [
         {
           type: 'ask', q: 'Which technician visits are wasted?',
-          a: 'The ones booked during an outage. The fault is in our network, so there is nothing to repair at the customer\'s home. Each of those visits costs INR 650.',
+          a: 'The ones booked during an outage. The fault is in our network, so there is nothing to repair at the customer\'s home. Each of those visits costs $650.',
           finding: 'f3',
         },
         {
@@ -1955,8 +1943,8 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
           tradeoff: 'Flexible. But a language model can give different amounts for the same case, and nobody can audit how it got there. The workshop prohibits AI-calculated credits.',
         },
         {
-          id: 'b', label: 'Fixed rules, supervisor above INR 500', hint: 'Code calculates. A person approves the larger ones.',
-          tradeoff: 'The same outage always earns the same credit. Amounts above INR 500 wait for a supervisor. The policy carries a version number, so every credit can be traced to the rule behind it.',
+          id: 'b', label: 'Fixed rules, supervisor above $500', hint: 'Code calculates. A person approves the larger ones.',
+          tradeoff: 'The same outage always earns the same credit. Amounts above $500 wait for a supervisor. The policy carries a version number, so every credit can be traced to the rule behind it.',
           decisions: ['D10'],
         },
         {
@@ -1992,7 +1980,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     { id: 'outage', label: 'Street-wide outage', hint: 'The network team has confirmed a fibre cut', input: { map: 'sure', net: 'outage', line: 'pass', hours: 5, fee: 999, repeat: false } },
     { id: 'line', label: 'Only this line is faulty', hint: 'No outage, but the line test fails', input: { map: 'sure', net: 'clear', line: 'fail', hours: 5, fee: 999, repeat: false } },
     { id: 'dark', label: 'Monitoring is down', hint: 'The network system does not answer', input: { map: 'sure', net: 'unknown', line: 'pass', hours: 5, fee: 999, repeat: false } },
-    { id: 'credit', label: 'Long outage, larger credit', hint: 'Above INR 500, a supervisor decides', input: { map: 'sure', net: 'outage', line: 'pass', hours: 50, fee: 4999, repeat: false } },
+    { id: 'credit', label: 'Long outage, larger credit', hint: 'Above $500, a supervisor decides', input: { map: 'sure', net: 'outage', line: 'pass', hours: 50, fee: 4999, repeat: false } },
     { id: 'repeat', label: 'The same request twice', hint: 'A second ticket must not appear', input: { map: 'sure', net: 'outage', line: 'pass', hours: 5, fee: 999, repeat: true } },
     { id: 'unsure', label: 'Unsure which node', hint: 'The address matches two nodes', input: { map: 'unsure', net: 'outage', line: 'pass', hours: 5, fee: 999, repeat: false } },
   ];
@@ -2007,7 +1995,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     },
     {
       topic: 'How fast faults must be fixed, and what customers are owed',
-      workshop: 'Credits follow one fixed company policy, with a supervisor above INR 500. The formula itself is still an open item.',
+      workshop: 'Credits follow one fixed company policy, with a supervisor above $500. The formula itself is still an open item.',
       outside: 'TRAI\'s 2024 quality-of-service regulations, in force since 1 October 2024, set a floor for fixed-line broadband: 85% of faults repaired by the next working day and 99% within three working days. A fault that takes longer than three working days earns a proportional rent rebate, or extra validity on a prepaid plan. For mobile, an outage across a district that lasts more than 24 hours earns the same kind of rebate.',
       meaning: 'A company credit policy sits on top of a regulatory minimum. The two should be designed together.',
       links: [
@@ -2041,7 +2029,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     },
     {
       topic: 'Keeping the AI on a short lead',
-      workshop: 'The AI handles language. Fixed rules handle money and visits. A person approves credits above INR 500. Only one controlled layer may change company systems.',
+      workshop: 'The AI handles language. Fixed rules handle money and visits. A person approves credits above $500. Only one controlled layer may change company systems.',
       outside: 'This matches the main published guidance. The OWASP Top 10 for LLM Applications (2025) lists prompt injection first and warns against excessive agency, meaning a model given more permissions or autonomy than its job needs. The NIST AI Risk Management Framework and ISO/IEC 42001 both set out how an organisation should govern AI, including who is accountable.',
       meaning: 'The design choices in this workshop are the standard defences, applied to a telecom case.',
       links: [
@@ -2052,7 +2040,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     },
     {
       topic: 'What an avoidable visit costs elsewhere',
-      workshop: 'An unnecessary visit costs INR 650, and 30% of outage calls end in one. Both are case-study figures for SkyLink.',
+      workshop: 'An unnecessary visit costs $650, and 30% of outage calls end in one. Both are case-study figures for SkyLink.',
       outside: 'The pattern is well known in the industry. In a Bain & Company interview on telecom field service, the partner put it as about $5 to take the call and about $100 to roll the truck, and noted that keeping the contact centre apart from the field force creates unnecessary work. It is a 2011 figure from the United States, so read it for the pattern only.',
       meaning: 'The saving is plausible in kind. Its size has to come from SkyLink\'s own measured baseline.',
       links: [{ label: 'Bain & Company, field service Q&A', url: 'https://www.bain.com/insights/field-service-what-utilities-can-learn-from-telcos-jeff-melton/' }],
@@ -2087,7 +2075,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     'Early complaint-reference creation',
     'NOC authoritative for outage status',
     'Strict dispatch preconditions',
-    'Deterministic credits; approval above INR 500',
+    'Deterministic credits; approval above $500',
     'Low-confidence mapping routed to human',
     'Correctness and safety ahead of automation rate',
     'Core ROI excludes speculative churn',
@@ -2144,7 +2132,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     ['Shadow mode', 'The system makes recommendations alongside the real operation while people still do the work.'],
     ['Stale data', 'Information that is too old to trust for a decision.'],
     ['Surge', 'A sudden flood of contacts. The case tests ten times the normal volume within 15 minutes.'],
-    ['Truck roll', 'Sending a technician to a customer\'s home. The case prices an unnecessary one at INR 650.'],
+    ['Truck roll', 'Sending a technician to a customer\'s home. The case prices an unnecessary one at $650.'],
     ['UNKNOWN', 'The honest third answer, used when the network status cannot be verified, so that silence is never read as an all-clear.'],
   ].map(([term, meaning]) => ({ term, meaning, key: term.toLowerCase().replace(/[^a-z0-9]+/g, '-') }));
 
@@ -2534,9 +2522,8 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
 
   const count = (n) => n.toLocaleString('en-US');
 
-  function moneyLine(amount, visits, noun) {
-    const words = amount >= 1e5 ? E.formatLakhCrore(amount) + ' · ' : '';
-    return words + count(visits) + ' ' + noun;
+  function visitsLine(visits, noun) {
+    return count(visits) + ' ' + noun;
   }
 
   function renderCalc() {
@@ -2545,13 +2532,13 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     const r = E.roi(contacts, reduction);
     $('#contacts-out').textContent = count(contacts);
     $('#reduction-out').textContent = reduction + '%';
-    $('#waste').textContent = E.formatInrMillions(r.baselineWaste);
-    $('#waste-sub').textContent = moneyLine(r.baselineWaste, r.unnecessaryVisits, 'unnecessary visits a year');
-    $('#saving').textContent = E.formatInrMillions(r.savings);
-    $('#saving-sub').textContent = moneyLine(r.savings, r.visitsAvoided, 'visits avoided a year');
+    $('#waste').textContent = E.formatUsdMillions(r.baselineWaste);
+    $('#waste-sub').textContent = visitsLine(r.unnecessaryVisits, 'unnecessary visits a year');
+    $('#saving').textContent = E.formatUsdMillions(r.savings);
+    $('#saving-sub').textContent = visitsLine(r.visitsAvoided, 'visits avoided a year');
     $('#bar-save').style.setProperty('--share', String(reduction / 100));
-    $('#bar').setAttribute('aria-label', 'Of ' + E.formatInrMillions(r.baselineWaste) + ' spent each year on unnecessary visits, ' +
-      E.formatInrMillions(r.savings) + ' is saved and ' + E.formatInrMillions(r.remainingWaste) + ' is still spent.');
+    $('#bar').setAttribute('aria-label', 'Of ' + E.formatUsdMillions(r.baselineWaste) + ' spent each year on unnecessary visits, ' +
+      E.formatUsdMillions(r.savings) + ' is saved and ' + E.formatUsdMillions(r.remainingWaste) + ' is still spent.');
     $$('#quick .chip').forEach((chip) => chip.setAttribute('aria-pressed', String(Number(chip.value) === contacts)));
   }
 
