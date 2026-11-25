@@ -273,7 +273,8 @@ def restoration(
 ) -> None:
     sim.post(f"/admin/v1/outages/{outage_id}/resolve").raise_for_status()
     contact = wait_for_replies(api, headers, accepted["contact_id"], count=2)
-    reply = outbound(contact)[-1]
+    # The second reply: a message that follows it (a credit applied, say) may already be there.
+    reply = outbound(contact)[1]
     check("waiting customer is told the outage is resolved", "resolved the outage" in reply)
     check(
         "contact now waits for the customer",
@@ -424,7 +425,9 @@ def credit_is_approved_and_applied(
     wait_for_replies(api, headers, accepted["contact_id"])
     sim.post(f"/admin/v1/outages/{outage_id}/resolve").raise_for_status()
     contact = wait_for_replies(api, headers, accepted["contact_id"], count=2)
-    restored = outbound(contact)[-1]
+    # The second reply, not the newest: where no person reviews the credit, the message that it
+    # was applied can follow before this run looks (it did on the AWS host on 25 Nov 2026).
+    restored = outbound(contact)[1]
     check("restoration message offers the credit", "you are due a service credit of $" in restored)
     check("credit names the policy version", "(v0-placeholder)" in restored)
     account = f"/billing/v1/accounts/{customer['customer_id']}/credits"
