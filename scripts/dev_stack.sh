@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Start or stop the local processes (mock gateway, API, orchestrator, executor, feed consumer) on
-# this machine. PostgreSQL comes from `make up`. Logs go to var/log, PIDs to var/run.
+# Start or stop the local processes (mock gateway, API, orchestrator, executor, feed consumer,
+# MCP server) on this machine. PostgreSQL comes from `make up`. Logs go to var/log, PIDs to
+# var/run.
 #
 # Each process is started with only the variables it needs, taken from .env:
 # the API gets no gateway key, the orchestrator gets the read-only agent keys, the feed consumer
-# gets the one key that can read the event feed, and the write key goes to the executor alone.
+# gets the one key that can read the event feed, the write key goes to the executor alone, and
+# the MCP server gets the one key that can read a node's status.
 # The same split is in docker-compose.yml.
 #
 # DEMO_HOLD_SECONDS=20 ./scripts/dev_stack.sh start  (or `make demo`) shortens the wait before a
@@ -21,7 +23,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 umask 077
 
-SERVICES=(mock-oss care-api care-worker care-executor care-ingest)
+SERVICES=(mock-oss care-api care-worker care-executor care-ingest care-mcp)
 mkdir -p var/log var/run
 
 # The two timings a demo shortens, for the two processes that judge the hold.
@@ -49,6 +51,7 @@ allowed_variables() {
     care-worker)   echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_OSS_BREAKER_|CARE_OSS_READ_RETRIES|CARE_LLM_|CARE_SURGE_|CARE_WORKER_CONCURRENCY=|CARE_IDENTITY_|CARE_STATUS_|CARE_FEED_|CARE_KNOWLEDGE_|CARE_LINE_|CARE_DISPATCH_|CARE_VISIT_|CARE_CREDIT_|CARE_APPROVAL_|CARE_NETWORK_|CARE_SUSPECTED_|CARE_OUTAGE_|CARE_CLOSE_|ANTHROPIC_API_KEY=|OPENAI_API_KEY=|LANGSMITH_[A-Z_]+=|OSS_KEY_(TRIAGE|DIAGNOSTICS|RESOLUTION|DISPATCH)=)' ;;
     care-executor) echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_OSS_BREAKER_|CARE_OSS_READ_RETRIES|CARE_CREDIT_|CARE_STATUS_|CARE_FEED_|CARE_LINE_|CARE_DISPATCH_|CARE_VISIT_|OSS_KEY_EXECUTOR=)' ;;
     care-ingest)   echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_OSS_BREAKER_|CARE_OSS_READ_RETRIES|CARE_NOTIFY_|OSS_KEY_INGEST=)' ;;
+    care-mcp)      echo '^(CARE_ENV|CARE_DB_|CARE_OSS_BASE_URL|CARE_OSS_BREAKER_|CARE_OSS_READ_RETRIES|CARE_MCP_|CARE_CREDIT_|CARE_STATUS_|CARE_FEED_|CARE_LINE_|CARE_SURGE_|CARE_WORKER_CONCURRENCY=|OSS_KEY_MCP=)' ;;
   esac
 }
 

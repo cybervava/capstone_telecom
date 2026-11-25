@@ -17,6 +17,9 @@ _BASE_SCOPES: dict[str, frozenset[str]] = {
     "resolution": frozenset({"billing:read"}),
     "dispatch": frozenset({"field:read"}),
     "ingest": frozenset({"network:feed"}),
+    # The MCP server reads the status of a node for its clients. It tests no line, reads no
+    # customer and writes nothing.
+    "mcp": frozenset({"network:read"}),
     "executor": frozenset(
         {
             "billing:read",

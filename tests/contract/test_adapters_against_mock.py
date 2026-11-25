@@ -48,6 +48,22 @@ async def test_diagnostics_identity_cannot_read_crm(
     assert result.kind is ErrorKind.FORBIDDEN
 
 
+async def test_the_mcp_identity_reads_a_nodes_status_and_nothing_else(
+    gateway: OssGateway, simulator: Simulator
+) -> None:
+    """The MCP server serves other people's assistants. Its key reads the status of a node;
+    the gateway refuses it a line test, which exercises a customer's equipment."""
+    customer = await simulator.find_customer(service_type="broadband", mapping_defect="none")
+    network = gateway.network_for_mcp()
+
+    status = await network.node_status(customer["true_node_id"], correlation_id="t-mcp")
+    test = await network.line_test(customer["service_id"], correlation_id="t-mcp")
+
+    assert isinstance(status, Ok)
+    assert not isinstance(test, Ok)
+    assert test.kind is ErrorKind.FORBIDDEN
+
+
 async def test_orchestrator_identities_cannot_write(gateway: OssGateway) -> None:
     from skylink_care.adapters.clients import BillingWriter, IncidentWriter
 

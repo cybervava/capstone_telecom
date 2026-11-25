@@ -3,7 +3,8 @@ name: skylink-care
 # Local runtime. Values come from .env (create it with `make init`); nothing secret lives in this
 # file. Each process is given only the variables it needs: the API holds no gateway key at all,
 # the orchestrator holds the read-only agent keys, the feed consumer holds the one key that can
-# read the NOC event feed, and only the executor holds the write key.
+# read the NOC event feed, only the executor holds the write key, and the MCP server holds one
+# key that can read a node's status.
 #
 #   make up          PostgreSQL only (processes run on the host with scripts/dev_stack.sh)
 #   make stack-up    everything in containers, including data generation and seeding
@@ -77,6 +78,8 @@ services:
       OSS_KEY_INGEST: ${OSS_KEY_INGEST:?run make init}
       OSS_KEY_EXECUTOR: ${OSS_KEY_EXECUTOR:?run make init}
       OSS_KEY_ADMIN: ${OSS_KEY_ADMIN:?run make init}
+      # The MCP server's identity. Left out, that identity does not exist at the gateway.
+      OSS_KEY_MCP: ${OSS_KEY_MCP:-}
     volumes:
       - mockstate:/state
     ports:
@@ -222,6 +225,45 @@ services:
       CARE_VISIT_EVIDENCE_MAX_AGE_SECONDS: ${CARE_VISIT_EVIDENCE_MAX_AGE_SECONDS:-1800}
       # The only process that can write to the enterprise systems.
       OSS_KEY_EXECUTOR: ${OSS_KEY_EXECUTOR:?run make init}
+
+  # The platform's read-only tools for a Model Context Protocol client (README, "MCP server").
+  # Both keys are optional here: without CARE_MCP_KEY the endpoint runs and answers nobody, and
+  # without OSS_KEY_MCP the network tool says it is not configured. Neither stops the stack.
+  mcp:
+    <<: *care-image
+    profiles: ["stack"]
+    command: ["care-mcp"]
+    depends_on:
+      mock-oss:
+        condition: service_healthy
+    environment:
+      <<: *care-db
+      CARE_MCP_HOST: 0.0.0.0
+      CARE_MCP_PORT: "8082"
+      CARE_MCP_KEY: ${CARE_MCP_KEY:-}
+      CARE_MCP_CALLS_PER_MINUTE: ${CARE_MCP_CALLS_PER_MINUTE:-60}
+      CARE_MCP_ALLOWED_HOSTS: ${CARE_MCP_ALLOWED_HOSTS:-}
+      CARE_OSS_BASE_URL: http://mock-oss:8081
+      CARE_OSS_BREAKER_FAILURES: ${CARE_OSS_BREAKER_FAILURES:-5}
+      CARE_OSS_BREAKER_REST_SECONDS: ${CARE_OSS_BREAKER_REST_SECONDS:-10}
+      CARE_OSS_READ_RETRIES: ${CARE_OSS_READ_RETRIES:-1}
+      # The network decision and the credit quotation go by the settings the agents go by.
+      CARE_STATUS_MAX_AGE_SECONDS: ${CARE_STATUS_MAX_AGE_SECONDS:-60}
+      CARE_FEED_MAX_AGE_SECONDS: ${CARE_FEED_MAX_AGE_SECONDS:-90}
+      CARE_CREDIT_REVIEW_ALL: ${CARE_CREDIT_REVIEW_ALL:-false}
+      CARE_SURGE_WAITING_CONTACTS: ${CARE_SURGE_WAITING_CONTACTS:-200}
+      CARE_SURGE_WAITING_SECONDS: ${CARE_SURGE_WAITING_SECONDS:-15}
+      CARE_WORKER_CONCURRENCY: ${CARE_WORKER_CONCURRENCY:-8}
+      # Reads the status of a node, and nothing else of the enterprise systems.
+      OSS_KEY_MCP: ${OSS_KEY_MCP:-}
+    ports:
+      # Loopback only, like the API and the gateway.
+      - "127.0.0.1:${CARE_MCP_PORT:-8082}:8082"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8082/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
 configs:
   setup_script:

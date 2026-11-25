@@ -51,6 +51,15 @@ class Passage:
 
 
 @dataclass(frozen=True)
+class IndexedGuide:
+    device_model: str
+    doc_id: str
+    doc_version: str
+    guide: str
+    sections: int
+
+
+@dataclass(frozen=True)
 class IndexInfo:
     index_version: str
     embedder: str
@@ -123,6 +132,17 @@ class GuideIndex(Repository):
             )
             row = await cursor.fetchone()
         return IndexInfo(**row) if row else None
+
+    async def guides(self) -> list[IndexedGuide]:
+        """The guides in the index, one a router model, in model order."""
+        async with self._db.connection() as conn:
+            cursor = await conn.execute(
+                "SELECT device_model, doc_id, doc_version, split_part(min(title), ':', 1) AS guide,"
+                " count(*) AS sections FROM guide_chunks WHERE doc_type = %s"
+                " GROUP BY device_model, doc_id, doc_version ORDER BY device_model",
+                (DEVICE_GUIDE,),
+            )
+            return [IndexedGuide(**row) for row in await cursor.fetchall()]
 
     async def search(
         self,

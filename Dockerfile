@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-# One image for every process: care-api, care-worker, care-executor, care-admin and the mock
-# OSS/BSS gateway. Which one runs is decided by the container command.
+# One image for every process: care-api, care-worker, care-executor, care-ingest, care-mcp,
+# care-admin and the mock OSS/BSS gateway. Which one runs is decided by the container command.
 
 FROM python:3.12-slim-bookworm AS build
 # The package manager is copied in at a pinned version; it is not part of the runtime image.
@@ -24,5 +24,5 @@ COPY --chown=care:care data/policies ./data/policies
 COPY --chown=care:care data/knowledge ./data/knowledge
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 USER care
-EXPOSE 8080 8081
+EXPOSE 8080 8081 8082
 CMD ["care-api"]

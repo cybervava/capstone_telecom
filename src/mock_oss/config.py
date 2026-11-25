@@ -15,6 +15,7 @@ CLIENT_ENV_VARS: Mapping[str, str] = {
     "dispatch": "OSS_KEY_DISPATCH",
     "ingest": "OSS_KEY_INGEST",
     "executor": "OSS_KEY_EXECUTOR",
+    "mcp": "OSS_KEY_MCP",
     "admin": "OSS_KEY_ADMIN",
 }
 

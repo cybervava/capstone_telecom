@@ -36,6 +36,9 @@ services:
   worker: *release
   ingest: *release
   executor: *release
+  # Bound to the host's loopback like the API; Caddy does not serve it. Until CARE_MCP_KEY is
+  # in the host's settings it answers nobody.
+  mcp: *release
 
   caddy:
     image: caddy:2.11.9-alpine

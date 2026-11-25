@@ -14,7 +14,9 @@ from psycopg.conninfo import make_conninfo
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-AgentIdentity = Literal["triage", "diagnostics", "resolution", "dispatch", "ingest", "executor"]
+AgentIdentity = Literal[
+    "triage", "diagnostics", "resolution", "dispatch", "ingest", "executor", "mcp"
+]
 
 
 class MissingSecretError(RuntimeError):
@@ -22,6 +24,8 @@ class MissingSecretError(RuntimeError):
 
 
 MIN_STAFF_KEY_CHARS = 16
+# The same floor for the key an MCP client presents: a shorter one is treated as none.
+MIN_MCP_KEY_CHARS = 16
 
 
 class Settings(BaseSettings):
@@ -46,6 +50,19 @@ class Settings(BaseSettings):
     dev_staff_key: SecretStr | None = None
     api_host: str = "127.0.0.1"
     api_port: int = 8080
+
+    # The MCP server (care-mcp): the platform's read-only tools for a Model Context Protocol
+    # client. Over HTTP a client presents the key as a bearer token; with none set, or one that
+    # is too short, the endpoint answers nobody. Over stdio there is no key: whoever started
+    # the process is the client.
+    mcp_host: str = "127.0.0.1"
+    mcp_port: int = 8082
+    mcp_key: SecretStr | None = None
+    # Host names a client may reach the HTTP endpoint by, beside the loopback names
+    # (comma-separated, "name" or "name:port" or "name:*"): the name of a proxy in front of it.
+    mcp_allowed_hosts: str = ""
+    # What all clients together may ask in a minute. Counted in the one MCP process.
+    mcp_calls_per_minute: int = Field(default=60, ge=1, le=6000)
 
     oss_base_url: str = "http://127.0.0.1:8081"
     # A dependency that fails this many times in a row is rested for this long (seconds) before
@@ -177,6 +194,14 @@ class Settings(BaseSettings):
         key = self.dev_staff_key.get_secret_value()
         return key if len(key) >= MIN_STAFF_KEY_CHARS else None
 
+    def mcp_key_for_http(self) -> str | None:
+        """The key an MCP client must present over HTTP, or None when it is not set or too
+        short to be one: the endpoint is then closed to everyone."""
+        if self.mcp_key is None:
+            return None
+        key = self.mcp_key.get_secret_value()
+        return key if len(key) >= MIN_MCP_KEY_CHARS else None
+
     def require_jwt_secret(self) -> str:
         if self.jwt_secret is None or not self.jwt_secret.get_secret_value():
             raise MissingSecretError("CARE_JWT_SECRET is not set")
@@ -210,6 +235,8 @@ class OssKeys(BaseSettings):
     dispatch: SecretStr | None = None
     ingest: SecretStr | None = None
     executor: SecretStr | None = None
+    # The MCP server's own identity: it may read a node's status and nothing else.
+    mcp: SecretStr | None = None
 
     def require(self, identity: AgentIdentity) -> str:
         """Return the key for an identity, or fail fast with the variable name to set."""

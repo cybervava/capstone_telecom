@@ -14,7 +14,10 @@ systems:
    router model, with the source,
 7. an outage long enough to earn a service credit: the credit is proposed from the policy and
    applied to the account once; with CARE_CREDIT_REVIEW_ALL=true, only after an agent has
-   approved it through the API.
+   approved it through the API,
+8. with the demo timing only: the held line still fails after the hold, and a visit is booked,
+9. the MCP server: a client with the key lists the four read-only tools and asks each one;
+   without the key it is turned away. Not run when CARE_MCP_KEY is not set for this run.
 
 Run with:  uv run --env-file .env python scripts/smoke.py
 Exits non-zero if any check fails. It changes simulator state and restores it at the end.
@@ -22,6 +25,7 @@ Exits non-zero if any check fails. It changes simulator state and restores it at
 
 from __future__ import annotations
 
+import asyncio
 import os
 import re
 import sys
@@ -36,6 +40,15 @@ API = "http://{}:{}".format(
     os.environ.get("CARE_API_HOST", "127.0.0.1"), os.environ.get("CARE_API_PORT", "8080")
 )
 OSS = os.environ.get("CARE_OSS_BASE_URL", "http://127.0.0.1:8081")
+# The MCP server is reached from this machine, whatever address its process listens on.
+MCP = "http://127.0.0.1:{}/mcp".format(os.environ.get("CARE_MCP_PORT", "8082"))
+MCP_TOOLS = [
+    "check_network_status",
+    "platform_status",
+    "quote_service_credit",
+    "search_router_guide",
+]
+MIN_MCP_KEY_CHARS = 16
 WAIT_SECONDS = 20.0
 # After the journeys with the Network API down its circuit is open: the API is rested for this
 # long before a call tries it again, and until then every answer is still "can't verify".
@@ -486,6 +499,89 @@ def applied_without_review(
     )
 
 
+async def asked_over_mcp(key: str, node_id: str, router_model: str) -> dict[str, Any]:
+    """What an MCP client with the key is offered and answered, over HTTP."""
+    # Imported here: the journeys before this one need nothing but an HTTP client.
+    import httpx2
+    from mcp import Client
+    from mcp.client.streamable_http import streamable_http_client
+
+    async with (
+        httpx2.AsyncClient(headers={"Authorization": f"Bearer {key}"}, timeout=20.0) as http,
+        Client(streamable_http_client(MCP, http_client=http)) as client,
+    ):
+        listed = await client.list_tools()
+        status = await client.call_tool("check_network_status", {"node_id": node_id})
+        guide = await client.call_tool(
+            "search_router_guide",
+            {"router_model": router_model, "problem": "wifi keeps dropping"},
+        )
+        quote = await client.call_tool(
+            "quote_service_credit",
+            {"service_type": "broadband", "monthly_fee_usd": "999.00", "outage_minutes": 300},
+        )
+        platform = await client.call_tool("platform_status", {})
+    return {
+        "tools": sorted(tool.name for tool in listed.tools),
+        "read_only": all(
+            tool.annotations is not None and tool.annotations.read_only_hint
+            for tool in listed.tools
+        ),
+        "status": status.structured_content or {},
+        "guide": guide.structured_content or {},
+        "quote": quote.structured_content or {},
+        "platform": platform.structured_content or {},
+    }
+
+
+def the_mcp_server_answers(customer: dict[str, Any]) -> None:
+    key = os.environ.get("CARE_MCP_KEY", "")
+    if len(key) < MIN_MCP_KEY_CHARS:
+        say("  [--] not run: CARE_MCP_KEY is not set for this run, so the endpoint is closed")
+        return
+    initialize = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {},
+            "clientInfo": {"name": "smoke", "version": "0"},
+        },
+    }
+    accept = {"Accept": "application/json, text/event-stream"}
+    without = httpx.post(MCP, json=initialize, headers=accept, timeout=10.0)
+    check("a client without the key is turned away", without.status_code == 401)
+    answers = asyncio.run(asked_over_mcp(key, customer["true_node_id"], customer["router_model"]))
+    check("the four tools are offered", answers["tools"] == MCP_TOOLS, ", ".join(answers["tools"]))
+    check("each tool is declared read-only", answers["read_only"])
+    status = answers["status"]
+    check(
+        "a healthy node is confirmed clear on a status read now",
+        status.get("state") == "CONFIRMED_CLEAR" and bool(status.get("evidence_at")),
+        f"{status.get('node_id')}: {status.get('state')}",
+    )
+    sections = answers["guide"].get("sections") or [{}]
+    cited = str(sections[0].get("citation", ""))
+    check(
+        "guide steps come from the router's own guide, with their source",
+        cited.startswith(f"guide-{customer['router_model'].lower()} ")
+        and bool(sections[0].get("steps")),
+        cited,
+    )
+    quote = answers["quote"]
+    check(
+        "a credit is quoted by the policy engine, and nothing is applied",
+        (quote.get("amount_usd"), quote.get("currency")) == ("50.00", "USD")
+        and "Nothing is applied" in str(quote.get("note")),
+        f"${quote.get('amount_usd')} under {quote.get('policy_version')}",
+    )
+    check(
+        "the platform says how it is doing",
+        (answers["platform"].get("feed") or {}).get("intact") is True,
+    )
+
+
 def main() -> int:
     admin_key = os.environ.get("OSS_KEY_ADMIN")
     if not admin_key:
@@ -532,6 +628,9 @@ def main() -> int:
 
         say("\n8. The held line still fails after the hold: a technician visit")
         visit_is_booked_after_the_hold(api, sim, on_a_healthy_node, held)
+
+        say("\n9. The MCP server: what an assistant with the key may ask")
+        the_mcp_server_answers(with_a_good_line)
     finally:
         sim.delete("/admin/v1/chaos")
         sim.post(

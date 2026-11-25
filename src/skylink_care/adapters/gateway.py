@@ -105,6 +105,11 @@ class OssGateway:
     def field_for_dispatch(self) -> FieldReader:
         return FieldReader(self._as("dispatch"))
 
+    def network_for_mcp(self) -> NetworkReader:
+        """Network Monitoring for the MCP server, under its own key. That key may read a
+        node's status; the gateway refuses it a line test, which the reader also has."""
+        return NetworkReader(self._as("mcp"))
+
     def feed_for_ingest(self) -> NetworkFeedReader:
         return NetworkFeedReader(self._as("ingest"))
 

@@ -10,6 +10,7 @@ dependencies = [
     "httpx>=0.28,<1",
     "langgraph>=1.2,<2",
     "langgraph-checkpoint-postgres>=3.2,<4",
+    "mcp>=2.3,<3",
     "openai>=3.52,<4",
     "prometheus-client>=0.26,<1",
     "psycopg[binary,pool]>=3.3,<4",
@@ -27,6 +28,7 @@ care-api = "skylink_care.api.main:run"
 care-worker = "skylink_care.orchestrator.worker:run"
 care-executor = "skylink_care.executor.worker:run"
 care-ingest = "skylink_care.ingest.worker:run"
+care-mcp = "skylink_care.mcp_server.main:run"
 mock-oss = "mock_oss.main:run"
 skylink-datagen = "skylink_datagen.cli:main"
 

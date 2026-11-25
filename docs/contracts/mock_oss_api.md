@@ -32,6 +32,7 @@ the care platform never sees that file.
 | `resolution` | `OSS_KEY_RESOLUTION` | `billing:read` |
 | `dispatch` | `OSS_KEY_DISPATCH` | `field:read` |
 | `ingest` | `OSS_KEY_INGEST` | `network:feed` |
+| `mcp` | `OSS_KEY_MCP` | `network:read` (the MCP server: a node's status, and no line test) |
 | `executor` | `OSS_KEY_EXECUTOR` | `billing:read`, `billing:write`, `field:read`, `field:write`, `incident:read`, `incident:write`, `notify:write`, `network:read`, `crm:consent` |
 | `admin` | `OSS_KEY_ADMIN` | `admin` and every scope above |
 
