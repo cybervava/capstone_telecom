@@ -785,7 +785,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
         <strong>Customer care</strong>
         <span>Hears about it from customers</span>
       </div>
-      <figcaption>The cable gets repaired in hours. The gap between these two teams stays open, and that gap is what the project is about.</figcaption>
+      <figcaption>Until the repair is done, the gap between these two teams stays open, and that gap is what the project is about.</figcaption>
     </figure>
 
     <h3>What happens today</h3>
@@ -822,7 +822,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     <div class="pair">
       <div class="note">
         <h3>What kind of workshop this was</h3>
-        <p>A simulated discovery workshop, run for the capstone and written up on 22 November 2026. Six stakeholder roles were played. Decisions were approved at four checkpoints. No real SkyLink staff were interviewed, nothing was measured in production, and no executive has signed anything.</p>
+        <p>A simulated discovery workshop, run for the capstone and written up on 22 November 2026. Six stakeholder roles were played, and Finance and Billing raised challenges too. Decisions were approved at four checkpoints. No real SkyLink staff were interviewed, nothing was measured in production, and no executive has signed anything.</p>
       </div>
       <div class="note">
         <h3>How to read the tags</h3>
@@ -858,7 +858,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     </div>
 
     <div class="people" id="people"></div>
-    <p class="src"><span class="tag tag--sim">Simulated</span> The answers paraphrase positions recorded in the report. Each role was played in the workshop. Nobody was interviewed.</p>
+    <p class="src"><span class="tag tag--sim">Simulated</span> The questions, and which role reveals which root cause, are this page's; the answers restate the report's root causes, concerns and challenges. Each role was played in the workshop. Nobody was interviewed.</p>
 
     <h3 id="board-h" tabindex="-1">What the workshop found</h3>
     <ol class="board" id="board" aria-labelledby="board-h"></ol>
@@ -899,7 +899,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
           <tr><th scope="row">Looked-up documents <small><button type="button" class="term" data-term="rag">RAG</button>, like a librarian</small></th><td data-label="Its job">Fetch router guides, policy and complaint rules, each with its version and a citation.</td><td data-label="Never allowed to">Offer unverified steps, or steps for the wrong router.</td></tr>
           <tr><th scope="row">Language AI <small><button type="button" class="term" data-term="llm">LLM</button>, like an interpreter</small></th><td data-label="Its job">Understand the request, hold the conversation, summarise, and explain from the facts it is given.</td><td data-label="Never allowed to">Calculate a credit, or declare the network healthy.</td></tr>
           <tr><th scope="row">Machine learning <small><button type="button" class="term" data-term="ml">ML</button>, a pattern spotter</small></th><td data-label="Its job">Sort contacts, support confidence in the address match, and study churn in aggregate.</td><td data-label="Never allowed to">Give different rights or credits to different customers.</td></tr>
-          <tr><th scope="row">Human approval <small>the supervisor</small></th><td data-label="Its job">Approve credits above $500, low-confidence cases, exceptions and overrides.</td><td data-label="Never allowed to">Be bypassed silently, with no log.</td></tr>
+          <tr><th scope="row">Human approval <small>a person; a supervisor for credits</small></th><td data-label="Its job">Approve credits above $500, low-confidence cases, exceptions and overrides.</td><td data-label="Never allowed to">Be bypassed silently, with no log.</td></tr>
           <tr><th scope="row">Action layer <small>the only keyholder</small></th><td data-label="Its job">Make typed, authorised, repeat-safe changes in company systems.</td><td data-label="Never allowed to">Run free-form tools that nobody approved.</td></tr>
         </tbody>
       </table>
@@ -1010,7 +1010,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
         <p id="today"></p>
       </div>
     </section>
-    <p class="src"><span class="tag tag--demo">Assumption</span> This simulation runs in your browser on made-up data and follows the target journey in the report. The credit formula is the capstone's placeholder. SkyLink's real credit policy is still an open item.</p>
+    <p class="src"><span class="tag tag--demo">Assumption</span> This simulation runs in your browser on made-up data and follows the target journey in the report, except that, as in the capstone build, the complaint reference comes first. The credit formula is the capstone's placeholder. SkyLink's real credit policy is still an open item.</p>
 
     <section class="proactive" aria-labelledby="pro-h">
       <div>
@@ -1163,11 +1163,11 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
         <p class="src"><span class="tag tag--prop">Proposed</span> Funding, delivery dates and production rollout authority remain open.</p>
       </div>
       <div class="open">
-        <p class="eyebrow">Still open, and not approved</p>
+        <p class="eyebrow">Open when the workshop closed, and not approved</p>
         <ul>
           <li>Real contact volume, baseline performance and production ROI</li>
           <li>Named participants and signatures. Only roles exist so far.</li>
-          <li>AWS or Azure, the hybrid layout and service costs</li>
+          <li>AWS or Azure (the build has since chosen AWS), the hybrid layout and service costs</li>
           <li>Freshness and confidence thresholds, and the policy formulas</li>
           <li>Availability targets and the length of the pilot</li>
           <li>Production authorisation, budget and rollout date</li>
@@ -1367,7 +1367,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
 
   /* ---------- service credit (illustration) ---------- */
 
-  function roundToPaise(amount) {
+  function roundToCents(amount) {
     return Math.round((amount + Number.EPSILON) * 100) / 100;
   }
 
@@ -1380,12 +1380,12 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     const formulaAmount = (monthlyFeeUsd * hours * tier.multiplier) / CREDIT_POLICY.hoursInMonth;
     const cap = monthlyFeeUsd * CREDIT_POLICY.capShareOfMonthlyFee;
     const withMinimum = Math.max(formulaAmount, CREDIT_POLICY.minimumCreditUsd);
-    const amount = roundToPaise(Math.min(withMinimum, cap));
+    const amount = roundToCents(Math.min(withMinimum, cap));
     return {
       eligible: true,
       hours,
       multiplier: tier.multiplier,
-      formulaAmount: roundToPaise(formulaAmount),
+      formulaAmount: roundToCents(formulaAmount),
       amount,
       minimumApplied: formulaAmount < CREDIT_POLICY.minimumCreditUsd,
       capApplied: withMinimum > cap,
@@ -1773,7 +1773,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
   const stakeholders = [
     {
       id: 'cco', mono: 'CCO', role: 'Chief Customer Officer', kind: 'Executive sponsor',
-      owns: 'outcomes, funding and release approval',
+      owns: 'outcomes and funding; release approval jointly with Platform and Trust',
       concern: 'Prove outcomes, not a chatbot demo.',
       qa: [
         {
@@ -2040,7 +2040,7 @@ input[type="range"] { inline-size: 100%; min-height: 2rem; margin: 0; accent-col
     },
     {
       topic: 'What an avoidable visit costs elsewhere',
-      workshop: 'An unnecessary visit costs $650, and 30% of outage calls end in one. Both are case-study figures for SkyLink.',
+      workshop: 'An unnecessary visit costs $650, and 30% of outage calls end in one. Both are case-study figures for SkyLink, given in rupees in the brief and shown here as dollars, unconverted.',
       outside: 'The pattern is well known in the industry. In a Bain & Company interview on telecom field service, the partner put it as about $5 to take the call and about $100 to roll the truck, and noted that keeping the contact centre apart from the field force creates unnecessary work. It is a 2011 figure from the United States, so read it for the pattern only.',
       meaning: 'The saving is plausible in kind. Its size has to come from SkyLink\'s own measured baseline.',
       links: [{ label: 'Bain & Company, field service Q&A', url: 'https://www.bain.com/insights/field-service-what-utilities-can-learn-from-telcos-jeff-melton/' }],
