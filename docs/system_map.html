@@ -1,0 +1,2026 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font: 14px system-ui, sans-serif; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<title>SkyLink Care System Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Atkinson+Hyperlegible+Mono:wght@400..700&family=Atkinson+Hyperlegible+Next:ital,wght@0,300..800;1,300..800&display=swap">
+<style>
+/* Layout: one stage holds the map of the running system. A flow is played over the map step by
+   step, with its narration in a panel beside the map (below it on narrow screens). The map is
+   drawn like the sibling pages' fibre plan: each kind of traffic is a strand with its own colour
+   and line style; trust boundaries are dashed outlines. Reference tables follow the stage.
+   Tokens are the sibling pages' own, with two strands added (database, language model). */
+:root {
+  --ground: #EDF1F4; --surface: #FFFFFF; --sunken: #E2E8ED;
+  --ink: #12233A; --ink-2: #43556B; --ink-3: #5A6B7E;
+  --line: #CCD6DF; --line-strong: #A3B2C0;
+  --accent: #0B7A83; --accent-strong: #08656D; --accent-ink: #086169; --accent-soft: #D7EEF0; --on-accent: #FFFFFF;
+  --slab: #12233A; --on-slab: #F1F5F8; --slab-accent: #7ADAE1;
+  --out: #BE362D; --out-ink: #9A2720; --out-soft: #FBE3E0;
+  --unk: #B06D00; --unk-ink: #7F4D00; --unk-soft: #FBECCF;
+  --ok: #1E8752; --ok-ink: #14633B; --ok-soft: #DAF1E4;
+  --hum: #5B45B0; --hum-ink: #4A3796; --hum-soft: #E8E3F8;
+  --focus: #1C64D9;
+  /* Strands: asks and answers, writes to SkyLink, announcements and wake-ups, the platform's
+     own database, the language model. */
+  --s-ask: #2F6FD6; --s-act: #128A6B; --s-event: #D65F18; --s-store: #66788C; --s-model: #B4337E;
+  --grid: #C9D3DC;
+  --shadow: 0 1px 2px rgb(18 35 58 / .06), 0 10px 28px rgb(18 35 58 / .09);
+  --font-display: "Archivo", "Arial Nova", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+  --canvas-h: clamp(420px, 70vh, 780px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0C1520; --surface: #142030; --sunken: #0F1A27; --ink: #E8EEF4; --ink-2: #B5C3D1;
+    --ink-3: #93A4B6; --line: #26364A; --line-strong: #40546B; --accent: #2BB3BD;
+    --accent-strong: #4CC8D1; --accent-ink: #62D3DB; --accent-soft: #10353A; --on-accent: #06242A;
+    --slab: #1C2D42; --on-slab: #F1F5F8; --slab-accent: #7ADAE1; --out: #E0665B; --out-ink: #FFA198;
+    --out-soft: #3B1917; --unk: #D99A2B; --unk-ink: #F5C76A; --unk-soft: #37280C; --ok: #3DB877;
+    --ok-ink: #7BE0AA; --ok-soft: #10301F; --hum: #A794F5; --hum-ink: #C3B5FF; --hum-soft: #241D45;
+    --focus: #8AB4FF;
+    --s-ask: #4A92EE; --s-act: #22AD7E; --s-event: #E5743A; --s-store: #8FA1B5; --s-model: #E46AAE;
+    --grid: #1E2C3D;
+    --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 28px rgb(0 0 0 / .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0C1520; --surface: #142030; --sunken: #0F1A27; --ink: #E8EEF4; --ink-2: #B5C3D1;
+  --ink-3: #93A4B6; --line: #26364A; --line-strong: #40546B; --accent: #2BB3BD;
+  --accent-strong: #4CC8D1; --accent-ink: #62D3DB; --accent-soft: #10353A; --on-accent: #06242A;
+  --slab: #1C2D42; --on-slab: #F1F5F8; --slab-accent: #7ADAE1; --out: #E0665B; --out-ink: #FFA198;
+  --out-soft: #3B1917; --unk: #D99A2B; --unk-ink: #F5C76A; --unk-soft: #37280C; --ok: #3DB877;
+  --ok-ink: #7BE0AA; --ok-soft: #10301F; --hum: #A794F5; --hum-ink: #C3B5FF; --hum-soft: #241D45;
+  --focus: #8AB4FF;
+  --s-ask: #4A92EE; --s-act: #22AD7E; --s-event: #E5743A; --s-store: #8FA1B5; --s-model: #E46AAE;
+  --grid: #1E2C3D;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 28px rgb(0 0 0 / .35);
+  color-scheme: dark;
+}
+
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 400 1rem/1.55 var(--font-body); -webkit-text-size-adjust: 100%; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--ground); }
+.wrap { max-width: 92rem; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); text-wrap: balance; }
+p { margin: 0; }
+ul, ol { margin: 0; }
+code { font-family: var(--font-mono); font-size: .88em; overflow-wrap: anywhere; }
+a { color: var(--accent-ink); text-underline-offset: .2em; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+[tabindex="-1"]:focus { outline: none; }
+.vh { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.sprite { position: absolute; inline-size: 0; block-size: 0; overflow: hidden; }
+.ico { inline-size: 1.05rem; block-size: 1.05rem; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.skip { position: absolute; left: 1rem; top: -4rem; z-index: 20; padding: .6rem .9rem; border-radius: 8px; background: var(--slab); color: var(--on-slab); }
+.skip:focus { top: calc(env(safe-area-inset-top, 0px) + .5rem); }
+.eyebrow { font: 600 .74rem/1.3 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--accent-ink); }
+.muted { color: var(--ink-3); }
+
+/* ---------- masthead ---------- */
+.mast { padding-block: 2.25rem 1.5rem; display: grid; gap: .85rem; }
+.mast h1 { font-size: clamp(2.1rem, 1.3rem + 2.8vw, 3.3rem); font-weight: 780; font-stretch: 86%; letter-spacing: -.012em; line-height: 1.02; }
+.lead { font-size: 1.12rem; color: var(--ink-2); max-width: 70ch; }
+.facts { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .3rem; }
+.fact { font: 500 .8rem/1.2 var(--font-mono); padding: .38rem .65rem; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); background: var(--surface); }
+.fact b { color: var(--ink); font-weight: 700; }
+
+/* ---------- the stage ---------- */
+.stage { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: clip; scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 12px); }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; padding: .7rem .85rem; border-bottom: 1px solid var(--line); }
+.flows { display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: thin; min-width: 0; flex: 1 1 100%; padding: 2px; }
+.chip { display: inline-flex; align-items: center; gap: .45rem; font: 600 .86rem/1.1 var(--font-body); padding: .5rem .8rem .5rem .55rem; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); cursor: pointer; white-space: nowrap; }
+.chip:hover { background: var(--sunken); }
+.chip-n { display: inline-grid; place-items: center; inline-size: 1.4rem; block-size: 1.4rem; border-radius: 50%; background: var(--sunken); font: 700 .72rem/1 var(--font-mono); color: var(--ink-2); }
+.chip[aria-pressed="true"] { background: var(--slab); color: var(--on-slab); border-color: var(--slab); }
+.chip[aria-pressed="true"] .chip-n { background: var(--slab-accent); color: var(--slab); }
+.chip--plain { padding-left: .8rem; }
+.ctl { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.ctl--end { margin-left: auto; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; font: 600 .86rem/1 var(--font-body); padding: .5rem .75rem; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); border-radius: 8px; cursor: pointer; min-height: 2.3rem; }
+.btn:hover:not([disabled]) { background: var(--sunken); }
+.btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); min-width: 6.4rem; }
+.btn--primary:hover:not([disabled]) { background: var(--accent-strong); }
+.btn[disabled] { opacity: .45; cursor: default; }
+.btn--icon { padding: .5rem; min-width: 2.3rem; }
+.btn[aria-pressed="true"]#follow { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+.count { font: 600 .84rem/1 var(--font-mono); color: var(--ink-2); min-width: 8.5ch; text-align: center; font-variant-numeric: tabular-nums; }
+.speed { display: inline-flex; align-items: center; gap: .35rem; font: 500 .82rem/1 var(--font-body); color: var(--ink-2); margin-left: .5rem; padding-left: .75rem; border-left: 1px solid var(--line); }
+@media (min-width: 900px) { .flows { flex-wrap: wrap; overflow-x: visible; } }
+.z-sw { fill: none; stroke: var(--line-strong); stroke-width: 1.3; stroke-dasharray: 3 2.5; }
+.speed select { font: 600 .84rem/1 var(--font-body); padding: .45rem .4rem; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: .5rem .8rem; font-weight: 600; font-size: .86rem; cursor: pointer; min-height: 2.25rem; }
+.seg button + button { border-left: 1px solid var(--line-strong); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.progress { block-size: 3px; background: var(--sunken); }
+.progress span { display: block; block-size: 100%; inline-size: 0; background: var(--accent); transition: inline-size .35s ease; }
+.strands { display: flex; flex-wrap: wrap; gap: .4rem; padding: .55rem .85rem; border-bottom: 1px solid var(--line); align-items: center; }
+.strands-l { font: 600 .72rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-right: .2rem; }
+.strand { display: inline-flex; align-items: center; gap: .45rem; font: 500 .8rem/1.1 var(--font-body); padding: .34rem .62rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.strand:hover { border-color: var(--line-strong); }
+.strand[aria-pressed="false"] { opacity: .5; text-decoration: line-through; }
+.strand--static { cursor: default; border-style: dashed; }
+.sw { inline-size: 30px; block-size: 12px; flex: none; overflow: visible; }
+
+.body { display: grid; grid-template-columns: minmax(0, 1fr); }
+.canvas { position: relative; height: var(--canvas-h); background: var(--ground); overflow: hidden; }
+.canvas.is-seq { overflow: auto; background: var(--surface); }
+.canvas.is-panning { cursor: grabbing; }
+#map { display: block; inline-size: 100%; block-size: 100%; user-select: none; -webkit-user-select: none; }
+.zoom { position: absolute; right: .75rem; bottom: .75rem; display: flex; flex-direction: column; gap: .3rem; }
+.zoom .btn { background: var(--surface); box-shadow: var(--shadow); }
+.canvas-note { position: absolute; left: .75rem; bottom: .75rem; font: 500 .74rem/1.3 var(--font-mono); color: var(--ink-3); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .3rem .5rem; pointer-events: none; }
+.panel { padding: 1rem 1.1rem 1.4rem; border-top: 1px solid var(--line); display: grid; gap: .9rem; align-content: start; min-width: 0; }
+@media (min-width: 1180px) {
+  .body { grid-template-columns: minmax(0, 1fr) 24rem; }
+  .panel { border-top: 0; border-left: 1px solid var(--line); max-height: var(--canvas-h); overflow: auto; }
+}
+@media (max-width: 700px) {
+  :root { --canvas-h: clamp(360px, 62vh, 560px); }
+  .ctl--end { margin-left: 0; }
+  .canvas-note { display: none; }
+  .strands { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+  .strand { white-space: nowrap; flex: none; }
+  .speed { margin-left: 0; padding-left: 0; border-left: 0; }
+}
+
+/* ---------- the panel ---------- */
+.p-kicker { font: 600 .72rem/1.35 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.p-title { font-size: 1.32rem; font-weight: 740; font-stretch: 92%; line-height: 1.18; }
+.p-title code { font-size: .86em; }
+.p-sub { color: var(--ink-3); font-weight: 600; margin-top: -.5rem; }
+.p-text { color: var(--ink-2); }
+.p-start { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.p-hint { font-size: .84rem; color: var(--ink-3); }
+.p-parts { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .35rem; }
+.p-back { display: flex; }
+.mini-btn { font: 600 .8rem/1.2 var(--font-body); padding: .28rem .55rem; border-radius: 6px; border: 1px solid var(--line); background: var(--sunken); color: var(--ink); cursor: pointer; }
+.mini-btn:hover { border-color: var(--line-strong); background: var(--surface); }
+.hops { list-style: none; padding: 0; display: grid; gap: .65rem; margin-top: .45rem; }
+.hop { display: grid; grid-template-columns: 1.4rem 30px minmax(0, 1fr); gap: .55rem; align-items: start; }
+.num { display: inline-grid; place-items: center; inline-size: 1.4rem; block-size: 1.4rem; border-radius: 50%; font: 800 .72rem/1 var(--font-mono); color: var(--surface); background: var(--s-ask); }
+.num.k-act { background: var(--s-act); } .num.k-event { background: var(--s-event); } .num.k-store { background: var(--s-store); }
+.num.k-model { background: var(--s-model); } .num.k-route { background: var(--ink-3); } .num.is-fail { background: var(--out); }
+.hop .sw { margin-top: .38rem; }
+.hop-b { display: grid; gap: .2rem; min-width: 0; }
+.hop-b > code { font-size: .86rem; font-weight: 600; color: var(--ink); }
+.hop-ft { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; font-size: .82rem; color: var(--ink-3); }
+.hop-ft .mini-btn { padding: .16rem .45rem; font-size: .76rem; }
+.hop-ep { font: .78rem/1.4 var(--font-mono); color: var(--ink-2); overflow-wrap: anywhere; }
+.hop-key { font: 600 .76rem/1.4 var(--font-mono); color: var(--accent-ink); }
+.hop-fail { font-size: .8rem; font-weight: 700; color: var(--out-ink); }
+.rule { border: 1px solid var(--line); background: var(--sunken); border-radius: 10px; padding: .65rem .8rem; font-size: .9rem; color: var(--ink-2); }
+.rule b { color: var(--ink); }
+.rule--never { border-color: var(--out-soft); background: var(--out-soft); color: var(--ink); }
+.rule--never b { color: var(--out-ink); }
+.codes ul { list-style: none; padding: 0; display: grid; gap: .15rem; margin-top: .3rem; }
+.codes code { font-size: .76rem; color: var(--ink-2); }
+.facts-dl { display: grid; grid-template-columns: minmax(6.5rem, max-content) minmax(0, 1fr); gap: .4rem .8rem; margin: 0; font-size: .88rem; }
+.facts-dl dt { color: var(--ink-3); font-weight: 600; }
+.facts-dl dd { margin: 0; color: var(--ink-2); min-width: 0; }
+.calls-mini { list-style: none; padding: 0; display: grid; gap: .3rem; margin-top: .35rem; }
+.calls-mini li { display: grid; grid-template-columns: 1.4rem 30px minmax(0, 1fr); gap: .5rem; align-items: center; }
+.call-btn { text-align: left; background: none; border: 0; padding: .15rem 0; cursor: pointer; color: var(--ink-2); font-size: .82rem; }
+.call-btn code { color: var(--accent-ink); font-weight: 700; font-size: .84rem; text-decoration: underline; text-underline-offset: .18em; }
+.call-btn:hover code { color: var(--ink); }
+.steps { list-style: none; padding: 0; display: grid; gap: 1px; border-top: 1px solid var(--line); padding-top: .6rem; }
+.steps button { inline-size: 100%; text-align: left; display: grid; grid-template-columns: 1.8rem minmax(0, 1fr); gap: .35rem; padding: .38rem .45rem; border: 0; background: transparent; color: var(--ink-2); border-radius: 7px; font: 500 .86rem/1.3 var(--font-body); cursor: pointer; }
+.steps button:hover { background: var(--sunken); }
+.steps button[aria-current="step"] { background: var(--accent-soft); color: var(--ink); font-weight: 650; }
+.steps .n { font: 700 .76rem/1.6 var(--font-mono); color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+
+/* ---------- map drawing ---------- */
+.grid-dot { fill: var(--grid); }
+.z-rect { fill: var(--sunken); fill-opacity: .55; stroke: var(--line-strong); stroke-width: 1.2; stroke-dasharray: 6 5; }
+.z-label { font: 700 10.5px var(--font-mono); letter-spacing: .08em; fill: var(--ink-3); }
+.node { cursor: pointer; outline: none; transition: opacity .25s ease; }
+.n-box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.2; transition: stroke .2s ease, stroke-width .2s ease; }
+.n-chassis { fill: var(--sunken); }
+.n-cap { fill: var(--surface); }
+.n-band { fill: var(--slab); }
+.n-band-t { font: 600 11px var(--font-mono); fill: var(--on-slab); letter-spacing: .02em; }
+.n-ext { stroke-dasharray: 5 4; }
+.n-sys { fill: var(--surface); }
+.n-bus { fill: var(--slab); stroke: none; }
+.bus-t { font: 700 10px var(--font-mono); fill: var(--slab-accent); letter-spacing: .12em; }
+.n-handle { stroke: var(--line-strong); stroke-width: 2; stroke-linecap: round; }
+.n-t { font: 700 13px var(--font-display); fill: var(--ink); font-stretch: 94%; }
+.n-s { font: 400 11px var(--font-body); fill: var(--ink-2); }
+.n-strong { font-weight: 700; fill: var(--ink); }
+.n-m { font: 500 10.3px var(--font-mono); fill: var(--ink-2); }
+.n-dt { font: 700 11.5px var(--font-display); fill: var(--ink); }
+.n-dm { font: 500 9px var(--font-mono); fill: var(--ink-3); }
+.n-mt { font: 700 12.5px var(--font-display); fill: var(--ink); }
+.n-ms { font: 400 10.3px var(--font-body); fill: var(--ink-2); }
+.keychip { fill: var(--accent-soft); }
+.keychip-t { font: 700 9.6px var(--font-mono); fill: var(--accent-ink); }
+.keychip--none { fill: var(--sunken); stroke: var(--line-strong); stroke-width: .8; }
+.keychip--none-t { font: 700 9.6px var(--font-mono); fill: var(--ink-3); }
+.lane { fill: var(--surface); stroke: var(--s-act); stroke-width: 1; }
+.lane-t { font: 700 9.8px var(--font-mono); fill: var(--ink); }
+.node:hover .n-box, .node:focus-visible .n-box { stroke: var(--focus); stroke-width: 2.2; }
+.node:focus-visible .n-box { stroke-width: 3; }
+.node.is-inflow > .n-box, .node.is-inflow > path.n-box { stroke: var(--accent); stroke-width: 2; }
+.node.is-hot > .n-box, .node.is-hot > path.n-box { stroke: var(--accent); stroke-width: 2.6; }
+.node.is-sel > .n-box, .node.is-sel > path.n-box { stroke: var(--focus); stroke-width: 3; }
+.m-dim .node { opacity: .26; }
+.m-dim .node.is-near { opacity: .62; }
+.m-dim .node.is-hot, .m-dim .node.is-sel { opacity: 1; }
+.m-dim .links .link { opacity: .12; }
+
+.link { fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.links .link { opacity: .62; transition: opacity .2s ease, stroke-width .2s ease; }
+.links .link.is-lit { opacity: 1; stroke-width: 2.6; }
+.s-ask { stroke: var(--s-ask); }
+.s-act { stroke: var(--s-act); stroke-width: 2.8; }
+.s-event { stroke: var(--s-event); stroke-dasharray: 7 5; }
+.s-store { stroke: var(--s-store); }
+.s-model { stroke: var(--s-model); stroke-dasharray: .5 5; stroke-width: 2.6; }
+.s-route { stroke: var(--ink-3); stroke-width: 1.4; }
+.link.is-fail { stroke: var(--out); stroke-dasharray: 3 4; }
+.ov .link { stroke-width: 3.2; opacity: 1; }
+.ov .s-act { stroke-width: 4.4; }
+.ov .s-model { stroke-width: 3.6; }
+.ov .s-route { stroke-width: 2.2; stroke: var(--ink-2); }
+.mk { stroke: none; }
+.mk-ask { fill: var(--s-ask); } .mk-act { fill: var(--s-act); } .mk-event { fill: var(--s-event); }
+.mk-store { fill: var(--s-store); } .mk-model { fill: var(--s-model); } .mk-route { fill: var(--ink-2); } .mk-fail { fill: var(--out); }
+.tag-bg { fill: var(--surface); stroke-width: 1.2; }
+.tag-t { font: 700 10.5px var(--font-mono); }
+.k-ask .tag-bg { stroke: var(--s-ask); } .k-ask .tag-t { fill: var(--s-ask); }
+.k-act .tag-bg { stroke: var(--s-act); } .k-act .tag-t { fill: var(--s-act); }
+.k-event .tag-bg { stroke: var(--s-event); } .k-event .tag-t { fill: var(--s-event); }
+.k-store .tag-bg { stroke: var(--s-store); } .k-store .tag-t { fill: var(--ink-2); }
+.k-model .tag-bg { stroke: var(--s-model); } .k-model .tag-t { fill: var(--s-model); }
+.k-route .tag-bg { stroke: var(--line-strong); } .k-route .tag-t { fill: var(--ink-2); }
+.badge.is-fail .tag-bg { stroke: var(--out); fill: var(--out-soft); } .badge.is-fail .tag-t { fill: var(--out-ink); }
+.badge-c { stroke: var(--surface); stroke-width: 2; fill: var(--s-ask); }
+.badge-t { font: 800 10.5px var(--font-mono); fill: var(--surface); pointer-events: none; }
+.k-act .badge-c { fill: var(--s-act); } .k-event .badge-c { fill: var(--s-event); } .k-store .badge-c { fill: var(--s-store); }
+.k-model .badge-c { fill: var(--s-model); } .k-route .badge-c { fill: var(--ink-3); } .badge.is-fail .badge-c { fill: var(--out); }
+.pk { fill: var(--surface); stroke-width: 3.2; }
+.pk-ask { stroke: var(--s-ask); } .pk-act { stroke: var(--s-act); } .pk-event { stroke: var(--s-event); }
+.pk-store { stroke: var(--s-store); } .pk-model { stroke: var(--s-model); } .pk-route { stroke: var(--ink-2); }
+.hide-ask .s-ask, .hide-ask .k-ask, .hide-ask .pk-ask,
+.hide-act .s-act, .hide-act .k-act, .hide-act .pk-act,
+.hide-event .s-event, .hide-event .k-event, .hide-event .pk-event,
+.hide-store .s-store, .hide-store .k-store, .hide-store .pk-store,
+.hide-model .s-model, .hide-model .k-model, .hide-model .pk-model { display: none; }
+
+/* ---------- the sequence view ---------- */
+#seq { min-width: max-content; }
+.seq-head { position: sticky; top: 0; z-index: 2; display: block; background: var(--surface); border-bottom: 1px solid var(--line); }
+.seq-body { display: block; }
+.seq-life { font: 700 11.5px var(--font-display); fill: var(--ink); }
+.seq-life-box { fill: var(--sunken); }
+.seq-lifeline { stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 3 5; }
+.seq-band { cursor: pointer; outline: none; }
+.seq-band-bg { fill: var(--ground); }
+.seq-band-t { font: 650 11.5px var(--font-body); fill: var(--ink-2); }
+.seq-band:hover .seq-band-bg { fill: var(--sunken); }
+.seq-band:focus-visible .seq-band-bg { stroke: var(--focus); stroke-width: 2; }
+.seq-band.is-cur .seq-band-bg { fill: var(--accent-soft); }
+.seq-band.is-cur .seq-band-t { fill: var(--ink); font-weight: 750; }
+.sq { cursor: pointer; }
+.sq .link { stroke-width: 1.6; }
+.sq.is-cur .link { stroke-width: 2.8; }
+.sq .is-ret { stroke-dasharray: 5 4; }
+.sq-t { font: 600 10.4px var(--font-mono); fill: var(--ink-2); }
+.sq.is-cur .sq-t { fill: var(--ink); font-weight: 700; }
+.sq-bg { fill: var(--surface); }
+.seq-empty { padding: 2rem; color: var(--ink-2); max-width: 52ch; }
+
+/* ---------- sections below the stage ---------- */
+.section { padding-block: 3rem 0; display: grid; gap: 1rem; }
+.section h2 { font-size: clamp(1.45rem, 1.1rem + 1.1vw, 2rem); font-weight: 760; font-stretch: 88%; line-height: 1.12; }
+.prose { color: var(--ink-2); max-width: 70ch; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; inline-size: 100%; font-size: .87rem; }
+th, td { text-align: left; vertical-align: top; padding: .55rem .7rem; border-bottom: 1px solid var(--line); }
+tbody tr:last-child > * { border-bottom: 0; }
+thead th { font: 700 .7rem/1.3 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); background: var(--sunken); }
+tr.grp th { background: var(--ground); font: 750 .9rem/1.3 var(--font-display); color: var(--ink); padding-block: .5rem; }
+td code, th code { font-size: .8rem; color: var(--ink); }
+td .ep { color: var(--ink-2); }
+.calls-tbl td:first-child { min-width: 16rem; }
+.calls-tbl td:nth-child(2) { min-width: 15rem; }
+.tbl-call { display: inline-flex; align-items: center; gap: .45rem; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+.tbl-call code { color: var(--accent-ink); font-weight: 700; text-decoration: underline; text-underline-offset: .18em; }
+.tbl-call:hover code { color: var(--ink); }
+.tbl-ft { display: block; font-size: .78rem; color: var(--ink-3); margin-top: .15rem; padding-left: 0; }
+.scope { font: 500 .76rem/1.3 var(--font-mono); color: var(--accent-ink); }
+.filter { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.filter .seg button { font-size: .82rem; }
+.keys th, .keys td { text-align: center; vertical-align: middle; }
+.keys th[scope="row"], .keys thead tr:first-child th:first-child { text-align: left; }
+.keys .sys-h { border-left: 1px solid var(--line); }
+.keys .sc-h { text-transform: none; letter-spacing: 0; font-size: .74rem; }
+.keys td.has { background: color-mix(in srgb, var(--accent-soft) 55%, transparent); }
+.mark { display: inline-block; inline-size: .78rem; block-size: .78rem; border-radius: 50%; background: var(--s-ask); vertical-align: middle; }
+.mark--w { background: var(--s-act); border-radius: 3px; }
+.mark--e { background: var(--s-event); border-radius: 2px; transform: rotate(45deg); }
+.keys-legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; font-size: .84rem; color: var(--ink-2); }
+.keys-legend span { display: inline-flex; align-items: center; gap: .4rem; }
+.two { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); }
+.step-groups { display: grid; gap: 1rem 2rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .step-groups { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+.groups { display: grid; gap: .7rem; }
+.loop-fig { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: .75rem; margin: 0; overflow-x: auto; }
+.loop-fig svg { display: block; inline-size: 100%; min-width: 640px; block-size: auto; }
+.loop-fig figcaption { font-size: .86rem; color: var(--ink-3); padding: .5rem .25rem 0; }
+.step-group h3 { font: 700 .74rem/1.3 var(--font-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); margin-bottom: .35rem; }
+.step-group ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem; }
+.step-group li code { display: inline-block; padding: .22rem .5rem; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); font-size: .78rem; }
+.limits { list-style: none; padding: 0; display: grid; gap: .45rem; }
+.limits li { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: .75rem; font-size: .9rem; color: var(--ink-2); padding-bottom: .45rem; border-bottom: 1px solid var(--line); }
+.limits b { color: var(--ink); font-weight: 700; }
+.foot { padding-block: 3rem 3.5rem; color: var(--ink-3); font-size: .86rem; display: grid; gap: .4rem; }
+.foot p { max-width: 80ch; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+<a class="skip" href="#stage">Skip to the map</a>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M15 5.5 8.5 12l6.5 6.5"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 5.5 15.5 12 9 18.5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7.5 4.8v14.4L19 12z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8.5 5v14M15.5 5v14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+</svg>
+<main id="main">
+  <header class="wrap mast">
+    <p class="eyebrow">Group 3 · Telco outage-aware customer care · the running system</p>
+    <h1>SkyLink Care System Map</h1>
+    <p class="lead">Follow a customer’s message from the chat window to the front desk, through the coordinator and its specialists, out to SkyLink’s systems and back. Every line is a call the code makes, drawn with the key it is made with. Choose a flow and play it, or click any part to open it.</p>
+    <div class="facts">
+      <span class="fact"><b>5</b> programs and one database</span>
+      <span class="fact"><b>6</b> SkyLink systems behind one gateway</span>
+      <span class="fact"><b>7</b> gateway keys, one per caller</span>
+      <span class="fact"><b>4</b> read-only MCP tools</span>
+      <span class="fact"><b>1</b> program that writes</span>
+      <span class="fact">checked against commit <b>bb8d25c</b> · 26 Nov 2026</span>
+    </div>
+  </header>
+
+  <section class="wrap" aria-labelledby="stage-h">
+    <h2 id="stage-h" class="vh">The map and its flows</h2>
+    <div class="stage" id="stage">
+      <div class="bar">
+        <div class="flows" id="flows" role="group" aria-label="Choose a flow"></div>
+      </div>
+      <div class="bar">
+        <div class="ctl">
+          <button class="btn btn--icon" id="prev" type="button" aria-label="Previous step"><svg class="ico"><use href="#i-prev"/></svg></button>
+          <button class="btn btn--primary" id="play" type="button" aria-pressed="false"><svg class="ico"><use href="#i-play"/></svg><span class="lbl">Play</span></button>
+          <button class="btn btn--icon" id="next" type="button" aria-label="Next step"><svg class="ico"><use href="#i-next"/></svg></button>
+          <span class="count" id="count">Overview</span>
+          <label class="speed" for="speed">Speed
+            <select id="speed">
+              <option value="0.75">0.75×</option>
+              <option value="1" selected>1×</option>
+              <option value="1.5">1.5×</option>
+              <option value="2">2×</option>
+            </select>
+          </label>
+        </div>
+        <div class="ctl ctl--end">
+          <div class="seg" role="group" aria-label="View">
+            <button type="button" id="v-map" aria-pressed="true">Map</button>
+            <button type="button" id="v-seq" aria-pressed="false">Sequence</button>
+          </div>
+          <button class="btn" id="follow" type="button" aria-pressed="true">Camera follows the step</button>
+        </div>
+      </div>
+      <div class="progress" aria-hidden="true"><span id="bar-fill"></span></div>
+      <div class="strands" id="strands" role="group" aria-label="Show or hide each kind of line"></div>
+      <div class="body">
+        <div class="canvas" id="canvas">
+          <svg id="map" role="group" aria-labelledby="map-title map-desc">
+            <title id="map-title">The SkyLink care platform, part by part</title>
+            <desc id="map-desc">People on the left reach two doors, care-api and care-mcp. Behind them, PostgreSQL holds the case files that every program shares. care-worker holds the coordinator with its supervisor and five specialists; care-executor is the only program that writes to SkyLink; care-ingest reads the NOC’s announcements. On the right, one gateway with a key per caller stands in front of SkyLink’s six systems. Above, the model provider, reached only through the LLM gateway.</desc>
+          </svg>
+          <div id="seq" hidden></div>
+          <div class="zoom" id="zoom">
+            <button class="btn btn--icon" id="zoom-in" type="button" aria-label="Zoom in"><svg class="ico"><use href="#i-plus"/></svg></button>
+            <button class="btn btn--icon" id="zoom-out" type="button" aria-label="Zoom out"><svg class="ico"><use href="#i-minus"/></svg></button>
+            <button class="btn btn--icon" id="zoom-fit" type="button" aria-label="Show the whole map"><svg class="ico"><use href="#i-fit"/></svg></button>
+          </div>
+          <p class="canvas-note" aria-hidden="true">drag to pan · click a part to open it</p>
+        </div>
+        <aside class="panel" id="panel" aria-label="About the current step or part"></aside>
+      </div>
+    </div>
+    <p class="vh" id="live" aria-live="polite"></p>
+  </section>
+
+  <section class="wrap section" id="calls" aria-labelledby="calls-h">
+    <h2 id="calls-h">Every call, and the key it is made with</h2>
+    <p class="prose">The specialists, the executor, the radio and the enquiry window reach SkyLink’s systems through one gateway, each with a key of its own. The coordinator’s two model calls go through the LLM gateway. Choose a call to see its path on the map.</p>
+    <div class="filter">
+      <div class="seg" id="calls-filter" role="group" aria-label="Which calls to list">
+        <button type="button" data-f="tools" aria-pressed="true">Tool calls</button>
+        <button type="button" data-f="store" aria-pressed="false">Database</button>
+        <button type="button" data-f="people" aria-pressed="false">People and doors</button>
+        <button type="button" data-f="all" aria-pressed="false">Everything</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="calls-tbl">
+        <thead><tr><th scope="col">Call · who to whom</th><th scope="col">Endpoint or form</th><th scope="col">Key · scope</th><th scope="col">When</th><th scope="col">Note</th></tr></thead>
+        <tbody id="calls-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="wrap section" id="keys" aria-labelledby="keys-h">
+    <h2 id="keys-h">Who holds which key</h2>
+    <p class="prose">The gateway turns each key into a fixed set of scopes. Each program is started with only its own callers’ keys, so a fault in one cannot borrow another’s powers. The front desk holds no key at all, and the coordinator’s four keys are all read-only.</p>
+    <div class="tbl-wrap">
+      <table class="keys">
+        <thead id="keys-head"></thead>
+        <tbody id="keys-body"></tbody>
+      </table>
+    </div>
+    <div class="keys-legend">
+      <span><i class="mark mark--r" aria-hidden="true"></i> reads</span>
+      <span><i class="mark mark--w" aria-hidden="true"></i> writes</span>
+      <span><i class="mark mark--e" aria-hidden="true"></i> the NOC’s announcement stream</span>
+    </div>
+    <p class="prose">Troubleshooting needs no key: it reads only the platform’s own guide index. The simulator also accepts an admin key, which only the tests use to stage outages and failures. Source: <code>src/mock_oss/auth.py</code>, <code>src/skylink_care/adapters/gateway.py</code>, <code>docker-compose.yml</code>.</p>
+  </section>
+
+  <section class="wrap section" id="turn" aria-labelledby="turn-h">
+    <h2 id="turn-h">One turn of the coordinator</h2>
+    <p class="prose">A conversation is a LangGraph thread kept in PostgreSQL. A note in its inbox starts a turn; the supervisor chooses step after step until there is nothing left to do but wait; the thread is then saved and parked until the next note.</p>
+    <div class="two">
+      <figure class="loop-fig">
+        <svg viewBox="0 0 980 236" role="img" aria-label="One turn: an inbox note leads to drain_inbox, then to the supervisor, which routes to one of 16 steps and back until it parks the thread at await_event or ends it at finish. A new note wakes the parked thread.">
+          <defs>
+            <marker id="lp-route" viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0.6 L10,5 L0,9.4 z" class="mk mk-route"/></marker>
+            <marker id="lp-event" viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0.6 L10,5 L0,9.4 z" class="mk mk-event"/></marker>
+          </defs>
+          <rect x="12" y="34" width="150" height="64" rx="10" class="n-box n-chassis"/>
+          <text x="24" y="58" class="n-t">Inbox note</text>
+          <text x="24" y="75" class="n-s">message · outage · timer</text>
+          <text x="24" y="89" class="n-s">· action finished</text>
+          <rect x="206" y="34" width="150" height="64" rx="10" class="n-box"/>
+          <text x="218" y="58" class="n-t">drain_inbox</text>
+          <text x="218" y="75" class="n-s">reads every new note</text>
+          <rect x="400" y="22" width="176" height="88" rx="10" class="n-box" style="stroke: var(--accent); stroke-width: 2.2"/>
+          <text x="412" y="48" class="n-t">supervisor</text>
+          <text x="412" y="66" class="n-s">decide_route picks the</text>
+          <text x="412" y="81" class="n-s">next step · plain code</text>
+          <rect x="640" y="22" width="190" height="88" rx="10" class="n-box"/>
+          <text x="652" y="48" class="n-t">one of 16 steps</text>
+          <text x="652" y="66" class="n-s">triage · diagnose · guide …</text>
+          <text x="652" y="81" class="n-s">30 s and 2 attempts each</text>
+          <rect x="400" y="160" width="176" height="62" rx="10" class="n-box"/>
+          <text x="412" y="184" class="n-t">await_event</text>
+          <text x="412" y="201" class="n-s">checkpoint saved, parked</text>
+          <rect x="852" y="160" width="116" height="62" rx="10" class="n-box"/>
+          <text x="864" y="184" class="n-t">finish</text>
+          <text x="864" y="201" class="n-s">closed or handed over</text>
+          <path d="M162,66 H204" class="link s-event" marker-end="url(#lp-event)"/>
+          <path d="M356,66 H398" class="link s-route" marker-end="url(#lp-route)"/>
+          <path d="M576,52 H638" class="link s-route" marker-end="url(#lp-route)"/>
+          <path d="M640,84 H578" class="link s-route" marker-end="url(#lp-route)"/>
+          <path d="M488,110 V158" class="link s-route" marker-end="url(#lp-route)"/>
+          <path d="M400,191 H289 Q281,191 281,183 V100" class="link s-event" marker-end="url(#lp-event)"/>
+          <path d="M556,110 V132 Q556,140 564,140 H902 Q910,140 910,148 V158" class="link s-route" marker-end="url(#lp-route)"/>
+          <text x="184" y="24" class="n-m" text-anchor="middle">for the case</text>
+          <text x="595" y="44" class="n-m">route</text>
+          <text x="597" y="100" class="n-m">back</text>
+          <text x="480" y="140" class="n-m" text-anchor="end">nothing left</text>
+          <text x="296" y="214" class="n-m">woken by a note</text>
+          <text x="700" y="132" class="n-m">closed · handed over</text>
+        </svg>
+        <figcaption>One turn of a conversation. The supervisor is the only node with a choice; every step returns to it.</figcaption>
+      </figure>
+      <div class="step-groups">
+        <div class="groups">
+        <div class="step-group"><h3>Conversation steps</h3><ul><li><code>triage</code></li><li><code>ask_identity</code></li><li><code>out_of_scope</code></li><li><code>close</code></li><li><code>handoff</code></li></ul></div>
+        <div class="step-group"><h3>Network steps</h3><ul><li><code>diagnose</code></li><li><code>outage_reply</code></li><li><code>unknown_reply</code></li><li><code>clear_reply</code></li><li><code>line_hold</code></li><li><code>guide</code></li><li><code>restored</code></li><li><code>keep_waiting</code></li></ul></div>
+        <div class="step-group"><h3>Credit and visit steps</h3><ul><li><code>credit_result</code></li><li><code>visit</code></li><li><code>visit_result</code></li></ul></div>
+        </div>
+        <ul class="limits">
+          <li><b>Per step</b><span>30 seconds and 2 attempts</span></li>
+          <li><b>Per turn</b><span>12 decisions, then a person takes over; 60 steps at most</span></li>
+          <li><b>At once</b><span>8 conversations, each locked by the database</span></li>
+          <li><b>A crash</b><span>tried again after 2, 4, 8 and 16 s; at the fifth failure a person, and the customer is told</span></li>
+          <li><b>Wake-ups</b><span>a customer message, an outage declared or resolved on the node, a timer, an action finished</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap section" id="mcp-tools" aria-labelledby="mcp-h">
+    <h2 id="mcp-h">The enquiry window: what an outside assistant may ask</h2>
+    <p class="prose">care-mcp is a Model Context Protocol server over streamable HTTP at <code>/mcp</code>. An assistant must present a Bearer key; with no key configured the window stays shut. Every argument is typed and bounded in the tool’s declaration, so a bad one is refused before the tool runs. All assistants together may make 60 calls a minute, and every call that reaches a tool is written to the audit log.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th scope="col">Tool or resource</th><th scope="col">Arguments, checked before it runs</th><th scope="col">Answers from</th><th scope="col">Never</th></tr></thead>
+        <tbody>
+          <tr><td><code>check_network_status</code></td><td><code>node_id</code>, as Network Monitoring names it (up to 64 letters, digits and <code>._:-</code>)</td><td>The diagnostics decision, on a status read now with the mcp key, and the radio’s record</td><td>Tests a line. UNKNOWN arrives with the sentence that it is not an all-clear</td></tr>
+          <tr><td><code>search_router_guide</code></td><td><code>router_model</code> (such as <code>AL-AX18</code>), <code>problem</code> in plain words, 1 to 500 characters</td><td>The troubleshooting search over the guide index; steps word for word, with their citation</td><td>Returns a factory reset, another model’s steps, or anything a model wrote</td></tr>
+          <tr><td><code>quote_service_credit</code></td><td><code>service_type</code> broadband or mobile, <code>monthly_fee_usd</code> above 0 up to 100,000, <code>outage_minutes</code> 0 to 132,480, <code>planned</code>, <code>credited_this_cycle_usd</code></td><td>The credit engine and the policy file the platform itself uses</td><td>Applies anything, or knows any customer</td></tr>
+          <tr><td><code>platform_status</code></td><td>none</td><td>The radio’s health, the queue for the coordinator, the guide index, the open outages and alarms</td><td>Says anything about a customer</td></tr>
+          <tr><td><code>skylink://credit-policy</code></td><td>a resource</td><td>The policy file as read when the server started (YAML)</td><td>—</td></tr>
+          <tr><td><code>skylink://router-models</code></td><td>a resource</td><td>The router models with a guide in the index (JSON)</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose">The conversation with a customer does not go through this window. The model that reads customers’ messages has no tools at all, and that stays so (<code>docs/adr/0003-read-only-tools-over-mcp.md</code>).</p>
+  </section>
+
+  <section class="wrap section" id="bounds" aria-labelledby="bounds-h">
+    <h2 id="bounds-h">What crosses each boundary</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th scope="col">Boundary</th><th scope="col">What crosses it</th><th scope="col">What guards it</th></tr></thead>
+        <tbody>
+          <tr><td><b>People → the front desk</b></td><td>Messages from customers and channels; staff’s decisions</td><td>Signed tokens with six roles. A first contact is never refused; after it, 5 new contacts a minute per caller and 20 messages a minute per conversation. A channel is capped at 600 contacts at once, then 60 a second. Someone else’s conversation looks exactly like one that does not exist.</td></tr>
+          <tr><td><b>Platform → the model provider</b></td><td>Masked text, and for a guide answer the sections found</td><td>The LLM gateway alone: masking by shape and by the customer’s own values, never the words of an unidentified visitor, 8 seconds, a strict form, no copy kept by OpenAI. A reading can only steer among options the evidence already allows.</td></tr>
+          <tr><td><b>Platform → SkyLink’s systems</b></td><td>Reads by four specialists, the radio and the enquiry window; writes by the executor alone</td><td>One key per caller with only its scopes; time limits; one retry for a read and none for a write; a circuit breaker; an Idempotency-Key on every write; every action checked again just before it is carried out.</td></tr>
+          <tr><td><b>An outside assistant → the enquiry window</b></td><td>Four questions and two resources</td><td>A Bearer key, arguments bounded in the declaration, 60 calls a minute, read-only tools, nothing of a customer in or out, every call in the audit log.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose">Not built yet: one database account per program (today every program connects as the table owner, which could switch off the audit log’s refusal to change), proper staff sign-in (today a shared key and a typed name), more than one server, and a stronger identity check for visitors, such as a one-time code by text.</p>
+  </section>
+
+  <footer class="wrap foot">
+    <p>Built on 26 November 2026 from the code at commit <code>bb8d25c</code>, <code>docs/HOW_IT_WORKS.md</code>, the three decision records in <code>docs/adr/</code> and <code>docker-compose.yml</code>. Every part names the files behind it.</p>
+    <p>Companion pages: SkyLink Care Architecture, a plain-language tour of the design, and SkyLink Care Request Flows, each step with the code behind it.</p>
+  </footer>
+</main>
+<script>
+/* ---------- data: every part, every call, every flow. Checked against commit bb8d25c. ---------- */
+const DATA = (() => {
+  const W = 1440, H = 800;
+
+  const ZONES = [
+    { x: 8, y: 72, w: 196, h: 720, label: 'OUTSIDE · PEOPLE' },
+    { x: 212, y: 72, w: 856, h: 720, label: 'CARE PLATFORM · FIVE PROGRAMS AND POSTGRESQL' },
+    { x: 1076, y: 72, w: 356, h: 720, label: 'SKYLINK OSS/BSS · MOCK-OSS :8081' },
+    { x: 640, y: 4, w: 428, h: 60, label: 'OUTSIDE · MODEL PROVIDER' },
+  ];
+
+  /* Types: box (people), prog (a program, with its band), mini (inside a program), row (a
+     specialist), db (the cylinder), drawer (a group of tables), bus (the gateway), sys (a SkyLink
+     system), ext (outside the platform). Geometry is in map units. */
+  const NODES = [
+    { id: 'chat', type: 'box', x: 24, y: 112, w: 160, h: 52, title: 'Customer chat', sub: 'website · guest or signed in',
+      kicker: 'Outside · the customer',
+      summary: 'The chat window on the website. It opens a contact with the first message, sends later messages and polls for replies, which the platform works out separately and stores as messages.',
+      facts: [['Pass', 'a signed token with the role guest (a session and no customer) or customer (it names them). The demo signs in through POST /v1/dev/token'],
+        ['Polls', 'GET /v1/contacts/{id} every 1.2 s, every 5 s while replies are delayed']],
+      never: 'Shows anything a model wrote. Every reply is one of 35 templates filled from verified facts.',
+      code: ['src/skylink_care/web/index.html', 'src/skylink_care/web/app.js'] },
+    { id: 'channel', type: 'box', x: 24, y: 176, w: 160, h: 48, title: 'Contact centre', sub: 'trusted channel',
+      kicker: 'Outside · a trusted integration',
+      summary: 'A contact-centre platform that passes calls on as text. It is the only caller allowed to state the phone line a call came from, so triage can identify a customer by their registered line.',
+      facts: [['Limit', '600 contacts at once from the channel, then 60 a second; past that even a first contact through it is turned away'],
+        ['Identity', 'the stated line goes to crm.lookup, and exactly one account must match']],
+      code: ['src/skylink_care/api/app.py', 'src/skylink_care/api/auth.py'] },
+    { id: 'staff', type: 'box', x: 24, y: 352, w: 160, h: 52, title: 'Staff desk', sub: 'agent · supervisor · ops',
+      kicker: 'Outside · the people in charge',
+      summary: 'Three queues: handoffs with their summary, approvals for credits above $500 with the working, and operations items that belong to no conversation. Every decision is written to the audit log in the same transaction.',
+      facts: [['Agent', 'sees the queues and any conversation, closes handed-over cases, takes a conversation over'],
+        ['Supervisor', 'also approves or rejects credits above $500 and closes operations items'],
+        ['Ops', 'sees everything and closes operations items'],
+        ['Sign-in', 'today a shared staff key and a typed name']],
+      code: ['src/skylink_care/web/staff.html', 'src/skylink_care/web/staff.js', 'src/skylink_care/api/approvals.py', 'src/skylink_care/api/handoffs.py', 'src/skylink_care/api/ops.py', 'src/skylink_care/api/takeover.py'] },
+    { id: 'assistant', type: 'box', x: 24, y: 688, w: 160, h: 52, title: 'Staff’s AI assistant', sub: 'any MCP client',
+      kicker: 'Outside · somebody else’s AI',
+      summary: 'A staff member’s desktop assistant, an IDE or another agent. It speaks the Model Context Protocol and may ask the enquiry window four questions. Nobody at SkyLink controls it, so it gets nothing that acts and nothing about a customer.',
+      facts: [['Connects', 'streamable HTTP at /mcp, with Authorization: Bearer and the key'],
+        ['Asks', 'initialize · tools/list · tools/call · resources/read']],
+      code: ['README.md (“The MCP server”)', 'docs/adr/0003-read-only-tools-over-mcp.md'] },
+
+    { id: 'api', type: 'prog', x: 228, y: 104, w: 160, h: 348, band: 'care-api · :8080', title: 'Front desk',
+      lines: [['never waits on a model', 'n-s', 62], ['or a SkyLink system', 'n-s', 77],
+        ['1  signed token', 'n-m', 108], ['2  well-formed message', 'n-m', 126], ['3  caller’s limits', 'n-m', 144],
+        ['4  one transaction', 'n-m', 162], ['5  reference at once', 'n-m', 180],
+        ['staff routes', 'n-s n-strong', 256], ['approvals · handoffs', 'n-m', 274], ['ops · takeover · audit', 'n-m', 291]],
+      kicker: 'Care platform · program care-api',
+      summary: 'The front desk. It checks the pass, checks the message, applies limits, writes the intake in one transaction and answers at once with the complaint reference. Because it never waits for a model or a SkyLink system, references keep flowing when everything behind it is struggling.',
+      facts: [['Roles', 'guest · customer · channel · agent · supervisor · ops'],
+        ['Limits', 'a first contact is never refused; after it, 5 new contacts a minute per caller and 20 messages a minute per conversation'],
+        ['Intake', 'contact, message, inbox note and COMPLAINT_REGISTER proposal: all four or none'],
+        ['Reference', 'SKL-261116-000042-0: the date in Indian time, a running number, a check digit'],
+        ['Repeats', 'the same request id gets the same reference; a reused id with other text is refused (409)'],
+        ['Measured', 'slowest reference 0.25 s at ten contacts a second'],
+        ['Gateway key', 'none']],
+      never: 'Calls a model or a SkyLink system.',
+      code: ['src/skylink_care/api/app.py', 'src/skylink_care/api/auth.py', 'src/skylink_care/api/ratelimit.py', 'src/skylink_care/db/contacts.py', 'src/skylink_care/domain/reference.py'] },
+    { id: 'mcp', type: 'prog', x: 228, y: 676, w: 160, h: 76, band: 'care-mcp · :8082', title: 'Enquiry window',
+      lines: [['4 read-only tools', 'n-m', 62]],
+      kicker: 'Care platform · program care-mcp',
+      summary: 'The enquiry window for other people’s AI assistants. Four read-only tools answer by the same rules the specialists go by: the network decision, the guide search, the credit engine and the platform’s own health.',
+      facts: [['Tools', 'check_network_status · search_router_guide · quote_service_credit · platform_status'],
+        ['Resources', 'skylink://credit-policy · skylink://router-models'],
+        ['Gateway key', 'mcp, which may read a node’s status and nothing else'],
+        ['Guards', 'a Bearer key (shut without one), arguments bounded in the declaration, 60 calls a minute for all callers together, every call audited']],
+      never: 'Acts, or takes or returns a name, a phone number or a customer ID.',
+      code: ['src/skylink_care/mcp_server/server.py', 'src/skylink_care/mcp_server/tools.py', 'src/skylink_care/mcp_server/main.py'] },
+
+    { id: 'db', type: 'db', x: 420, y: 104, w: 184, h: 668, title: 'PostgreSQL 17', sub: '+ pgvector · the case files',
+      kicker: 'Care platform · the database',
+      summary: 'The case files. Every program keeps its state here, and the programs reach each other only through it: the front desk leaves a note in the inbox, the coordinator writes proposals to the action ledger, the executor writes back what happened.',
+      facts: [['Tables', '21, created by numbered migrations, plus LangGraph’s checkpoints'],
+        ['Audit log', 'the database refuses any change or deletion of an entry'],
+        ['Known limit', 'every program connects as the table owner, which could switch that refusal off; one account per program is not built yet']],
+      code: ['src/skylink_care/db/migrations/', 'src/skylink_care/db/'] },
+    { id: 'db.contacts', type: 'drawer', x: 428, y: 156, w: 168, h: 38, title: 'Conversations', mono: ['contacts · contact_messages'],
+      kicker: 'Case files · drawer',
+      summary: 'One row per conversation, with its reference, status and, once known, the customer, service and node. Every message, both ways. Written by the front desk and by the coordinator’s replies.',
+      code: ['src/skylink_care/db/contacts.py', 'src/skylink_care/db/messages.py'] },
+    { id: 'db.inbox', type: 'drawer', x: 428, y: 200, w: 168, h: 38, title: 'Inbox · timers', mono: ['inbox · timers'],
+      kicker: 'Case files · drawer',
+      summary: 'Notes for the coordinator: a new message, an outage declared or resolved on the customer’s node, a timer that fired, an action finished. A note is the only thing that wakes a conversation.',
+      code: ['src/skylink_care/db/inbox.py', 'src/skylink_care/db/timers.py'] },
+    { id: 'db.checkpoints', type: 'drawer', x: 428, y: 244, w: 168, h: 38, title: 'Notebooks', mono: ['LangGraph checkpoints'],
+      kicker: 'Case files · drawer',
+      summary: 'A conversation’s working notes between turns, saved at the end of each turn and deleted when the work on it is finished. A crash costs at most one repeated turn.',
+      code: ['src/skylink_care/orchestrator/graph.py'] },
+    { id: 'db.reference', type: 'drawer', x: 428, y: 288, w: 168, h: 38, title: 'Address → node map', mono: ['address_node_map · nodes'],
+      kicker: 'Case files · drawer',
+      summary: 'Which network node serves each address, loaded from SkyLink’s reference data. Deliberately imperfect in the invented data: 1.5% of addresses missing, 1.0% with two candidates, 0.7% pointing at retired equipment.',
+      code: ['src/skylink_care/db/reference.py', 'src/skylink_care/pipelines/reference_loader.py'] },
+    { id: 'db.identity', type: 'drawer', x: 428, y: 332, w: 168, h: 38, title: 'Identity attempts', mono: ['identity_attempts'],
+      kicker: 'Case files · drawer',
+      summary: 'Wrong answers to the identity check, counted per claimed customer ID across all conversations. Five in an hour or ten in a day stop further checks for that ID until they age out.',
+      code: ['src/skylink_care/db/identity.py', 'src/skylink_care/agents/identity_guard.py'] },
+    { id: 'db.staff', type: 'drawer', x: 428, y: 376, w: 168, h: 38, title: 'People’s queues', mono: ['approvals · handoffs · ops'],
+      kicker: 'Case files · drawer',
+      summary: 'What waits for a person: credits above $500, conversations handed over with their summary, and operations items such as a text that could not be sent.',
+      code: ['src/skylink_care/db/approvals.py', 'src/skylink_care/db/handoffs.py', 'src/skylink_care/db/ops.py'] },
+    { id: 'db.guides', type: 'drawer', x: 428, y: 420, w: 168, h: 38, title: 'Guide index', mono: ['guide_chunks · pgvector'],
+      kicker: 'Case files · drawer',
+      summary: 'Twelve router guides cut into sections, each checked for unsafe instructions before it is indexed. A search filters by router model first, then ranks by the words shared and by vector similarity.',
+      code: ['src/skylink_care/rag/index.py', 'src/skylink_care/rag/documents.py', 'src/skylink_care/rag/embedding.py'] },
+    { id: 'db.actions', type: 'drawer', x: 428, y: 476, w: 168, h: 94, title: 'Action ledger', mono: ['actions', 'lane 1 complaint · 2 ticket', '3 link, visit · 4 credit', '9 text'],
+      kicker: 'Case files · drawer',
+      summary: 'Every proposed change to a SkyLink system, stored exactly as it will be sent, with a fingerprint of that content, a unique name and a lane. Proposing the same thing twice gives the same row.',
+      code: ['src/skylink_care/db/actions.py'] },
+    { id: 'db.network', type: 'drawer', x: 428, y: 588, w: 168, h: 78, title: 'Network picture', mono: ['outages · outage_nodes', 'node_alarms · feed_state', 'line_tests · episodes'],
+      kicker: 'Case files · drawer',
+      summary: 'What the radio and the specialists have learnt: outages and the nodes they cover, alarms, the stream’s cursor and heartbeat, line tests, and each node’s episode with its one repair ticket.',
+      code: ['src/skylink_care/db/read_model.py', 'src/skylink_care/db/line_tests.py', 'src/skylink_care/db/episodes.py'] },
+    { id: 'db.audit', type: 'drawer', x: 428, y: 684, w: 168, h: 62, title: 'Audit log', mono: ['audit_log', 'no update · no delete'],
+      kicker: 'Case files · drawer',
+      summary: 'Every step: when, which conversation, who acted (“agent:diagnostics”, “system:executor”, “staff:anna”), what went in and came out, with the model, prompt and policy versions where they apply. Contact details are masked first; only staff can read it.',
+      code: ['src/skylink_care/db/audit.py', 'src/skylink_care/observability/audit.py'] },
+
+    { id: 'worker', type: 'prog', x: 640, y: 104, w: 412, h: 348, band: 'care-worker · coordinator and specialists · LangGraph',
+      kicker: 'Care platform · program care-worker',
+      summary: 'The coordinator: a LangGraph state machine that works each conversation through its steps with five specialists. It is the only part that reads customers’ messages, and the only one that may call a language model.',
+      facts: [['Picks up', 'cases with unread inbox notes, oldest first, 8 at a time, each one locked'],
+        ['A turn', 'drain the inbox, run steps until only waiting is left, save the checkpoint, park'],
+        ['Limits', '30 s and 2 attempts per step; 12 decisions in a turn, then a person; 60 steps at most'],
+        ['Crashes', 'tried again after 2, 4, 8 and 16 s; at the fifth failure a person takes the case and the customer is told'],
+        ['Gateway keys', 'triage, diagnostics, resolution, dispatch, all read-only. The write key is not given to it']],
+      never: 'Writes to a SkyLink system. Every change it wants is a proposal in the action ledger.',
+      code: ['src/skylink_care/orchestrator/graph.py', 'src/skylink_care/orchestrator/routing.py', 'src/skylink_care/orchestrator/nodes.py', 'src/skylink_care/orchestrator/network_nodes.py', 'src/skylink_care/orchestrator/credit_nodes.py', 'src/skylink_care/orchestrator/visit_nodes.py', 'src/skylink_care/orchestrator/worker.py'] },
+    { id: 'replies', type: 'mini', parent: 'worker', x: 652, y: 136, w: 132, h: 48, title: 'Replies', sub: '35 templates · claims',
+      kicker: 'care-worker · what a customer may read',
+      summary: 'Customers are only ever sent templates: 35 pre-written messages with blanks filled from verified facts. Each template declares what it claims about the network, and the claim is checked against this turn’s evidence before the message is stored.',
+      facts: [['“No outage reported”', 'needs a confirmed-clear decision made in this turn, on a status read within 60 s'],
+        ['“There is an outage”', 'needs a fresh ACTIVE decision about that same outage'],
+        ['“It is over”', 'needs a fresh confirmed clear, or the NOC’s own announcement with its time'],
+        ['Wording', 'an all-clear phrase in any message needs the proof of “no outage reported”'],
+        ['Blocked', 'not stored; written to the audit log; a person takes over']],
+      never: 'Sends words a model wrote. Every conversation message begins “I’m SkyLink’s automated assistant”.',
+      code: ['src/skylink_care/agents/replies.py', 'src/skylink_care/agents/visit_replies.py', 'src/skylink_care/guardrails/claims.py', 'src/skylink_care/orchestrator/outgoing.py'] },
+    { id: 'sup', type: 'mini', parent: 'worker', x: 792, y: 136, w: 132, h: 48, title: 'Supervisor', sub: 'decide_route · code',
+      kicker: 'care-worker · what happens next',
+      summary: 'decide_route reads the case and picks the next of 16 steps. It is plain code: the same situation always leads to the same step, and nothing a model says can unlock an action.',
+      facts: [['Steps', 'triage · ask_identity · out_of_scope · diagnose · outage_reply · unknown_reply · clear_reply · line_hold · guide · restored · keep_waiting · credit_result · visit · visit_result · close · handoff'],
+        ['After triage', 'a person asked for: handoff. Words aimed at the instructions and no fault: decline. Not identified: ask, three times at most. Low confidence or billing: a person. Otherwise: diagnose'],
+        ['After diagnosis', 'ACTIVE: tell of the outage. CONFIRMED_CLEAR: restored, line hold, guide steps or a visit. UNKNOWN: “cannot verify”, look again, then a person']],
+      code: ['src/skylink_care/orchestrator/routing.py', 'src/skylink_care/orchestrator/state.py'] },
+    { id: 'llm', type: 'mini', parent: 'worker', x: 932, y: 136, w: 108, h: 48, title: 'LLM gateway', sub: 'mask · 8 s · rules',
+      kicker: 'care-worker · the one door to a model',
+      summary: 'Every model call goes through here. The gateway masks personal details before any text leaves, gives the model 8 seconds, and lets the keyword rules answer when the model fails, is slow, refuses or returns something that does not fit the form.',
+      facts: [['Readers', 'keyword rules (the default, inside the platform) · OpenAI gpt-5.4-mini-2026-03-17 (the demo) · Claude (a setting, not yet run live) · simulated (load tests)'],
+        ['Jobs', 'read_contact on every message of an identified customer; answer_from_guide at most once a conversation'],
+        ['Record', 'provider, model, prompt version (a fingerprint of its text) and token counts, for every call'],
+        ['Surge', 'when the coordinator is behind, the rules read instead']],
+      never: 'Gives the model a tool. It cannot look anything up, send anything or start anything.',
+      code: ['src/skylink_care/llm/gateway.py', 'src/skylink_care/llm/offline.py', 'src/skylink_care/llm/openai_provider.py', 'src/skylink_care/llm/claude.py', 'src/skylink_care/llm/prompts/triage.md', 'src/skylink_care/llm/prompts/guide.md', 'src/skylink_care/guardrails/pii.py'] },
+    { id: 'triage', type: 'row', parent: 'worker', x: 652, y: 196, w: 388, h: 42, title: 'Triage', role: 'who it is, what they want', key: 'key triage',
+      calls: 'crm.lookup · crm.verify · crm.customer · model',
+      kicker: 'care-worker · specialist',
+      summary: 'Works out who the customer is and what they want. Identity comes from the sign-in, a registered caller line, or a customer ID with the last four digits of the registered mobile, which CRM checks. What they want comes from a model or the keyword rules, as a form of nine fields.',
+      facts: [['Gateway key', 'triage: crm:profile and crm:verify. Nothing else may read a profile'],
+        ['Identity guard', 'an attempt is taken before CRM is asked; 5 wrong in an hour or 10 in a day stop checks for that ID; wrong answers for 50 customers in an hour alert staff'],
+        ['Once verified', 'the conversation is bound to that customer; another ID typed later is ignored and noted'],
+        ['The form', 'intent, confidence, wants a person, blames own device, asks for a technician, asks for a credit, says it works, abusive or off-topic, a summary for staff']],
+      never: 'Believes an ID typed into a message without checking it, or sends an unidentified visitor’s words to an external model.',
+      code: ['src/skylink_care/agents/triage.py', 'src/skylink_care/agents/identity_guard.py'] },
+    { id: 'diag', type: 'row', parent: 'worker', x: 652, y: 246, w: 388, h: 42, title: 'Diagnostics', role: 'is there an outage here?', key: 'key diagnostics',
+      calls: 'network.node_status · network.line_test',
+      kicker: 'care-worker · specialist',
+      summary: 'Finds the node that serves the customer and decides what is known about it: ACTIVE, CONFIRMED_CLEAR or UNKNOWN. It gathers the evidence; the decision itself is one pure function.',
+      facts: [['Gateway key', 'diagnostics: network:read and network:test'],
+        ['Fresh', 'a live status for 60 s; the radio’s record while its heartbeat is under 90 s old and no announcement is missing'],
+        ['Line test', 'names the node that really serves the line, decides what may be done on a clear node, and exposes a node fault before the NOC declares it'],
+        ['Suspected fault', 'an alarm, or at least 3 failing lines on a node in 15 minutes that chance would explain less than once in a thousand']],
+      never: 'Treats a failed lookup as “all clear”, or changes anything.',
+      code: ['src/skylink_care/agents/diagnostics.py', 'src/skylink_care/domain/network.py'] },
+    { id: 'guide', type: 'row', parent: 'worker', x: 652, y: 296, w: 388, h: 42, title: 'Troubleshooting', role: 'which guide steps fit', key: 'no key',
+      calls: 'guide search · model',
+      kicker: 'care-worker · specialist',
+      summary: 'Gives steps from the guide for the customer’s own router, word for word with their source. It only speaks when the node is confirmed clear and the line passed its test.',
+      facts: [['Gateway key', 'none: it reads only the platform’s guide index'],
+        ['Search', 'the router model from the service record is a hard filter; sections are ranked by the kind of fault and the words shared, with vector similarity'],
+        ['Model', 'names one of the sections found and points at up to two quotations; each is used only if it is found word for word where the model says'],
+        ['Sections', 'only four may be quoted: no internet, Wi-Fi, slow speed, power cycle'],
+        ['Measured', 'with gpt-5.4-mini choosing, 144 of 144 independent descriptions got the right section; the search alone, 129 of 144']],
+      never: 'Writes steps of its own, or sends anything a model wrote.',
+      code: ['src/skylink_care/agents/troubleshooting.py', 'src/skylink_care/rag/index.py', 'src/skylink_care/rag/symptoms.py', 'src/skylink_care/guardrails/grounding.py'] },
+    { id: 'res', type: 'row', parent: 'worker', x: 652, y: 346, w: 388, h: 42, title: 'Resolution', role: 'is a credit owed, how much', key: 'key resolution',
+      calls: 'billing.credits · policy file',
+      kicker: 'care-worker · specialist',
+      summary: 'Decides whether a service credit is owed and how much, from the credits already on the account and the policy file. Nothing a customer writes and no model touches the numbers.',
+      facts: [['Gateway key', 'resolution: billing:read'],
+        ['Formula', 'monthly fee × hours (rounded up) × multiplier ÷ 720; ×1.0 from 4 h, ×1.5 from 24 h, ×2.0 from 72 h for broadband'],
+        ['Floor and cap', 'at least $50 for broadband ($25 mobile); never more than one monthly fee in a billing cycle'],
+        ['Approval', 'up to $500 applied without review; above $500 a supervisor decides'],
+        ['Policy', 'v0-placeholder, a labelled stand-in, named in every credit record']],
+      never: 'Applies a credit. When the existing credits cannot be read, none is proposed.',
+      code: ['src/skylink_care/agents/resolution.py', 'src/skylink_care/domain/credit.py', 'data/policies/credit_policy.v0.yaml'] },
+    { id: 'disp', type: 'row', parent: 'worker', x: 652, y: 396, w: 388, h: 42, title: 'Dispatch', role: 'which technician slots', key: 'key dispatch',
+      calls: 'field.booked_for_service · field.slots',
+      kicker: 'care-worker · specialist',
+      summary: 'Offers technician slots once the evidence for a visit holds, and reads the customer’s choice by fixed rules.',
+      facts: [['Gateway key', 'dispatch: field:read'],
+        ['Offered when', 'the service is active with no visit booked, the node is confirmed clear by a reading under a minute old, the line failed, and a test after the 10-minute hold still fails'],
+        ['Offer', 'the three earliest free slots, numbered'],
+        ['Answer', 'a slot number, a day, or a plain yes; anything doubtful is asked once more, then a person takes over']],
+      never: 'Books a visit, or infers consent to one.',
+      code: ['src/skylink_care/agents/dispatch.py', 'src/skylink_care/domain/dispatch.py', 'src/skylink_care/orchestrator/visit_nodes.py'] },
+
+    { id: 'exec', type: 'prog', x: 640, y: 470, w: 412, h: 104, band: 'care-executor · the hands · the only writer',
+      lanes: ['1 complaint', '2 ticket', '3 link · visit', '4 credit', '9 text'],
+      lines: [['Idempotency-Key on every write · checks again before acting', 'n-s', 74], ['retries after 2, 4, 8 … 60 s · a person after 24 h', 'n-s', 91]],
+      kicker: 'Care platform · program care-executor',
+      summary: 'The hands: the only program holding the key that can change SkyLink’s systems. It carries out proposals from the action ledger in lane order, and checks each one again just before acting.',
+      facts: [['Gateway key', 'executor: billing, field and incident read and write; notify:write; network:read; crm:consent'],
+        ['Order', 'lane 1 complaints, 2 tickets, 3 links and visits, 4 credits, 9 texts'],
+        ['Exactly once', 'the action’s unique name goes with every attempt as the Idempotency-Key; a claimed action is hidden from other copies for 30 s'],
+        ['Retries', 'after 2, 4, 8 and up to 60 s; staff alerted at the 8th attempt; after 24 h a person takes over'],
+        ['Checks', 'credit: fingerprint, approval for that fingerprint, policy, cycle cap. Visit: network still clear, line failure recent, no other visit. Text: consent now, message under 30 minutes old']],
+      code: ['src/skylink_care/executor/worker.py', 'src/skylink_care/executor/credits.py', 'src/skylink_care/executor/visits.py', 'src/skylink_care/db/actions.py'] },
+    { id: 'ingest', type: 'prog', x: 640, y: 590, w: 412, h: 78, band: 'care-ingest · the radio',
+      lines: [['long-polls the NOC’s numbered stream', 'n-s', 46], ['a gap or 90 s silent: not evidence', 'n-s', 63]],
+      kicker: 'Care platform · program care-ingest',
+      summary: 'The radio. It reads the NOC’s numbered stream of announcements and keeps the platform’s picture of the network. Each announcement’s consequences are written in one transaction with the stream’s cursor, so they happen exactly once.',
+      facts: [['Gateway key', 'ingest: network:feed'],
+        ['Polling', 'waits up to 20 s for news and reads up to 200 announcements at a time'],
+        ['Trust', 'a missing number stops the record counting as evidence until a person clears the gap; 90 s of silence, until it answers again'],
+        ['Outage started', 'a text proposed for every customer placed on an affected node; waiting conversations woken'],
+        ['Outage resolved', 'episode and ticket closed; “it’s over” for those told; conversations woken'],
+        ['Estimate changed', 'nothing: customers are not pestered with every revision']],
+      never: 'Talks to a customer or writes to a SkyLink system.',
+      code: ['src/skylink_care/ingest/consumer.py', 'src/skylink_care/ingest/reactions.py'] },
+    { id: 'notif', type: 'mini', parent: 'ingest', x: 884, y: 622, w: 156, h: 38, title: 'Notifications', sub: 'wording of the texts',
+      kicker: 'care-ingest · proactive texts',
+      summary: 'Words the proactive texts from the same verified outage facts as the conversation replies: the cause, the estimate, and that there is no need to restart the router or call.',
+      facts: [['Templates', 'outage_started.v1 · outage_resolved.v1'],
+        ['Consent', 'not decided here: the executor asks CRM at the moment of sending'],
+        ['Known gap', 'these texts begin “SkyLink:” and do not say they are automated']],
+      code: ['src/skylink_care/agents/notifications.py'] },
+
+    { id: 'provider', type: 'ext', x: 912, y: 12, w: 148, h: 44, title: 'Model provider', mono: 'gpt-5.4-mini · demo',
+      kicker: 'Outside · model provider',
+      summary: 'For the demo, OpenAI’s gpt-5.4-mini, pinned to the dated version that was tested. It is asked for a structured answer under a strict JSON schema, and asked not to keep a copy (store: false).',
+      facts: [['Sees', 'masked text only, never the words of a visitor who has not been identified'],
+        ['Returns', 'a form: nine fields for a message, three for a guide answer'],
+        ['Default', 'no model at all: out of the box the keyword rules read every message'],
+        ['Claude', 'connected through Anthropic’s own library; tested against stand-ins, not yet run live']],
+      code: ['src/skylink_care/llm/openai_provider.py', 'src/skylink_care/llm/claude.py'] },
+
+    { id: 'bus', type: 'bus', x: 1088, y: 104, w: 20, h: 668, title: 'OSS/BSS gateway', label: 'OSS/BSS GATEWAY · ONE KEY PER CALLER · 401 / 403',
+      kicker: 'Between the platform and SkyLink',
+      summary: 'One gateway in front of all six SkyLink systems. Each caller presents its own key, and the gateway gives that key only the scopes its job needs: an unknown key is refused with 401, a missing scope with 403.',
+      facts: [['Time limits', '1 s to connect, 3 s to send or receive, 9 s in all; a line test 6 s and 10 s in all'],
+        ['Retries', 'a read that fails fast is tried once more; a write never is, except by the executor under its idempotency key'],
+        ['Circuit breaker', '5 failures in a row rest a system for 10 s, then one trial call is let through'],
+        ['Failures', 'a failed call comes back as a failure, never as “nothing found”']],
+      code: ['src/skylink_care/adapters/gateway.py', 'src/skylink_care/adapters/http.py', 'src/skylink_care/adapters/breaker.py', 'src/skylink_care/adapters/clients.py', 'src/mock_oss/auth.py'] },
+
+    { id: 'crm', type: 'sys', x: 1132, y: 196, w: 284, h: 42, title: 'Customer records (CRM)', sub: 'lookup · profile · consent · verify',
+      kicker: 'SkyLink · customer records',
+      summary: 'Finds a customer by phone, ID or email, returns the profile with its services and router model, holds consent to messages, and checks the last four digits of the registered mobile.',
+      facts: [['Scopes', 'crm:profile and crm:verify (triage) · crm:consent (executor)']], code: ['src/mock_oss/crm.py'] },
+    { id: 'netmon', type: 'sys', x: 1132, y: 246, w: 284, h: 42, title: 'Network Monitoring', sub: 'node status · remote line tests',
+      kicker: 'SkyLink · network monitoring',
+      summary: 'Each node’s live status with its estimate and alarms, and remote line tests that name the node really serving a line. In the simulator an outage shows in the status only after a delay while line tests on the node already fail, as real outages often look in their first minutes.',
+      facts: [['Scopes', 'network:read (diagnostics, executor, mcp) · network:test (diagnostics)']], code: ['src/mock_oss/network.py'] },
+    { id: 'billing', type: 'sys', x: 1132, y: 346, w: 284, h: 42, title: 'Billing', sub: 'credits · apply a credit',
+      kicker: 'SkyLink · billing',
+      summary: 'Service credits per account, and the one write that applies a credit. It refuses any single credit above $5,000.',
+      facts: [['Scopes', 'billing:read (resolution, executor) · billing:write (executor)']], code: ['src/mock_oss/billing.py'] },
+    { id: 'field', type: 'sys', x: 1132, y: 396, w: 284, h: 42, title: 'Field Service', sub: 'slots · appointments',
+      kicker: 'SkyLink · field service',
+      summary: 'Technician slots, mornings and afternoons for the next five days with three visits per slot per postcode, and the appointments booked in them.',
+      facts: [['Scopes', 'field:read (dispatch, executor) · field:write (executor)']], code: ['src/mock_oss/field.py'] },
+    { id: 'incident', type: 'sys', x: 1132, y: 476, w: 284, h: 42, title: 'Incident Management', sub: 'complaints · tickets · links',
+      kicker: 'SkyLink · incident management',
+      summary: 'Complaint registrations, repair tickets and the links between them. It deliberately does not remove duplicates, so a duplicate made by the platform would show.',
+      facts: [['Scopes', 'incident:read and incident:write (executor only)']], code: ['src/mock_oss/incident.py'] },
+    { id: 'notify', type: 'sys', x: 1132, y: 528, w: 284, h: 42, title: 'SMS gateway', sub: 'texts · recorded, never sent',
+      kicker: 'SkyLink · text messages',
+      summary: 'Sends the proactive texts. In the simulator they are recorded and never actually sent.',
+      facts: [['Scope', 'notify:write (executor only)']], code: ['src/mock_oss/notify.py'] },
+    { id: 'feed', type: 'sys', x: 1132, y: 596, w: 284, h: 64, title: 'NOC event feed', sub: 'part of Network Monitoring', mono: 'numbered: started · updated · resolved',
+      kicker: 'SkyLink · the NOC’s announcements',
+      summary: 'A numbered stream: outage started, estimate changed, outage resolved, alarm raised, alarm cleared. Because it is numbered, a missing announcement can be noticed.',
+      facts: [['Scope', 'network:feed (ingest only)']], code: ['src/mock_oss/noc.py'] },
+  ];
+
+  /* Lines drawn at rest: who talks to whom. Points are in map units. */
+  const LINKS = [
+    ['chat', 'api', 'ask', [[184, 138], [228, 138]]],
+    ['channel', 'api', 'ask', [[184, 200], [228, 200]]],
+    ['staff', 'api', 'ask', [[184, 378], [228, 378]]],
+    ['assistant', 'mcp', 'ask', [[184, 714], [228, 714]]],
+    ['api', 'db.contacts', 'store', [[388, 175], [428, 175]]],
+    ['api', 'db.inbox', 'store', [[388, 219], [428, 219]]],
+    ['api', 'db.staff', 'store', [[388, 395], [428, 395]]],
+    ['db.inbox', 'worker', 'event', [[596, 219], [640, 219]]],
+    ['db.contacts', 'replies', 'store', [[596, 175], [652, 175]]],
+    ['worker', 'db.checkpoints', 'store', [[640, 263], [596, 263]]],
+    ['db.actions', 'exec', 'store', [[596, 523], [640, 523]]],
+    ['db.network', 'ingest', 'store', [[596, 627], [640, 627]]],
+    ['mcp', 'db.audit', 'store', [[388, 715], [428, 715]]],
+    ['triage', 'bus', 'ask', [[1040, 217], [1088, 217]]],
+    ['diag', 'bus', 'ask', [[1040, 267], [1088, 267]]],
+    ['res', 'bus', 'ask', [[1040, 367], [1088, 367]]],
+    ['disp', 'bus', 'ask', [[1040, 417], [1088, 417]]],
+    ['exec', 'bus', 'act', [[1052, 497], [1088, 497]]],
+    ['exec', 'bus', 'act', [[1052, 549], [1088, 549]]],
+    ['bus', 'ingest', 'event', [[1088, 628], [1052, 628]]],
+    ['mcp', 'bus', 'ask', [[308, 752], [308, 784], [1098, 784], [1098, 772]]],
+    ['bus', 'crm', 'ask', [[1108, 217], [1132, 217]]],
+    ['bus', 'netmon', 'ask', [[1108, 267], [1132, 267]]],
+    ['bus', 'billing', 'ask', [[1108, 367], [1132, 367]]],
+    ['bus', 'field', 'ask', [[1108, 417], [1132, 417]]],
+    ['bus', 'incident', 'act', [[1108, 497], [1132, 497]]],
+    ['bus', 'notify', 'act', [[1108, 549], [1132, 549]]],
+    ['feed', 'bus', 'event', [[1132, 628], [1108, 628]]],
+    ['llm', 'provider', 'model', [[986, 136], [986, 56]]],
+    ['triage', 'llm', 'model', [[986, 196], [986, 184]]],
+    ['guide', 'llm', 'model', [[1040, 317], [1047, 317], [1047, 160], [1040, 160]]],
+    ['sup', 'worker', 'route', [[858, 184], [858, 190], [646, 190], [646, 417]]],
+    ['sup', 'triage', 'route', [[646, 217], [652, 217]]],
+    ['sup', 'diag', 'route', [[646, 267], [652, 267]]],
+    ['sup', 'guide', 'route', [[646, 317], [652, 317]]],
+    ['sup', 'res', 'route', [[646, 367], [652, 367]]],
+    ['sup', 'disp', 'route', [[646, 417], [652, 417]]],
+  ];
+
+  /* Every call a part makes. k is the strand: ask (a request or a read), act (a write to
+     SkyLink), event (an announcement or a wake-up), store (the platform's own database), model. */
+  const CALLS = [
+    { id: 'chat.open', g: 'People and the front desk', from: 'chat', to: 'api', k: 'ask', name: 'POST /v1/contacts', ep: 'first message, with the signed token', when: 'a new conversation', note: 'answered with the complaint reference (201); a repeat of the same request gets the same one (200)' },
+    { id: 'chat.msg', g: 'People and the front desk', from: 'chat', to: 'api', k: 'ask', name: 'POST /v1/contacts/{id}/messages', ep: 'a later message', when: 'the customer writes again', note: 'accepted with 202; 20 a minute per conversation' },
+    { id: 'chat.poll', g: 'People and the front desk', from: 'chat', to: 'api', k: 'ask', name: 'GET /v1/contacts/{id}', ep: 'the conversation and its messages', when: 'every 1.2 s, every 5 s in surge', note: 'someone else’s conversation looks exactly like one that does not exist' },
+    { id: 'channel.open', g: 'People and the front desk', from: 'channel', to: 'api', k: 'ask', name: 'POST /v1/contacts', ep: 'with caller_phone', when: 'a call passed on as text', note: 'only a channel may state the caller line' },
+    { id: 'staff.queues', g: 'People and the front desk', from: 'staff', to: 'api', k: 'ask', name: 'GET /v1/handoffs · /v1/approvals · /v1/ops', ep: 'the three queues', when: 'the desk is open', note: 'staff roles only' },
+    { id: 'staff.approve', g: 'People and the front desk', from: 'staff', to: 'api', k: 'ask', name: 'POST /v1/approvals/{id}/decision', ep: 'approve or reject, quoting the request’s fingerprint', when: 'a credit above $500 waits', note: 'supervisor only; a rejection must give its reason' },
+    { id: 'staff.handoff', g: 'People and the front desk', from: 'staff', to: 'api', k: 'ask', name: 'POST /v1/handoffs/{id}/done', ep: 'close a handed-over case, with an optional note', when: 'a person has dealt with it', note: 'the customer is told once, in the same transaction' },
+    { id: 'staff.audit', g: 'People and the front desk', from: 'staff', to: 'api', k: 'ask', name: 'GET /v1/contacts/{id}/audit', ep: 'the conversation’s audit trail', when: 'reading a case', note: 'staff only' },
+    { id: 'staff.takeover', g: 'People and the front desk', from: 'staff', to: 'api', k: 'ask', name: 'POST /v1/contacts/{id}/takeover', ep: 'take a conversation from the assistant, with a reason', when: 'a person steps in', note: 'through the API only; the desk has no button yet' },
+
+    { id: 'triage.lookup', g: 'Triage', from: 'triage', to: 'crm', k: 'ask', name: 'crm.lookup', ep: 'GET /crm/v1/customers/lookup?phone=', key: 'triage', scope: 'crm:profile', when: 'a trusted channel stated the caller line', note: 'exactly one account must match' },
+    { id: 'triage.verify', g: 'Triage', from: 'triage', to: 'crm', k: 'ask', name: 'crm.verify', ep: 'POST /crm/v1/customers/{id}/verify', key: 'triage', scope: 'crm:verify', when: 'a visitor gave an ID and four digits', note: 'only after the identity guard grants an attempt' },
+    { id: 'triage.customer', g: 'Triage', from: 'triage', to: 'crm', k: 'ask', name: 'crm.customer', ep: 'GET /crm/v1/customers/{id}', key: 'triage', scope: 'crm:profile', when: 'the customer is known', note: 'profile, services, router model, and the values to mask before a model reads' },
+    { id: 'triage.attempts', g: 'Triage', from: 'triage', to: 'db.identity', k: 'store', name: 'identity guard', ep: 'take, give back or count an attempt', when: 'before every identity check', note: 'counted per claimed ID across all conversations' },
+    { id: 'triage.model', g: 'Triage', from: 'triage', to: 'llm', k: 'model', name: 'read_contact', ep: 'masked message → a form of nine fields', when: 'every message of an identified customer', note: '8 s; the keyword rules answer otherwise, and always for a visitor not yet identified' },
+
+    { id: 'diag.map', g: 'Diagnostics', from: 'diag', to: 'db.reference', k: 'store', name: 'resolve_mapping', ep: 'address → node', when: 'every diagnosis', note: 'a missing or doubtful entry is repaired by the line test, for this contact only' },
+    { id: 'diag.status', g: 'Diagnostics', from: 'diag', to: 'netmon', k: 'ask', name: 'network.node_status', ep: 'GET /network/v1/nodes/{node_id}/status', key: 'diagnostics', scope: 'network:read', when: 'every diagnosis', note: 'fresh for 60 s; a failed call is never “all clear”' },
+    { id: 'diag.linetest', g: 'Diagnostics', from: 'diag', to: 'netmon', k: 'ask', name: 'network.line_test', ep: 'POST /network/v1/line-tests', key: 'diagnostics', scope: 'network:test', when: 'no outage is known on the node (broadband)', note: '6 s limit; names the node that really serves the line' },
+    { id: 'diag.feed', g: 'Diagnostics', from: 'diag', to: 'db.network', k: 'store', name: 'the radio’s record', ep: 'open outages, alarms, heartbeat; line tests on the node', when: 'every diagnosis', note: 'counts only while fresh and gap-free' },
+
+    { id: 'guide.search', g: 'Troubleshooting', from: 'guide', to: 'db.guides', k: 'store', name: 'guide search', ep: 'guide_chunks: router model filter, then words and vectors', when: 'node clear and line passed', note: 'only the four self-service sections' },
+    { id: 'guide.model', g: 'Troubleshooting', from: 'guide', to: 'llm', k: 'model', name: 'answer_from_guide', ep: 'masked words and the sections found → section and two pointers', when: 'at most once a conversation', note: 'only a section it was shown; quotations checked word for word' },
+
+    { id: 'res.credits', g: 'Resolution', from: 'res', to: 'billing', k: 'ask', name: 'billing.credits', ep: 'GET /billing/v1/accounts/{customer_id}/credits', key: 'resolution', scope: 'billing:read', when: 'an outage the customer waited on is over', note: 'the cap and one credit per outage; unreadable means no credit is proposed' },
+
+    { id: 'disp.booked', g: 'Dispatch', from: 'disp', to: 'field', k: 'ask', name: 'field.booked_for_service', ep: 'GET /field/v1/appointments?service_id=…&status=BOOKED', key: 'dispatch', scope: 'field:read', when: 'before a visit is offered', note: 'no second visit for one line' },
+    { id: 'disp.slots', g: 'Dispatch', from: 'disp', to: 'field', k: 'ask', name: 'field.slots', ep: 'GET /field/v1/slots?pincode=…&from_date=…', key: 'dispatch', scope: 'field:read', when: 'the line still fails after the hold', note: 'the three earliest are offered' },
+
+    { id: 'worker.drain', g: 'The coordinator', from: 'db.inbox', to: 'worker', k: 'event', name: 'drain_inbox', ep: 'every note newer than the case’s cursor', when: 'a case with unread notes', note: 'oldest first, 8 cases at a time, one lock per case' },
+    { id: 'worker.checkpoint', g: 'The coordinator', from: 'worker', to: 'db.checkpoints', k: 'store', name: 'checkpoint', ep: 'the conversation’s state', when: 'the end of every turn', note: 'deleted when the work on the case is finished' },
+    { id: 'worker.propose', g: 'The coordinator', from: 'worker', to: 'db.actions', k: 'store', name: 'propose', ep: 'INCIDENT_OPEN · INCIDENT_LINK_COMPLAINT · CREDIT_APPLY · VISIT_BOOK', when: 'a step wants something changed', note: 'one row per unique name; a credit’s approval request in the same transaction' },
+    { id: 'worker.handoff', g: 'The coordinator', from: 'worker', to: 'db.staff', k: 'store', name: 'handoff', ep: 'the reason, a priority and a summary built from recorded facts', when: 'about two dozen situations', note: 'the customer’s own words are not copied into it' },
+    { id: 'replies.store', g: 'The coordinator', from: 'replies', to: 'db.contacts', k: 'store', name: 'store a reply', ep: 'a template with its blanks filled', when: 'a step speaks', note: 'stored only if its claim is backed by this turn’s evidence' },
+
+    { id: 'exe.complaint', g: 'The executor', from: 'exec', to: 'incident', k: 'act', name: 'incident.register_complaint', ep: 'POST /incident/v1/complaints', key: 'executor', scope: 'incident:write', when: 'lane 1, for every contact', note: 'the regulator’s complaint reference' },
+    { id: 'exe.incident', g: 'The executor', from: 'exec', to: 'incident', k: 'act', name: 'incident.open', ep: 'POST /incident/v1/incidents', key: 'executor', scope: 'incident:write', when: 'lane 2', note: 'one ticket per node episode, whoever asks first' },
+    { id: 'exe.link', g: 'The executor', from: 'exec', to: 'incident', k: 'act', name: 'incident.link_complaint', ep: 'POST /incident/v1/incidents/{id}/complaints', key: 'executor', scope: 'incident:write', when: 'lane 3', note: '500 complaints on one node: one ticket, 500 links' },
+    { id: 'exe.update', g: 'The executor', from: 'exec', to: 'incident', k: 'act', name: 'incident.update', ep: 'PATCH /incident/v1/incidents/{id}', key: 'executor', scope: 'incident:write', when: 'lane 2, when the NOC resolves an outage', note: 'proposed by the radio' },
+    { id: 'exe.consent', g: 'The executor', from: 'exec', to: 'crm', k: 'ask', name: 'crm.consent', ep: 'GET /crm/v1/customers/{id}/consent', key: 'executor', scope: 'crm:consent', when: 'just before a text is sent', note: 'the consent flag, nothing else of the record' },
+    { id: 'exe.notify', g: 'The executor', from: 'exec', to: 'notify', k: 'act', name: 'notify.send', ep: 'POST /notify/v1/messages', key: 'executor', scope: 'notify:write', when: 'lane 9, last', note: 'skipped without consent, or when older than 30 minutes' },
+    { id: 'exe.creditsRead', g: 'The executor', from: 'exec', to: 'billing', k: 'ask', name: 'billing.credits', ep: 'GET /billing/v1/accounts/{id}/credits', key: 'executor', scope: 'billing:read', when: 'before a credit is applied', note: 'the cycle’s cap, under the customer’s lock' },
+    { id: 'exe.credit', g: 'The executor', from: 'exec', to: 'billing', k: 'act', name: 'billing.apply_credit', ep: 'POST /billing/v1/credits', key: 'executor', scope: 'billing:write', when: 'lane 4', note: 'above $500 only with a supervisor’s approval of this exact request' },
+    { id: 'exe.status', g: 'The executor', from: 'exec', to: 'netmon', k: 'ask', name: 'network.node_status', ep: 'GET /network/v1/nodes/{id}/status', key: 'executor', scope: 'network:read', when: 'just before a visit is booked', note: 'the node must still be confirmed clear' },
+    { id: 'exe.booked', g: 'The executor', from: 'exec', to: 'field', k: 'ask', name: 'field.booked_for_service · appointment_by_key', ep: 'GET /field/v1/appointments · /by-key/{key}', key: 'executor', scope: 'field:read', when: 'just before a visit is booked', note: 'no other visit, and no earlier attempt that already booked it' },
+    { id: 'exe.book', g: 'The executor', from: 'exec', to: 'field', k: 'act', name: 'field.book', ep: 'POST /field/v1/appointments', key: 'executor', scope: 'field:write', when: 'lane 3', note: 'ends as SKIPPED with the reason when the evidence no longer holds' },
+    { id: 'exe.claim', g: 'The executor', from: 'db.actions', to: 'exec', k: 'event', name: 'claim', ep: 'ready actions, lowest lane first, 20 at a time', when: 'every 0.25 s', note: 'hidden from other copies for 30 s' },
+    { id: 'exe.finished', g: 'The executor', from: 'exec', to: 'db.inbox', k: 'event', name: 'action.finished', ep: 'an inbox note for the conversation', when: 'a credit or a visit is settled', note: 'the customer is owed the outcome' },
+
+    { id: 'ing.events', g: 'The radio', from: 'ingest', to: 'feed', k: 'event', name: 'network.events', ep: 'GET /network/v1/events?after_seq=…&limit=200&wait_seconds=20', key: 'ingest', scope: 'network:feed', when: 'always: a long poll', note: 'a gap or 90 s of silence stops it counting as evidence' },
+    { id: 'ing.write', g: 'The radio', from: 'ingest', to: 'db.network', k: 'store', name: 'apply an announcement', ep: 'the picture, proposals and wake-ups, with the cursor', when: 'every announcement', note: 'one transaction: all of it or none' },
+
+    { id: 'asst.list', g: 'The enquiry window', from: 'assistant', to: 'mcp', k: 'ask', name: 'initialize · tools/list', ep: 'MCP over streamable HTTP at /mcp, Bearer key', when: 'an assistant connects', note: 'four tools, each marked read-only, and two resources' },
+    { id: 'asst.call', g: 'The enquiry window', from: 'assistant', to: 'mcp', k: 'ask', name: 'tools/call', ep: 'one of the four tools, its arguments checked against the declaration', when: 'an assistant asks', note: '60 calls a minute for all callers together' },
+    { id: 'mcp.status', g: 'The enquiry window', from: 'mcp', to: 'netmon', k: 'ask', name: 'network.node_status', ep: 'GET /network/v1/nodes/{id}/status', key: 'mcp', scope: 'network:read', when: 'check_network_status', note: 'a line test would be refused with 403' },
+    { id: 'mcp.read', g: 'The enquiry window', from: 'mcp', to: 'db.guides', k: 'store', name: 'guide search · radio · queue', ep: 'the guide index, the network picture, the coordinator’s backlog', when: 'search_router_guide, check_network_status, platform_status', note: 'nothing of a customer' },
+    { id: 'mcp.audit', g: 'The enquiry window', from: 'mcp', to: 'db.audit', k: 'store', name: 'audit entry', ep: 'what was asked and how it ended', when: 'every call that reaches a tool', note: 'never the words of a problem description' },
+  ];
+
+  const hop = (f, t, k, l, more) => Object.assign({ f, t, k, l }, more);
+  const call = (c, more) => Object.assign({ c }, more);
+
+  const FLOWS = [
+    { id: 'outage', name: 'An outage, end to end',
+      summary: 'Priya is signed in. The NOC has already declared an outage on the node that serves their street. Follow the first message through the front desk, the coordinator and three specialists, out to SkyLink and back, until the credit is paid and the case closes.',
+      steps: [
+        { t: 'Priya writes in', x: 'The chat page sends the first message with Priya’s signed token. The token says who is asking and in what role: here, a signed-in customer.',
+          h: [call('chat.open')], code: ['src/skylink_care/web/app.js', 'src/skylink_care/api/app.py'] },
+        { t: 'The front desk files it and answers at once', x: 'The token is checked, the message validated and the caller’s limits applied; a first contact is never refused. Four rows are written in one transaction, then the complaint reference goes back. The front desk waits for nothing else.',
+          h: [hop('api', 'db.contacts', 'store', 'contact + message'), hop('api', 'db.inbox', 'store', 'inbox: contact.received'), hop('api', 'db.actions', 'store', 'COMPLAINT_REGISTER · lane 1'), hop('api', 'chat', 'ask', '201 · SKL-261116-000042-0', { r: 1 })],
+          rule: ['Measured', 'In the load test the slowest reference took 0.25 s at ten contacts a second.'],
+          code: ['src/skylink_care/db/contacts.py', 'src/skylink_care/domain/reference.py'] },
+        { t: 'The complaint is registered, first in line', x: 'The executor serves the lowest lane first. It claims the registration, hides it from other copies for 30 seconds, and sends it with the action’s unique name as the idempotency key, so a repeat is answered “already done”.',
+          h: [hop('db.actions', 'exec', 'event', 'claim · lane 1'), call('exe.complaint')], code: ['src/skylink_care/executor/worker.py'] },
+        { t: 'The coordinator takes the case', x: 'care-worker looks for cases with unread inbox notes, oldest first, eight at a time, and locks each one. The turn starts: every new note is read, then the supervisor picks the first step.',
+          h: [call('worker.drain', { l: 'contact.received' })], focus: ['sup'], code: ['src/skylink_care/orchestrator/worker.py', 'src/skylink_care/orchestrator/graph.py'] },
+        { t: 'Triage: who is it?', x: 'Priya’s token names them, so no identity question is needed. Triage loads the profile with its own key, which may read customer profiles and check identities, and nothing else.',
+          h: [hop('sup', 'triage', 'route', 'triage'), call('triage.customer')], code: ['src/skylink_care/agents/triage.py'] },
+        { t: 'Triage: what do they want?', x: 'Before anything leaves the platform, the LLM gateway masks personal details, by their shape and by the values in Priya’s record. The model fills in a nine-field form and nothing else: a connectivity problem, high confidence. Without a model, or after 8 seconds, the keyword rules answer.',
+          h: [call('triage.model'), hop('llm', 'provider', 'model', 'masked text'), hop('provider', 'llm', 'model', 'nine-field form', { r: 1 })],
+          rule: ['Rule', 'The model has no tools. It cannot look anything up, send anything or start anything.'],
+          code: ['src/skylink_care/llm/gateway.py', 'src/skylink_care/guardrails/pii.py', 'src/skylink_care/llm/prompts/triage.md'] },
+        { t: 'The supervisor chooses: diagnose', x: 'decide_route is plain code. Identified, a connectivity problem, a confident reading and a service on the account lead to diagnostics. The same state always leads to the same step.',
+          h: [hop('sup', 'diag', 'route', 'diagnose')], code: ['src/skylink_care/orchestrator/routing.py'] },
+        { t: 'Diagnostics: which node, and what does it say?', x: 'The address map gives the node that serves Priya’s street. Network Monitoring is asked for its live status with the diagnostics key, and the radio’s record is read beside it. Both report the declared outage, so the decision is ACTIVE and no line test is needed.',
+          h: [call('diag.map'), call('diag.status'), call('diag.feed')],
+          rule: ['Rule', 'ACTIVE needs a fresh source: a live status, or the radio’s record while its heartbeat is under 90 seconds old and no announcement is missing.'],
+          code: ['src/skylink_care/agents/diagnostics.py', 'src/skylink_care/domain/network.py'] },
+        { t: 'One repair ticket per node', x: 'The case joins the node’s episode. If the episode has no ticket yet, one INCIDENT_OPEN is proposed, and Priya’s complaint is linked to it. Five hundred customers on one node make one ticket with five hundred links.',
+          h: [hop('diag', 'db.actions', 'store', 'INCIDENT_OPEN · lane 2 + link · lane 3')], code: ['src/skylink_care/orchestrator/network_nodes.py'] },
+        { t: 'The reply is checked, then stored', x: 'The outage template is filled with verified facts: the cause, when it began, the estimate and where the estimate came from. It claims “there is an outage”, so it is stored only because this turn’s evidence shows that same outage. The page picks it up on its next poll.',
+          h: [hop('replies', 'db.contacts', 'store', 'outage_active · claim checked'), call('chat.poll')],
+          code: ['src/skylink_care/agents/replies.py', 'src/skylink_care/orchestrator/outgoing.py', 'src/skylink_care/guardrails/claims.py'] },
+        { t: 'The hands open the ticket', x: 'Tickets come second in the executor’s order. The ticket is opened once, and the complaint is linked to it.',
+          h: [hop('db.actions', 'exec', 'event', 'claim · lanes 2, 3'), call('exe.incident'), call('exe.link')] },
+        { t: 'The case parks', x: 'The turn ends. The conversation’s notebook is saved as a checkpoint, and a slow watch is set for 15 minutes behind the radio. Nothing runs for this case until a note arrives.',
+          h: [call('worker.checkpoint'), hop('worker', 'db.inbox', 'store', 'timer · slow watch 15 min')], code: ['src/skylink_care/orchestrator/graph.py'] },
+        { t: 'The NOC resolves the outage', x: 'The radio long-polls the NOC’s numbered stream. The resolution arrives, and in one transaction with the stream’s cursor the radio closes the episode, proposes the ticket’s update and “it’s over” texts for those told it began, and wakes Priya’s case.',
+          h: [hop('feed', 'ingest', 'event', 'outage resolved · seq n'), hop('ingest', 'db.network', 'store', 'outage closed'), hop('ingest', 'db.actions', 'store', 'INCIDENT_UPDATE · texts'), hop('ingest', 'db.inbox', 'event', 'outage.resolved')],
+          code: ['src/skylink_care/ingest/consumer.py', 'src/skylink_care/ingest/reactions.py'] },
+        { t: 'Diagnostics looks again for itself', x: 'The woken case is told only which outage changed. Diagnostics reads the node again: a live status under 60 seconds old says it works normally, with no alarm and no cluster of failing lines. The decision is CONFIRMED_CLEAR, so Priya’s service is restored.',
+          h: [call('worker.drain', { l: 'outage.resolved' }), hop('sup', 'diag', 'route', 'diagnose'), call('diag.status')] },
+        { t: 'Resolution: is a credit owed?', x: 'The restored step asks Resolution, which reads the credits already on the account and applies the policy file in code. Five hours on a $999 plan works out at $6.94, raised to the policy’s minimum of $50.00. Up to $500 needs no review, so a CREDIT_APPLY is proposed.',
+          h: [hop('sup', 'res', 'route', 'restored'), call('res.credits'), hop('res', 'db.actions', 'store', 'CREDIT_APPLY · lane 4')],
+          rule: ['Rule', 'No model and nothing the customer writes touches the amount. The policy is v0-placeholder, named in every credit record.'],
+          code: ['src/skylink_care/agents/resolution.py', 'src/skylink_care/domain/credit.py', 'data/policies/credit_policy.v0.yaml'] },
+        { t: 'Priya is told, and the hands pay', x: 'The restoration message says the service should be working again and that a $50.00 credit is being applied. The executor checks the request’s fingerprint, the policy version and the billing cycle’s cap under the customer’s lock, then applies the credit.',
+          h: [hop('replies', 'db.contacts', 'store', 'outage_restored + $50.00'), hop('db.actions', 'exec', 'event', 'claim · lane 4'), call('exe.creditsRead'), call('exe.credit')],
+          code: ['src/skylink_care/executor/credits.py'] },
+        { t: 'The outcome comes back, the case closes', x: 'The executor’s note wakes the case, and Priya is told the credit has been applied, with its reference. When Priya answers “yes, it’s working, thanks”, triage reads it and the case closes.',
+          h: [call('exe.finished'), call('worker.drain', { l: 'action.finished' }), hop('replies', 'db.contacts', 'store', 'credit_applied'), call('chat.msg', { l: '“yes, it’s working”' })],
+          code: ['src/skylink_care/orchestrator/credit_nodes.py', 'src/skylink_care/orchestrator/nodes.py'] },
+      ] },
+
+    { id: 'guide', name: 'A guest and the router guide',
+      summary: 'Ravi is not signed in and writes “my wifi keeps dropping”. The network is fine and so is the line, so the answer comes from the guide for Ravi’s own router, chosen with the help of a model and quoted word for word.',
+      steps: [
+        { t: 'A guest writes in', x: 'A guest’s token carries a session and no customer. The reference comes back at once, as it does for anyone.',
+          h: [call('chat.open', { l: 'POST /v1/contacts · guest' }), hop('api', 'db.inbox', 'store', 'inbox: contact.received'), hop('api', 'chat', 'ask', '201 · reference', { r: 1 })] },
+        { t: 'Read inside the platform', x: 'Triage cannot tell who Ravi is. With no record there is nothing to mask by value, so Ravi’s words are read by the keyword rules inside the platform and never sent to an external model. Ravi is asked for a customer ID.',
+          h: [call('worker.drain', { l: 'contact.received' }), hop('sup', 'triage', 'route', 'triage'), hop('replies', 'db.contacts', 'store', 'need_identifier')],
+          rule: ['Rule', 'An unidentified visitor’s message is never sent to an external model.'] },
+        { t: 'Two things Ravi knows', x: 'Ravi gives the ID, then the last four digits of the registered mobile. The identity guard takes one attempt for that ID first, then CRM checks the pair. The conversation is now bound to Ravi, and the profile is loaded.',
+          h: [call('chat.msg', { l: 'ID, then four digits' }), hop('sup', 'triage', 'route', 'triage'), call('triage.attempts'), call('triage.verify'), call('triage.customer')],
+          rule: ['Rule', 'A wrong answer gets the same reply whether the ID exists or not, so the chat cannot be used to find real IDs. Five wrong in an hour, or ten in a day, stop checks for that ID.'],
+          code: ['src/skylink_care/agents/identity_guard.py'] },
+        { t: 'Diagnostics: the node, then the line', x: 'The node’s live status is normal, no alarm is raised and no cluster of failing lines is seen. A remote test of Ravi’s own line passes, and names the node that really serves it. The decision is CONFIRMED_CLEAR.',
+          h: [hop('sup', 'diag', 'route', 'diagnose'), call('diag.map'), call('diag.status'), call('diag.linetest'), call('diag.feed', { l: 'line tests on the node' })] },
+        { t: 'The supervisor chooses: guide', x: 'A clear node and a passing line point at the equipment in the home. That is the one case in which a customer is given steps to try, once.',
+          h: [hop('sup', 'guide', 'route', 'guide')] },
+        { t: 'Search the guide for Ravi’s router', x: 'The router model comes from the service record, never from what Ravi wrote, and is a hard filter. The search ranks the sections a customer may follow alone by the kind of fault and the words they share.',
+          h: [call('guide.search')], code: ['src/skylink_care/rag/index.py', 'src/skylink_care/rag/symptoms.py'] },
+        { t: 'The model chooses among what was found', x: 'Ravi’s masked words and the sections found are shown to the model with one question: which section answers this customer? It may only name a section it was shown, and only point at words. The platform finds those words in their source and takes that clause whole.',
+          h: [call('guide.model'), hop('llm', 'provider', 'model', 'masked words + sections'), hop('provider', 'llm', 'model', 'section + two pointers', { r: 1 })],
+          rule: ['Measured', 'With gpt-5.4-mini choosing, 144 of 144 independent descriptions got the right section; the search alone got 129 of 144.'],
+          code: ['src/skylink_care/agents/troubleshooting.py', 'src/skylink_care/guardrails/grounding.py'] },
+        { t: 'Steps in the guide’s own words', x: 'The reply quotes the steps word for word and names its source, such as “guide-al-r12 §wifi v1.2”. Its claim, “no outage has been reported”, is backed by this turn’s confirmed-clear reading, under 60 seconds old.',
+          h: [hop('replies', 'db.contacts', 'store', 'guided_steps · claim checked'), call('chat.poll')] },
+        { t: 'Did it help?', x: 'Ravi is asked to reply with whether it worked. A yes closes the case. A no goes to a person, and the steps are not repeated.',
+          h: [call('chat.msg', { l: '“yes, that fixed it”' }), hop('sup', 'triage', 'route', 'triage, then close'), hop('replies', 'db.contacts', 'store', 'closed_confirmed')] },
+      ] },
+
+    { id: 'visit', name: 'A broken line and a visit',
+      summary: 'Meena’s node is healthy, but Meena’s own line fails its test. Nothing is booked until the evidence has held for ten minutes, and the executor checks it all again before it books.',
+      steps: [
+        { t: 'The line fails on a healthy node', x: 'Diagnostics finds the node confirmed clear, but the test of Meena’s line fails. The first minutes of an undeclared outage look exactly like this, so nothing is arranged yet. Meena is told a fault was found and that it is being checked against a wider problem.',
+          h: [hop('sup', 'diag', 'route', 'diagnose'), call('diag.status'), call('diag.linetest', { l: 'line test · FAIL' }), hop('replies', 'db.contacts', 'store', 'line_fault_hold'), hop('worker', 'db.inbox', 'store', 'timer · 10-minute hold')] },
+        { t: 'Watching for a wider pattern', x: 'During the hold, an alarm, or more failing lines on the node than chance explains, turns the case into a possible outage instead. Three failures among three lines tested happen by chance about 8 times in a million; three among a hundred, about one time in three.',
+          h: [call('diag.feed', { l: 'failing lines on the node' })], code: ['src/skylink_care/domain/network.py'] },
+        { t: 'The hold ends: test again', x: 'The timer’s note wakes the case. A fresh test still fails, and the node is still confirmed clear.',
+          h: [call('worker.drain', { l: 'timer.fired' }), hop('sup', 'diag', 'route', 'diagnose'), call('diag.linetest', { l: 'line test · still FAIL' })] },
+        { t: 'Dispatch: what can be offered', x: 'Dispatch checks that no visit is booked for the service and asks for free slots near Meena’s postcode, with its field-read key. The three earliest are offered, numbered.',
+          h: [hop('sup', 'disp', 'route', 'visit'), call('disp.booked'), call('disp.slots'), hop('replies', 'db.contacts', 'store', 'visit offer · 3 slots')] },
+        { t: 'Meena replies “2”', x: 'The answer is read by fixed rules, not by a model: a slot number, a day, or a plain yes. The choice becomes a VISIT_BOOK proposal, and the database itself refuses a second open visit for one service.',
+          h: [call('chat.msg', { l: '“2”' }), call('worker.drain', { l: 'customer.message' }), hop('disp', 'db.actions', 'store', 'VISIT_BOOK · lane 3')],
+          code: ['src/skylink_care/orchestrator/visit_nodes.py', 'src/skylink_care/agents/dispatch.py'] },
+        { t: 'The hands check again before booking', x: 'The executor reads the evidence for itself: no visit booked and no earlier attempt that already booked one, the node still confirmed clear by a reading under a minute old, and the line’s failing test recent. Only then is the visit booked.',
+          h: [hop('db.actions', 'exec', 'event', 'claim · lane 3'), call('exe.booked'), call('exe.status'), call('exe.book')],
+          rule: ['Rule', 'Had an outage been declared between the offer and the booking, nothing would be booked and Meena would be told of the outage.'],
+          code: ['src/skylink_care/executor/visits.py', 'src/skylink_care/domain/dispatch.py'] },
+        { t: 'Meena is told the appointment', x: 'The executor’s note wakes the case and the appointment is confirmed in the conversation.',
+          h: [call('exe.finished'), call('worker.drain', { l: 'action.finished' }), hop('replies', 'db.contacts', 'store', 'visit booked')] },
+      ] },
+
+    { id: 'curveball', name: 'Network Monitoring goes down',
+      summary: 'The curveball: Network Monitoring stops answering in the middle of a live outage. References keep flowing, nobody is told “all clear”, and nothing is booked on stale information.',
+      steps: [
+        { t: 'References keep flowing', x: 'The front desk never depended on Network Monitoring. Contacts are filed and answered with a reference, as before.',
+          h: [call('chat.open'), hop('api', 'db.contacts', 'store', 'contact + message'), hop('api', 'chat', 'ask', '201 · reference', { r: 1 })] },
+        { t: 'A failed call is a failure', x: 'Diagnostics asks for the node’s status and the call fails. A read that fails fast is tried once more. After five failures in a row the circuit breaker rests Network Monitoring for 10 seconds, then lets one trial call through.',
+          h: [hop('sup', 'diag', 'route', 'diagnose'), call('diag.status', { l: 'node_status · fails', x: 1 })],
+          code: ['src/skylink_care/adapters/breaker.py', 'src/skylink_care/adapters/http.py'] },
+        { t: 'UNKNOWN, unless the NOC has said otherwise', x: 'Without a fresh live answer the decision is UNKNOWN. If the radio’s up-to-date record shows the declared outage, customers in it are still told about it, from the NOC’s announcement.',
+          h: [call('diag.feed', { l: 'the radio’s record' })], code: ['src/skylink_care/domain/network.py', 'docs/adr/0001-degraded-mode-when-the-network-api-fails.md'] },
+        { t: 'UNKNOWN never becomes “all clear”', x: 'The customer is told the status cannot be verified for their area right now. They are given no router steps and offered no technician visit.',
+          h: [hop('replies', 'db.contacts', 'store', 'network_unknown')],
+          rule: ['Rule', 'Every stored message is checked. One that claims more than this turn’s evidence shows is stopped, and a person takes over.'] },
+        { t: 'Look again every minute, then a person', x: 'The case looks again every minute. After five minutes without a verified answer, it goes to a person with the evidence so far.',
+          h: [hop('worker', 'db.inbox', 'store', 'timer · 1 min'), call('worker.drain', { l: 'timer.fired' }), call('diag.status', { l: 'still fails', x: 1 }), call('worker.handoff', { l: 'NETWORK_STATUS_UNVERIFIED' })] },
+        { t: 'No visit on stale evidence', x: 'A visit chosen before the failure is not booked. The executor looks at the network for itself, cannot verify it, and ends the action as SKIPPED with the reason.',
+          h: [hop('db.actions', 'exec', 'event', 'claim · lane 3'), call('exe.status', { l: 'node_status · fails', x: 1 }), hop('exec', 'db.actions', 'store', 'SKIPPED · nothing booked')] },
+        { t: 'The NOC’s own word ends it', x: 'If the NOC announces the outage resolved while the live status is still down, the customer may be told so, quoting the announcement and its time.',
+          h: [hop('feed', 'ingest', 'event', 'outage resolved'), hop('ingest', 'db.inbox', 'event', 'outage.resolved'), hop('replies', 'db.contacts', 'store', 'restored, per the NOC')],
+          rule: ['Measured', 'Eight variations of this scene (refusing, slow, failing, half failing; with the NOC’s stream working or silent): every rule held in all eight.'] },
+      ] },
+
+    { id: 'proactive', name: 'Texts before customers ask',
+      summary: 'The NOC declares an outage. Customers placed on the affected nodes are sent a text, if they agreed to such messages, before most of them think of writing in.',
+      steps: [
+        { t: 'The radio hears the declaration', x: 'The radio waits up to 20 seconds at a time for news and reads up to 200 announcements at once. Each one is numbered, so a missing one is noticed.',
+          h: [call('ing.events'), hop('feed', 'ingest', 'event', 'outage started · seq n', { r: 1 })],
+          rule: ['Rule', 'A missing number, or 90 seconds of silence, stops the radio’s record counting as evidence until it is checked.'] },
+        { t: 'One transaction, every consequence', x: 'With the stream’s cursor, in one transaction: the outage and its nodes are recorded, a text is proposed for every customer whose active service is placed without doubt on an affected node, and waiting conversations on those nodes are woken.',
+          h: [hop('ingest', 'notif', 'route', 'word the texts'), hop('ingest', 'db.network', 'store', 'outage + nodes'), hop('ingest', 'db.actions', 'store', 'NOTIFY_SEND per customer · lane 9'), hop('ingest', 'db.inbox', 'event', 'outage.declared')],
+          rule: ['Rule', 'An announcement more than 15 minutes old triggers no texts.'],
+          code: ['src/skylink_care/ingest/reactions.py', 'src/skylink_care/agents/notifications.py'] },
+        { t: 'Consent, asked at the moment of sending', x: 'Texts are served last, after complaints, tickets, visits and credits. For each one the executor asks CRM for the customer’s consent there and then, with a key that can read the consent flag and nothing else of the record.',
+          h: [hop('db.actions', 'exec', 'event', 'claim · lane 9'), call('exe.consent')] },
+        { t: 'Sent, or skipped with a reason', x: 'With consent, the text goes to the SMS gateway. Without it, or when the message is more than 30 minutes old, the action ends as SKIPPED.',
+          h: [call('exe.notify')],
+          rule: ['Measured', 'In the half-hour load test 42,845 texts were sent and 12,390 withheld for want of consent.'] },
+        { t: 'Woken conversations look for themselves', x: 'A conversation waiting on the node is told only which outage changed, and diagnoses again from fresh evidence.',
+          h: [call('worker.drain', { l: 'outage.declared' }), hop('sup', 'diag', 'route', 'diagnose'), call('diag.status')] },
+      ] },
+
+    { id: 'approval', name: 'A credit above $500',
+      summary: 'Large credits wait for a person. A supervisor decides on the exact request, and the executor checks that it is still the request that was approved before it pays.',
+      steps: [
+        { t: 'Resolution prices it above $500', x: 'On a dearer plan and a long outage the policy can give more than $500. The CREDIT_APPLY is proposed waiting for approval, and the approval request is written in the same transaction, with a fingerprint of the exact request.',
+          h: [hop('sup', 'res', 'route', 'restored'), call('res.credits'), hop('res', 'db.actions', 'store', 'CREDIT_APPLY · waiting'), hop('res', 'db.staff', 'store', 'approval request · fingerprint')],
+          code: ['src/skylink_care/orchestrator/credit_nodes.py', 'src/skylink_care/db/approvals.py'] },
+        { t: 'The customer is told it is on its way', x: 'The restoration message names the amount and says it has been sent for approval, and that the assistant will confirm here once it has been applied.',
+          h: [hop('replies', 'db.contacts', 'store', 'restored + “sent for approval”')] },
+        { t: 'The supervisor sees the working', x: 'The staff desk lists the request with its working: fee, hours, multiplier, policy version, and the fingerprint.',
+          h: [call('staff.queues', { l: 'GET /v1/approvals' }), hop('api', 'db.staff', 'store', 'pending approvals')] },
+        { t: 'A decision that quotes the fingerprint', x: 'The decision must quote the fingerprint back, so a decision made on an out-of-date screen cannot land on another request. A rejection must give its reason. An approval nobody gives within 72 hours lapses, and a person follows up.',
+          h: [call('staff.approve'), hop('api', 'db.staff', 'store', 'decision + audit entry'), hop('api', 'db.actions', 'store', 'READY')],
+          code: ['src/skylink_care/api/approvals.py'] },
+        { t: 'The executor checks it is still that request', x: 'Before paying: the stored request must still match its fingerprint, an approval of the required role must be on record for that fingerprint, and the cycle’s credits must stay within the cap.',
+          h: [hop('db.actions', 'exec', 'event', 'claim · lane 4'), call('exe.creditsRead'), call('exe.credit')],
+          code: ['src/skylink_care/executor/credits.py'] },
+        { t: 'The customer hears the outcome', x: 'The executor’s note wakes the case, and the customer is told the credit has been applied.',
+          h: [call('exe.finished'), call('worker.drain', { l: 'action.finished' }), hop('replies', 'db.contacts', 'store', 'credit_applied')] },
+      ] },
+
+    { id: 'mcp', name: 'A staff assistant asks over MCP',
+      summary: 'Somebody else’s AI assistant connects to the enquiry window. It may ask four questions. It can change nothing, and it learns nothing about any customer.',
+      steps: [
+        { t: 'Connect and list the tools', x: 'The assistant presents its key as a Bearer token over streamable HTTP at /mcp; with no key configured, the window stays shut. The list declares each tool’s arguments with their types and bounds, and marks every tool read-only.',
+          h: [call('asst.list'), hop('mcp', 'assistant', 'ask', '4 tools · 2 resources', { r: 1 })],
+          code: ['src/skylink_care/mcp_server/server.py'] },
+        { t: 'Is there an outage on this node?', x: 'The arguments are checked against the declaration before the tool runs. The same three-state decision as diagnostics is made, on a status read now with the mcp key, which may read a node’s status and nothing else.',
+          h: [call('asst.call', { l: 'check_network_status' }), call('mcp.status'), call('mcp.read', { t: 'db.network', l: 'the radio’s record' })],
+          rule: ['Rule', 'A line test with the mcp key is refused by the gateway (403).'] },
+        { t: 'UNKNOWN comes with its meaning', x: 'The answer says in words what may be said on it. UNKNOWN arrives with the sentence that it is not an all-clear.',
+          h: [hop('mcp', 'assistant', 'ask', 'UNKNOWN · “not an all-clear”', { r: 1 })] },
+        { t: 'Steps from a router’s guide', x: 'The same search the troubleshooting specialist uses, with the steps word for word and their citation. No model is involved.',
+          h: [call('asst.call', { l: 'search_router_guide' }), call('mcp.read', { l: 'guide search' }), hop('mcp', 'assistant', 'ask', 'steps + citation', { r: 1 })] },
+        { t: 'What would this outage earn?', x: 'The credit engine, on the caller’s own figures: a service type, a fee, minutes. It quotes and applies nothing, and it knows no customer.',
+          h: [call('asst.call', { l: 'quote_service_credit' }), hop('mcp', 'assistant', 'ask', 'a quote · applies nothing', { r: 1 })] },
+        { t: 'Every call on record', x: 'All assistants together may ask 60 questions a minute. Every call that reaches a tool is written to the audit log with what was asked, never the words of a problem description, and how it ended.',
+          h: [call('mcp.audit')], code: ['src/skylink_care/mcp_server/tools.py'] },
+      ] },
+
+    { id: 'handover', name: 'Handing over to a person',
+      summary: 'About two dozen situations hand a conversation to a person: the customer asks for one, identity cannot be established, a billing question, a status that stays unverified, steps that did not help, and more.',
+      steps: [
+        { t: 'The customer asks for a person', x: 'Triage’s reading says the customer wants a person. The supervisor’s first rule after triage sends the case to one, whatever else the message says.',
+          h: [call('chat.msg', { l: '“let me talk to a person”' }), call('worker.drain', { l: 'customer.message' }), hop('sup', 'triage', 'route', 'triage'), call('triage.model')] },
+        { t: 'A summary from recorded facts', x: 'The person gets a summary built from what is on record: the reason, how identity was established, the service and router, the network evidence and its time, line tests, credits, visits, steps already given. The customer’s own words are not copied into it.',
+          h: [call('worker.handoff', { l: 'CUSTOMER_REQUESTED_HUMAN' }), hop('replies', 'db.contacts', 'store', 'handed_to_human')],
+          code: ['src/skylink_care/orchestrator/handover.py'] },
+        { t: 'The assistant falls silent', x: 'If the customer writes again, the coordinator does not answer. It puts the case back in the staff queue as a follow-up. Only the outcome of a credit or a booking already under way is still told.',
+          h: [call('chat.msg', { l: 'a later message' }), call('worker.drain', { l: 'customer.message' }), call('worker.handoff', { l: 'CUSTOMER_FOLLOW_UP' })] },
+        { t: 'A person picks it up', x: 'The staff desk shows the queue, the conversation and its audit trail.',
+          h: [call('staff.queues', { l: 'GET /v1/handoffs' }), call('staff.audit')] },
+        { t: 'Closed, and the customer told once', x: 'The person’s note is shown to the customer as that person’s note, exactly as written; the audit log keeps it with contact details masked. The customer is not told who closed the case.',
+          h: [call('staff.handoff'), hop('api', 'db.staff', 'store', 'closed + audit entry'), hop('api', 'db.contacts', 'store', 'the person’s note')],
+          code: ['src/skylink_care/api/handoffs.py'] },
+      ] },
+  ];
+
+  const STRANDS = [
+    { k: 'ask', label: 'Requests and reads' },
+    { k: 'act', label: 'Writes to SkyLink' },
+    { k: 'event', label: 'Announcements and wake-ups' },
+    { k: 'store', label: 'Platform database' },
+    { k: 'model', label: 'Language model' },
+  ];
+
+  const LIFE = [
+    ['chat', 'Chat page'], ['channel', 'Contact centre'], ['staff', 'Staff desk'], ['assistant', 'AI assistant'],
+    ['api', 'care-api'], ['mcp', 'care-mcp'], ['db', 'PostgreSQL'], ['sup', 'Coordinator'],
+    ['triage', 'Triage'], ['diag', 'Diagnostics'], ['guide', 'Troubleshooting'], ['res', 'Resolution'], ['disp', 'Dispatch'],
+    ['replies', 'Replies'], ['llm', 'LLM gateway'], ['provider', 'Model'],
+    ['exec', 'care-executor'], ['ingest', 'care-ingest'], ['notif', 'Notifications'],
+    ['crm', 'CRM'], ['netmon', 'Network Mon.'], ['feed', 'NOC feed'], ['billing', 'Billing'], ['field', 'Field Service'],
+    ['incident', 'Incidents'], ['notify', 'SMS gateway'],
+  ];
+
+  const SCOPES = [
+    ['CRM', ['crm:profile', 'crm:verify', 'crm:consent']],
+    ['Network Monitoring', ['network:read', 'network:test', 'network:feed']],
+    ['Billing', ['billing:read', 'billing:write']],
+    ['Field Service', ['field:read', 'field:write']],
+    ['Incidents', ['incident:read', 'incident:write']],
+    ['SMS', ['notify:write']],
+  ];
+  const KEYS = [
+    { key: 'triage', node: 'triage', held: 'care-worker · Triage', scopes: ['crm:profile', 'crm:verify'] },
+    { key: 'diagnostics', node: 'diag', held: 'care-worker · Diagnostics', scopes: ['network:read', 'network:test'] },
+    { key: 'resolution', node: 'res', held: 'care-worker · Resolution', scopes: ['billing:read'] },
+    { key: 'dispatch', node: 'disp', held: 'care-worker · Dispatch', scopes: ['field:read'] },
+    { key: 'ingest', node: 'ingest', held: 'care-ingest', scopes: ['network:feed'] },
+    { key: 'mcp', node: 'mcp', held: 'care-mcp', scopes: ['network:read'] },
+    { key: 'executor', node: 'exec', held: 'care-executor', scopes: ['crm:consent', 'network:read', 'billing:read', 'billing:write', 'field:read', 'field:write', 'incident:read', 'incident:write', 'notify:write'] },
+  ];
+
+  return { W, H, ZONES, NODES, LINKS, CALLS, FLOWS, STRANDS, LIFE, SCOPES, KEYS };
+})();
+
+/* ---------- behaviour ---------- */
+(function () {
+  'use strict';
+  const D = DATA;
+  const NS = 'http://www.w3.org/2000/svg';
+  const N = {}; D.NODES.forEach((n) => { N[n.id] = n; });
+  const CALL = {}; D.CALLS.forEach((c) => { CALL[c.id] = c; });
+  const FLOW = {}; D.FLOWS.forEach((f, i) => { f.index = i; FLOW[f.id] = f; });
+  const LIFE = new Map(D.LIFE);
+  const ROWS = new Set(['triage', 'diag', 'guide', 'res', 'disp']);
+  const CONTAINERS = new Set(['prog', 'db', 'bus']);
+  const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const still = () => motion.matches;
+  const $ = (sel) => document.querySelector(sel);
+
+  function S(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    if (attrs) for (const k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function E(tag, attrs, ...kids) {
+    const e = document.createElement(tag);
+    if (attrs) for (const k in attrs) {
+      const v = attrs[k];
+      if (v == null) continue;
+      if (k === 'class') e.className = v;
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v);
+    }
+    kids.flat(Infinity).forEach((kid) => { if (kid != null && kid !== false) e.append(kid); });
+    return e;
+  }
+  function T(parent, x, y, text, cls, extra) {
+    const t = S('text', Object.assign({ x, y, class: cls }, extra), parent);
+    t.textContent = text;
+    return t;
+  }
+
+  const svg = $('#map');
+  const canvas = $('#canvas');
+  const seqBox = $('#seq');
+  const panel = $('#panel');
+
+  const state = { flow: 'outage', step: -1, playing: false, view: 'map', sel: null, follow: true, speed: 1, hidden: new Set() };
+  const nodeEls = {};
+  const linkEls = [];
+
+  /* ---------- the map ---------- */
+  svg.setAttribute('viewBox', `0 0 ${D.W} ${D.H}`);
+  const defs = S('defs', null, svg);
+  function markers(root, prefix) {
+    const d = S('defs', null, root);
+    ['ask', 'act', 'event', 'store', 'model', 'route', 'fail'].forEach((k) => {
+      const m = S('marker', { id: prefix + k, viewBox: '0 0 10 10', refX: 8.6, refY: 5, markerWidth: 9, markerHeight: 9,
+        orient: 'auto-start-reverse', markerUnits: 'userSpaceOnUse' }, d);
+      S('path', { d: 'M0,0.6 L10,5 L0,9.4 z', class: 'mk mk-' + k }, m);
+    });
+    return d;
+  }
+  markers(svg, 'ah-');
+  const pat = S('pattern', { id: 'grid-dots', width: 16, height: 16, patternUnits: 'userSpaceOnUse' }, defs);
+  S('circle', { cx: 1.5, cy: 1.5, r: 1, class: 'grid-dot' }, pat);
+  S('rect', { x: -1600, y: -1200, width: D.W + 3200, height: D.H + 2400, fill: 'url(#grid-dots)', class: 'grid' }, svg);
+
+  const gZones = S('g', { class: 'zones' }, svg);
+  const gBack = S('g', { class: 'nodes nodes--back' }, svg);
+  const gLinks = S('g', { class: 'links', id: 'links' }, svg);
+  const gFront = S('g', { class: 'nodes' }, svg);
+  const gOv = S('g', { class: 'ov' }, svg);
+  const gTags = S('g', { class: 'tags' }, svg);
+  const gPk = S('g', { class: 'packets', 'aria-hidden': 'true' }, svg);
+
+  D.ZONES.forEach((z) => {
+    S('rect', { x: z.x, y: z.y, width: z.w, height: z.h, rx: 14, class: 'z-rect' }, gZones);
+    T(gZones, z.x + 12, z.y + 18, z.label, 'z-label');
+  });
+
+  const label = (n) => [n.band && n.band.split(' · ')[0], n.title, n.sub, n.role].filter(Boolean).join('. ') + '. Open details.';
+  const chips = [];
+  function chip(g, xRight, y, text, rectCls, textCls) {
+    const t = T(g, 0, y + 11.5, text, textCls);
+    const r = S('rect', { y, height: 16, rx: 8, class: rectCls }, null);
+    g.insertBefore(r, t);
+    chips.push({ t, r, xRight, pad: 7 });
+    return t;
+  }
+  function layoutChips() {
+    chips.filter((c) => !c.lane).forEach((c) => {
+      const w = c.t.getComputedTextLength() + c.pad * 2;
+      if (!w || !isFinite(w)) return;
+      c.r.setAttribute('x', c.xRight - w); c.r.setAttribute('width', w);
+      c.t.setAttribute('x', c.xRight - w + c.pad);
+    });
+  }
+
+  function drawNode(n) {
+    const back = CONTAINERS.has(n.type);
+    const g = S('g', { class: `node t-${n.type}`, 'data-id': n.id, tabindex: 0, role: 'button', 'aria-label': label(n) }, back ? gBack : gFront);
+    nodeEls[n.id] = g;
+    const { x, y, w, h } = n;
+    switch (n.type) {
+      case 'prog': {
+        S('rect', { x, y, width: w, height: h, rx: 10, class: 'n-box n-chassis' }, g);
+        S('rect', { x, y, width: w, height: 24, rx: 10, class: 'n-band' }, g);
+        S('rect', { x, y: y + 12, width: w, height: 12, class: 'n-band' }, g);
+        T(g, x + 10, y + 16, n.band, 'n-band-t');
+        if (n.title && (n.id === 'api' || n.id === 'mcp')) T(g, x + 12, y + 46, n.title, 'n-t');
+        (n.lines || []).forEach(([text, cls, dy]) => T(g, x + 12, y + dy, text, cls));
+        if (n.lanes) {
+          let cx = x + 12;
+          n.lanes.forEach((ln) => {
+            const t = T(g, cx + 7, y + 49.5, ln, 'lane-t');
+            const r = S('rect', { x: cx, y: y + 37, height: 18, rx: 9, class: 'lane' });
+            g.insertBefore(r, t);
+            chips.push({ t, r, lane: true, x0: cx });
+            cx += ln.length * 6.4 + 22;
+          });
+        }
+        break;
+      }
+      case 'db': {
+        const top = y + 10, bot = y + h - 10, rx = w / 2;
+        S('path', { d: `M${x},${top} V${bot} A${rx},10 0 0 0 ${x + w},${bot} V${top}`, class: 'n-box n-chassis' }, g);
+        S('ellipse', { cx: x + rx, cy: top, rx, ry: 10, class: 'n-box n-cap' }, g);
+        T(g, x + 12, y + 33, n.title, 'n-t');
+        T(g, x + 12, y + 46, n.sub, 'n-s');
+        break;
+      }
+      case 'bus': {
+        S('rect', { x, y, width: w, height: h, rx: 10, class: 'n-bus' }, g);
+        T(g, x + w / 2, y + h / 2, n.label, 'bus-t', { 'text-anchor': 'middle', 'dominant-baseline': 'central', transform: `rotate(-90 ${x + w / 2} ${y + h / 2})` });
+        break;
+      }
+      case 'ext': {
+        S('rect', { x, y, width: w, height: h, rx: 10, class: 'n-box n-ext' }, g);
+        T(g, x + 12, y + 19, n.title, 'n-t');
+        T(g, x + 12, y + 35, n.mono, 'n-m');
+        break;
+      }
+      case 'drawer': {
+        S('rect', { x, y, width: w, height: h, rx: 6, class: 'n-box n-drawer' }, g);
+        S('line', { x1: x + w - 22, y1: y + 9, x2: x + w - 10, y2: y + 9, class: 'n-handle' }, g);
+        T(g, x + 10, y + 15, n.title, 'n-dt');
+        (n.mono || []).forEach((m, i) => T(g, x + 10, y + 28 + i * 13, m, 'n-dm'));
+        break;
+      }
+      case 'mini': {
+        S('rect', { x, y, width: w, height: h, rx: 8, class: 'n-box n-mini' }, g);
+        const short = h < 44;
+        T(g, x + 10, y + (short ? 16 : 20), n.title, 'n-mt');
+        T(g, x + 10, y + (short ? 30 : 36), n.sub, 'n-ms');
+        break;
+      }
+      case 'row': {
+        S('rect', { x, y, width: w, height: h, rx: 8, class: 'n-box n-row' }, g);
+        const t = S('text', { x: x + 12, y: y + 17 }, g);
+        const a = S('tspan', { class: 'n-t' }, t); a.textContent = n.title;
+        const b = S('tspan', { class: 'n-s', dx: 8 }, t); b.textContent = n.role;
+        if (n.key === 'no key') chip(g, x + w - 10, y + 6, n.key, 'keychip--none', 'keychip--none-t');
+        else chip(g, x + w - 10, y + 6, n.key, 'keychip', 'keychip-t');
+        T(g, x + 12, y + 34, n.calls, 'n-m');
+        break;
+      }
+      default: { // box, sys
+        S('rect', { x, y, width: w, height: h, rx: 10, class: 'n-box' + (n.type === 'sys' ? ' n-sys' : '') }, g);
+        const base = n.mono ? y + 22 : y + h / 2 - 3;
+        T(g, x + 12, base, n.title, 'n-t');
+        T(g, x + 12, base + 16, n.sub, 'n-s');
+        if (n.mono) T(g, x + 12, base + 32, n.mono, 'n-m');
+      }
+    }
+    g.addEventListener('click', (e) => { e.stopPropagation(); if (!suppressClick) selectNode(n.id); });
+    g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectNode(n.id); } });
+    g.addEventListener('mouseenter', () => lightLinks(n.id, true));
+    g.addEventListener('mouseleave', () => lightLinks(n.id, false));
+    g.addEventListener('focus', () => lightLinks(n.id, true));
+    g.addEventListener('blur', () => lightLinks(n.id, false));
+  }
+  D.NODES.forEach(drawNode);
+  function relayoutLanes() {
+    chips.filter((c) => c.lane).forEach((c) => {
+      const w = c.t.getComputedTextLength() + 14;
+      if (w > 14) c.r.setAttribute('width', w);
+    });
+    // keep lane chips evenly spaced once their text is measured
+    const lanes = chips.filter((c) => c.lane);
+    let cx = lanes.length ? lanes[0].x0 : 0;
+    lanes.forEach((c) => {
+      const w = Number(c.r.getAttribute('width')) || 60;
+      c.r.setAttribute('x', cx); c.t.setAttribute('x', cx + 7);
+      cx += w + 6;
+    });
+  }
+
+  function pathD(pts, r = 7) {
+    const f = (v) => Math.round(v * 10) / 10;
+    let d = `M${f(pts[0][0])},${f(pts[0][1])}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+      const l1 = Math.hypot(x1 - x0, y1 - y0) || 1, l2 = Math.hypot(x2 - x1, y2 - y1) || 1;
+      const rr = Math.min(r, l1 / 2, l2 / 2);
+      d += ` L${f(x1 - (x1 - x0) / l1 * rr)},${f(y1 - (y1 - y0) / l1 * rr)} Q${f(x1)},${f(y1)} ${f(x1 + (x2 - x1) / l2 * rr)},${f(y1 + (y2 - y1) / l2 * rr)}`;
+    }
+    const last = pts[pts.length - 1];
+    return d + ` L${f(last[0])},${f(last[1])}`;
+  }
+
+  D.LINKS.forEach(([a, b, k, pts]) => {
+    const p = S('path', { d: pathD(pts), class: `link s-${k}`, 'data-a': a, 'data-b': b }, gLinks);
+    linkEls.push(p);
+  });
+  function lightLinks(id, on) {
+    linkEls.forEach((p) => { if (p.dataset.a === id || p.dataset.b === id) p.classList.toggle('is-lit', on); });
+  }
+
+  /* ---------- routing a call across the map ---------- */
+  const BX = 1098, LANE_L = 408, LANE_R = 622, BOTTOM = 784;
+  const isDrawer = (id) => id.startsWith('db.');
+  const isSys = (id) => N[id] && N[id].type === 'sys';
+  const mid = (n) => n.y + n.h / 2;
+  const within = (y, n, pad) => y >= n.y + pad && y <= n.y + n.h - pad;
+  const clampY = (y, n, pad) => Math.max(n.y + pad, Math.min(n.y + n.h - pad, y));
+
+  function special(f, t) {
+    const key = f + '>' + t;
+    if (key === 'triage>llm') return [[986, 196], [986, 184]];
+    if (key === 'guide>llm') return [[1040, 317], [1047, 317], [1047, 160], [1040, 160]];
+    if (key === 'llm>provider') return [[986, 136], [986, 56]];
+    if (f === 'sup' && ROWS.has(t)) { const y = mid(N[t]); return [[858, 184], [858, 190], [646, 190], [646, y], [652, y]]; }
+    return undefined;
+  }
+  function toDrawer(src, dr) {
+    if (src === 'sup' || src === 'llm') src = 'worker';
+    const a = N[src], d = N[dr];
+    if (!a || !d) return null;
+    const ym = mid(d), left = a.x < d.x;
+    const xs = left ? a.x + a.w : a.x, xe = left ? d.x : d.x + d.w, lane = left ? LANE_L : LANE_R;
+    if (within(ym, a, 5)) return [[xs, ym], [xe, ym]];
+    const ys = a.h < 60 ? mid(a) : clampY(ym, a, 10);
+    return [[xs, ys], [lane, ys], [lane, ym], [xe, ym]];
+  }
+  function toSys(src, sys) {
+    const s = N[sys], ym = mid(s);
+    if (src === 'mcp') return [[308, 752], [308, BOTTOM], [BX, BOTTOM], [BX, ym], [s.x, ym]];
+    const a = N[src];
+    if (!a) return null;
+    const xs = a.x + a.w;
+    const ys = within(ym, a, 5) ? ym : (a.h < 60 ? mid(a) : clampY(ym, a, 10));
+    if (ys === ym) return [[xs, ym], [s.x, ym]];
+    return [[xs, ys], [BX, ys], [BX, ym], [s.x, ym]];
+  }
+  function straight(f, t) {
+    const a = N[f], b = N[t];
+    if (!a || !b || a.parent === t || b.parent === f) return null;
+    const lo = Math.max(a.y, b.y), hi = Math.min(a.y + a.h, b.y + b.h);
+    if (hi - lo < 8) return null;
+    const small = a.h <= b.h ? a : b;
+    let y = mid(small);
+    if (y < lo + 4 || y > hi - 4) y = (lo + hi) / 2;
+    if (a.x + a.w <= b.x) return [[a.x + a.w, y], [b.x, y]];
+    if (b.x + b.w <= a.x) return [[a.x, y], [b.x + b.w, y]];
+    return null;
+  }
+  const rev = (p) => (p ? p.slice().reverse() : p);
+  function route(f, t) {
+    let p = special(f, t);
+    if (p !== undefined) return p;
+    p = special(t, f);
+    if (p !== undefined) return rev(p);
+    if (isDrawer(t) && !isDrawer(f)) return toDrawer(f, t);
+    if (isDrawer(f) && !isDrawer(t)) return rev(toDrawer(t, f));
+    if (isSys(t)) return toSys(f, t);
+    if (isSys(f)) return rev(toSys(t, f));
+    return straight(f, t);
+  }
+
+  function resolve(hp) {
+    if (hp.c) {
+      const c = CALL[hp.c];
+      return { f: hp.f || c.from, t: hp.t || c.to, k: hp.k || c.k, l: hp.l || c.name, call: c, r: hp.r, x: hp.x };
+    }
+    return { f: hp.f, t: hp.t, k: hp.k, l: hp.l, r: hp.r, x: hp.x, call: null };
+  }
+  const nameOf = (id) => {
+    const n = N[id];
+    if (!n) return id;
+    if (n.type === 'drawer') return 'Case files: ' + n.title;
+    if (n.type === 'prog') return n.band.split(' · ')[0];
+    return n.title;
+  };
+
+  /* ---------- overlays: the calls of one step, one part or one call ---------- */
+  /* Each drawn call gets a numbered badge on its path, matching the numbered list in the panel.
+     Its name is written beside the badge only where it covers no part of the map. */
+  const solid = D.NODES.map((n) => ({ x: n.x, y: n.y, w: n.w, h: n.h }));
+  const placedTags = [], placedBadges = [];
+  const hits = (b, list) => list.some((p) => b.x < p.x + p.w && b.x + b.w > p.x && b.y < p.y + p.h && b.y + b.h > p.y);
+  function mark(pathEl, num, r) {
+    const len = pathEl.getTotalLength();
+    let pt = null;
+    for (const t of [0.5, 0.36, 0.64, 0.24, 0.76, 0.14, 0.86]) {
+      const q = pathEl.getPointAtLength(len * t);
+      if (!placedBadges.some((b) => Math.hypot(b.x - q.x, b.y - q.y) < 21)) { pt = q; break; }
+    }
+    if (!pt) pt = pathEl.getPointAtLength(len * 0.5);
+    const g = S('g', { class: `badge k-${r.k}${r.x ? ' is-fail' : ''}` }, gTags);
+    const tip = S('title', null, g);
+    tip.textContent = `${num}. ${r.l}${r.call && r.call.ep && r.call.ep !== r.l ? ' · ' + r.call.ep : ''}`;
+    S('circle', { cx: pt.x, cy: pt.y, r: 9.5, class: 'badge-c' }, g);
+    T(g, pt.x, pt.y + 3.7, String(num), 'badge-t', { 'text-anchor': 'middle' });
+    const avoid = solid.concat(placedTags, placedBadges.map((b) => ({ x: b.x - 11, y: b.y - 11, w: 22, h: 22 })));
+    placedBadges.push({ x: pt.x, y: pt.y });
+    const t = T(g, 0, 0, r.l, 'tag-t');
+    const w = (t.getComputedTextLength() || r.l.length * 6.3) + 14, h = 18;
+    const spots = [[pt.x + 14, pt.y - 9], [pt.x - 14 - w, pt.y - 9], [pt.x - w / 2, pt.y - 33], [pt.x - w / 2, pt.y + 15]];
+    for (const [x, y] of spots) {
+      if (x < 4 || x + w > D.W - 4 || y < 2 || y + h > D.H - 2) continue;
+      if (hits({ x: x - 3, y: y - 3, w: w + 6, h: h + 6 }, avoid)) continue;
+      placedTags.push({ x, y, w, h });
+      g.insertBefore(S('rect', { x, y, width: w, height: h, rx: 9, class: 'tag-bg' }), t);
+      t.setAttribute('x', x + 7); t.setAttribute('y', y + 12.6);
+      return;
+    }
+    t.remove();
+  }
+
+  function clearOverlay() {
+    gOv.textContent = ''; gTags.textContent = ''; gPk.textContent = '';
+    placedTags.length = 0; placedBadges.length = 0;
+    cancelAnimationFrame(pkRAF);
+    Object.values(nodeEls).forEach((g) => g.classList.remove('is-hot', 'is-near', 'is-sel', 'is-inflow'));
+    svg.classList.remove('m-dim');
+  }
+  function heat(id, cls = 'is-hot') {
+    const g = nodeEls[id];
+    if (!g) return;
+    g.classList.add(cls);
+    const p = N[id].parent || (isDrawer(id) ? 'db' : null);
+    if (p && nodeEls[p] && !nodeEls[p].classList.contains('is-hot')) nodeEls[p].classList.add('is-near');
+  }
+
+  function drawHops(list, opts) {
+    const paths = [];
+    const box = { x1: Infinity, y1: Infinity, x2: -Infinity, y2: -Infinity };
+    const grow = (x, y) => { box.x1 = Math.min(box.x1, x); box.y1 = Math.min(box.y1, y); box.x2 = Math.max(box.x2, x); box.y2 = Math.max(box.y2, y); };
+    const growNode = (id) => { const n = N[id]; if (n && !CONTAINERS.has(n.type)) { grow(n.x, n.y); grow(n.x + n.w, n.y + n.h); } };
+    const drawn = [];
+    list.forEach((r, i) => {
+      heat(r.f); heat(r.t);
+      if (isSys(r.f) || isSys(r.t)) nodeEls.bus.classList.add('is-near');
+      growNode(r.f); growNode(r.t);
+      const pts = route(r.f, r.t);
+      if (!pts) return;
+      pts.forEach(([x, y]) => grow(x, y));
+      if (state.hidden.has(r.k)) return;
+      const p = S('path', { d: pathD(pts), class: `link s-${r.k}${r.x ? ' is-fail' : ''}${r.r ? ' is-ret' : ''}`, 'marker-end': `url(#ah-${r.x ? 'fail' : r.k})`, 'data-k': r.k }, gOv);
+      paths.push(p);
+      drawn.push([p, i + 1, r]);
+    });
+    drawn.forEach(([p, num, r]) => mark(p, num, r));
+    (opts.focus || []).forEach((id) => { heat(id); growNode(id); });
+    svg.classList.add('m-dim');
+    return { paths, box };
+  }
+
+  /* ---------- camera ---------- */
+  let cam = { x: 0, y: 0, w: D.W, h: D.H }, camRAF = 0, pkRAF = 0;
+  function setView(v) { cam = v; svg.setAttribute('viewBox', `${v.x.toFixed(1)} ${v.y.toFixed(1)} ${v.w.toFixed(1)} ${v.h.toFixed(1)}`); }
+  function fitBox(b, pad) {
+    const rect = canvas.getBoundingClientRect();
+    const ar = rect.width / Math.max(1, rect.height) || 1.8;
+    let x = b.x - pad, y = b.y - pad, w = b.w + pad * 2, h = b.h + pad * 2;
+    const minW = Math.max(300, Math.min(600, rect.width * 0.62));
+    if (w < minW) { x -= (minW - w) / 2; w = minW; }
+    if (w / h < ar) { const nw = h * ar; x -= (nw - w) / 2; w = nw; } else { const nh = w / ar; y -= (nh - h) / 2; h = nh; }
+    return { x, y, w, h };
+  }
+  const fullView = () => fitBox({ x: 0, y: 0, w: D.W, h: D.H }, 6);
+  function moveTo(v) {
+    cancelAnimationFrame(camRAF);
+    if (still()) { setView(v); return; }
+    const from = Object.assign({}, cam), t0 = performance.now(), dur = 560;
+    const tick = (now) => {
+      const p = Math.min(1, (now - t0) / dur), e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      setView({ x: from.x + (v.x - from.x) * e, y: from.y + (v.y - from.y) * e, w: from.w + (v.w - from.w) * e, h: from.h + (v.h - from.h) * e });
+      if (p < 1) camRAF = requestAnimationFrame(tick);
+    };
+    camRAF = requestAnimationFrame(tick);
+  }
+  function zoomBy(f) {
+    const w = Math.max(260, Math.min(D.W * 1.6, cam.w / f)), h = w * (cam.h / cam.w);
+    moveTo({ x: cam.x + (cam.w - w) / 2, y: cam.y + (cam.h - h) / 2, w, h });
+  }
+
+  function runPackets(paths) {
+    cancelAnimationFrame(pkRAF);
+    gPk.textContent = '';
+    if (still() || !paths.length) return;
+    const items = paths.map((p, i) => {
+      const len = p.getTotalLength();
+      return { p, len, delay: 250 + i * 430, dur: Math.max(650, Math.min(1500, len * 2.1)), dot: S('circle', { r: 5.5, class: 'pk pk-' + p.dataset.k, opacity: 0 }, gPk) };
+    });
+    const t0 = performance.now();
+    const tick = (now) => {
+      let live = false;
+      items.forEach((it) => {
+        const t = (now - t0 - it.delay) / it.dur;
+        if (t < 0) { live = true; return; }
+        if (t > 1) { it.dot.setAttribute('opacity', 0); return; }
+        live = true;
+        const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        const pt = it.p.getPointAtLength(it.len * e);
+        it.dot.setAttribute('cx', pt.x); it.dot.setAttribute('cy', pt.y); it.dot.setAttribute('opacity', 1);
+      });
+      if (live) pkRAF = requestAnimationFrame(tick);
+    };
+    pkRAF = requestAnimationFrame(tick);
+  }
+
+  /* The calls drawn when a part is opened, in the order the panel numbers them. */
+  function partCalls(id) {
+    if (id === 'bus') return D.CALLS.filter((c) => c.key);
+    if (id === 'worker') return D.CALLS.filter((c) => (ROWS.has(c.from) || c.from === 'worker') && c.k !== 'store');
+    if (id === 'db') return [];
+    return D.CALLS.filter((c) => c.from === id).concat(D.CALLS.filter((c) => c.to === id));
+  }
+  const callHop = (c) => ({ f: c.from, t: c.to, k: c.k, l: c.name, call: c });
+
+  function renderOverlay(moveCamera) {
+    clearOverlay();
+    const flow = FLOW[state.flow];
+    if (state.sel) {
+      const list = state.sel.call ? [callHop(CALL[state.sel.call])] : partCalls(state.sel.node).map(callHop);
+      const { box } = drawHops(list, { focus: state.sel.node ? [state.sel.node] : [] });
+      if (state.sel.node) {
+        nodeEls[state.sel.node].classList.add('is-sel');
+        if (state.sel.node === 'db') D.NODES.filter((n) => n.type === 'drawer').forEach((n) => heat(n.id));
+        if (N[state.sel.node].type === 'prog' || state.sel.node === 'db') D.NODES.filter((n) => n.parent === state.sel.node).forEach((n) => heat(n.id, 'is-near'));
+      }
+      if (moveCamera && state.follow && state.sel.call && isFinite(box.x1)) moveTo(fitBox({ x: box.x1, y: box.y1, w: box.x2 - box.x1, h: box.y2 - box.y1 }, 60));
+      return;
+    }
+    if (!flow) { if (moveCamera && state.follow) moveTo(fullView()); return; }
+    if (state.step < 0) {
+      const ids = new Set();
+      flow.steps.forEach((st) => { st.h.forEach((hp) => { const r = resolve(hp); ids.add(r.f); ids.add(r.t); }); (st.focus || []).forEach((id) => ids.add(id)); });
+      ids.forEach((id) => { if (nodeEls[id]) nodeEls[id].classList.add('is-inflow'); });
+      if (moveCamera && state.follow) moveTo(fullView());
+      return;
+    }
+    const st = flow.steps[state.step];
+    const { paths, box } = drawHops(st.h.map(resolve), { focus: st.focus });
+    if (moveCamera && state.follow && isFinite(box.x1)) moveTo(fitBox({ x: box.x1, y: box.y1, w: box.x2 - box.x1, h: box.y2 - box.y1 }, 56));
+    runPackets(paths);
+  }
+
+  /* ---------- the sequence view ---------- */
+  const lifeOf = (id) => (isDrawer(id) ? 'db' : id === 'worker' ? 'sup' : id);
+  function renderSeq() {
+    seqBox.textContent = '';
+    const flow = FLOW[state.flow];
+    if (!flow) {
+      seqBox.append(E('p', { class: 'seq-empty' }, 'Choose a flow above to see it drawn as a sequence diagram: one column per part, one arrow per call, in order.'));
+      return;
+    }
+    const used = new Set();
+    flow.steps.forEach((st) => st.h.forEach((hp) => { const r = resolve(hp); used.add(lifeOf(r.f)); used.add(lifeOf(r.t)); }));
+    const cols = D.LIFE.map((l) => l[0]).filter((id) => used.has(id));
+    const CW = 124, ML = 12;
+    const X = (id) => ML + CW / 2 + cols.indexOf(id) * CW;
+    const width = ML * 2 + cols.length * CW;
+    const head = S('svg', { class: 'seq-head', width, height: 52, viewBox: `0 0 ${width} 52`, 'aria-hidden': 'true' });
+    cols.forEach((id) => {
+      const x = X(id);
+      S('rect', { x: x - 56, y: 9, width: 112, height: 32, rx: 8, class: 'n-box seq-life-box' + (N[id] && N[id].type === 'sys' ? ' n-sys' : '') }, head);
+      T(head, x, 29.5, LIFE.get(id) || id, 'seq-life', { 'text-anchor': 'middle' });
+    });
+    const body = S('svg', { class: 'seq-body', width, role: 'group', 'aria-label': `Sequence of “${flow.name}”` });
+    markers(body, 'sq-');
+    const gL = S('g', null, body), gB = S('g', null, body), gA = S('g', null, body);
+    let y = 12;
+    const visible = (k) => !state.hidden.has(k);
+    flow.steps.forEach((st, i) => {
+      const cur = i === state.step;
+      const band = S('g', { class: 'seq-band' + (cur ? ' is-cur' : ''), 'data-step': i, tabindex: 0, role: 'button', 'aria-label': `Step ${i + 1}: ${st.t}` }, gB);
+      S('rect', { x: 4, y, width: width - 8, height: 24, rx: 6, class: 'seq-band-bg' }, band);
+      T(band, 14, y + 16, `${i + 1} · ${st.t}`, 'seq-band-t');
+      band.addEventListener('click', () => go(state.flow, i));
+      band.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(state.flow, i); } });
+      if (cur) band.dataset.cur = '1';
+      y += 40;
+      st.h.forEach((hp) => {
+        const r = resolve(hp);
+        if (!visible(r.k)) return;
+        const a = X(lifeOf(r.f)), b = X(lifeOf(r.t));
+        const cls = `link s-${r.k}${r.r ? ' is-ret' : ''}${r.x ? ' is-fail' : ''}${cur ? ' is-cur' : ''}`;
+        const g = S('g', { class: 'sq' + (cur ? ' is-cur' : '') }, gA);
+        let lx, ly;
+        if (a === b) {
+          S('path', { d: `M${a + 2},${y - 6} H${a + 30} V${y + 6} H${a + 6}`, class: cls, 'marker-end': `url(#sq-${r.x ? 'fail' : r.k})` }, g);
+          lx = a + 36; ly = y + 4;
+        } else {
+          const dir = b > a ? 1 : -1;
+          S('path', { d: `M${a + dir * 3},${y} H${b - dir * 4}`, class: cls, 'marker-end': `url(#sq-${r.x ? 'fail' : r.k})` }, g);
+          lx = Math.min(a, b) + 10; ly = y - 7;
+        }
+        const t = T(g, lx, ly, r.l, 'sq-t');
+        const w = t.getComputedTextLength() || r.l.length * 6;
+        const bg = S('rect', { x: lx - 4, y: ly - 11, width: w + 8, height: 15, rx: 4, class: 'sq-bg' });
+        g.insertBefore(bg, t);
+        g.addEventListener('click', () => go(state.flow, i));
+        y += 32;
+      });
+      y += 10;
+    });
+    const total = y + 8;
+    body.setAttribute('height', total); body.setAttribute('viewBox', `0 0 ${width} ${total}`);
+    cols.forEach((id) => S('line', { x1: X(id), y1: 0, x2: X(id), y2: total, class: 'seq-lifeline' }, gL));
+    seqBox.append(head, body);
+    const curBand = body.querySelector('[data-cur]');
+    if (curBand) {
+      const top = Number(curBand.querySelector('rect').getAttribute('y'));
+      canvas.scrollTo({ top: Math.max(0, top - 8), behavior: still() ? 'auto' : 'smooth' });
+    } else if (state.step < 0) canvas.scrollTo({ top: 0 });
+  }
+
+  /* ---------- the panel ---------- */
+  const put = (...kids) => kids.flat(Infinity).forEach((k) => { if (k != null && k !== false) panel.append(k); });
+  function swatch(k, fail) {
+    const s = S('svg', { viewBox: '0 0 30 12', class: 'sw', 'aria-hidden': 'true' });
+    S('line', { x1: 2, y1: 6, x2: 28, y2: 6, class: `link s-${k}${fail ? ' is-fail' : ''}` }, s);
+    return s;
+  }
+  function openBtn(id, text) {
+    return E('button', { type: 'button', class: 'mini-btn', onclick: () => selectNode(id) }, text || nameOf(id));
+  }
+  const num = (n, k, fail) => E('span', { class: `num k-${k}${fail ? ' is-fail' : ''}`, 'aria-hidden': 'true' }, String(n));
+  function hopItem(r, n) {
+    const body = E('div', { class: 'hop-b' },
+      E('code', null, r.l),
+      E('span', { class: 'hop-ft' }, openBtn(r.f), E('span', { 'aria-hidden': 'true' }, ' → '), E('span', { class: 'vh' }, ' to '), openBtn(r.t)));
+    if (r.call && r.call.ep && r.call.ep !== r.l) body.append(E('span', { class: 'hop-ep' }, r.call.ep));
+    if (r.call && r.call.key) body.append(E('span', { class: 'hop-key' }, `key ${r.call.key} · ${r.call.scope}`));
+    if (r.x) body.append(E('span', { class: 'hop-fail' }, 'This call fails.'));
+    return E('li', { class: 'hop' }, num(n, r.k, r.x), swatch(r.k, r.x), body);
+  }
+  function codeList(paths) {
+    if (!paths || !paths.length) return null;
+    return E('div', { class: 'codes' }, E('p', { class: 'p-kicker' }, 'In the code'), E('ul', null, paths.map((p) => E('li', null, E('code', null, p)))));
+  }
+  function stepList(flow) {
+    return E('ol', { class: 'steps', 'aria-label': 'Steps of this flow' },
+      E('li', null, E('button', { type: 'button', 'aria-current': state.step < 0 ? 'step' : null, onclick: () => go(flow.id, -1) }, E('span', { class: 'n' }, '·'), E('span', null, 'Overview'))),
+      flow.steps.map((st, i) => E('li', null, E('button', { type: 'button', 'aria-current': i === state.step ? 'step' : null, onclick: () => go(flow.id, i) },
+        E('span', { class: 'n' }, String(i + 1)), E('span', null, st.t)))));
+  }
+  function facts(list) {
+    if (!list || !list.length) return null;
+    return E('dl', { class: 'facts-dl' }, list.map(([k, v]) => [E('dt', null, k), E('dd', null, v)]));
+  }
+  function callList(title, list, side, start) {
+    if (!list.length) return null;
+    return E('div', { class: 'p-calls' }, E('p', { class: 'p-kicker' }, title),
+      E('ul', { class: 'calls-mini' }, list.map((c, i) => E('li', null,
+        num(start + i, c.k), swatch(c.k),
+        E('button', { type: 'button', class: 'call-btn', onclick: () => selectCall(c.id) }, E('code', null, c.name),
+          E('span', null, side === 'to' ? ' to ' + nameOf(c.to) : ' from ' + nameOf(c.from)))))));
+  }
+
+  function renderPanel() {
+    panel.textContent = '';
+    const flow = FLOW[state.flow];
+    if (state.sel && state.sel.node) return renderNode(state.sel.node, flow);
+    if (state.sel && state.sel.call) return renderCall(CALL[state.sel.call], flow);
+    if (!flow) {
+      put(E('p', { class: 'p-kicker' }, 'Just the map'),
+        E('h3', { class: 'p-title' }, 'Click any part to open it'),
+        E('p', { class: 'p-text' }, 'Each part opens with what it does, the calls it makes and the key it makes them with. Choose a flow above to watch one request travel, step by step.'),
+        E('div', { class: 'p-parts' }, ['api', 'worker', 'exec', 'ingest', 'mcp', 'db', 'bus', 'llm'].map((id) => openBtn(id))));
+      return;
+    }
+    if (state.step < 0) {
+      const ids = [];
+      flow.steps.forEach((st) => st.h.forEach((hp) => { const r = resolve(hp); [r.f, r.t].forEach((id) => { if (!ids.includes(id)) ids.push(id); }); }));
+      put(E('p', { class: 'p-kicker' }, `Flow ${flow.index + 1} of ${D.FLOWS.length} · ${flow.steps.length} steps`),
+        E('h3', { class: 'p-title', id: 'p-title', tabindex: '-1' }, flow.name),
+        E('p', { class: 'p-text' }, flow.summary),
+        E('div', { class: 'p-start' }, E('button', { type: 'button', class: 'btn btn--primary', onclick: () => go(flow.id, 0) }, 'Start at step 1'),
+          E('span', { class: 'p-hint' }, 'or press Play; ← and → move a step')),
+        E('p', { class: 'p-kicker' }, 'Parts it touches'),
+        E('div', { class: 'p-parts' }, ids.map((id) => openBtn(id))),
+        stepList(flow));
+      return;
+    }
+    const st = flow.steps[state.step];
+    const list = st.h.map(resolve);
+    put(E('p', { class: 'p-kicker' }, `${flow.name} · step ${state.step + 1} of ${flow.steps.length}`),
+      E('h3', { class: 'p-title', id: 'p-title', tabindex: '-1' }, st.t),
+      E('p', { class: 'p-text' }, st.x),
+      E('div', null, E('p', { class: 'p-kicker' }, list.length === 1 ? 'The call in this step' : `The ${list.length} calls in this step`),
+        E('ul', { class: 'hops' }, list.map((r, i) => hopItem(r, i + 1)))),
+      st.rule ? E('p', { class: 'rule' }, E('b', null, st.rule[0] + '. '), st.rule[1]) : null,
+      codeList(st.code),
+      stepList(flow));
+  }
+  function backBar(flow) {
+    return E('div', { class: 'p-back' }, E('button', { type: 'button', class: 'btn', onclick: clearSel },
+      flow ? (state.step < 0 ? `Back to “${flow.name}”` : `Back to step ${state.step + 1}`) : 'Close'));
+  }
+  function renderNode(id, flow) {
+    const n = N[id];
+    const kids = D.NODES.filter((m) => m.parent === id || (id === 'db' && m.type === 'drawer'));
+    let lists;
+    if (id === 'bus') lists = [['Calls it carries', partCalls('bus'), 'to']];
+    else if (id === 'worker') lists = [['Calls its specialists make', partCalls('worker'), 'to']];
+    else lists = [['Calls it makes', D.CALLS.filter((c) => c.from === id), 'to'],
+      [n.type === 'sys' || n.type === 'drawer' ? 'Who calls it' : 'Calls it receives', D.CALLS.filter((c) => c.to === id), 'from']];
+    let start = 1;
+    const listEls = lists.map(([title, list, side]) => { const el = callList(title, list, side, start); start += list.length; return el; });
+    put(backBar(flow),
+      E('p', { class: 'p-kicker' }, n.kicker || ''),
+      E('h3', { class: 'p-title', id: 'p-title', tabindex: '-1' }, n.type === 'prog' ? n.band.split(' · ')[0] : n.title),
+      n.type === 'prog' && n.title && n.id !== 'worker' && n.id !== 'exec' && n.id !== 'ingest' ? E('p', { class: 'p-sub' }, n.title) : null,
+      E('p', { class: 'p-text' }, n.summary || ''),
+      facts(n.facts),
+      kids.length ? E('div', null, E('p', { class: 'p-kicker' }, 'Its parts'), E('div', { class: 'p-parts' }, kids.map((m) => openBtn(m.id)))) : null,
+      listEls,
+      n.never ? E('p', { class: 'rule rule--never' }, E('b', null, 'Never. '), n.never) : null,
+      codeList(n.code));
+  }
+  function renderCall(c, flow) {
+    put(backBar(flow),
+      E('p', { class: 'p-kicker' }, 'A call · ' + c.g),
+      E('h3', { class: 'p-title', id: 'p-title', tabindex: '-1' }, E('code', null, c.name)),
+      E('p', { class: 'hop-ft' }, openBtn(c.from), E('span', { 'aria-hidden': 'true' }, ' → '), E('span', { class: 'vh' }, ' to '), openBtn(c.to)),
+      facts([['Endpoint or form', c.ep], c.key ? ['Key', `${c.key} · ${c.scope}`] : null, ['When', c.when], ['Note', c.note]].filter(Boolean)));
+  }
+
+  /* ---------- controls ---------- */
+  const flowsEl = $('#flows');
+  D.FLOWS.forEach((f, i) => flowsEl.append(E('button', { type: 'button', class: 'chip', 'data-flow': f.id, onclick: () => go(f.id, -1) },
+    E('span', { class: 'chip-n' }, String(i + 1)), f.name)));
+  flowsEl.append(E('button', { type: 'button', class: 'chip chip--plain', 'data-flow': '', onclick: () => go(null, -1) }, 'Just the map'));
+
+  const strandsEl = $('#strands');
+  strandsEl.append(E('span', { class: 'strands-l' }, 'Lines'));
+  D.STRANDS.forEach((s) => strandsEl.append(E('button', { type: 'button', class: 'strand', 'aria-pressed': 'true', 'data-k': s.k,
+    onclick: (e) => toggleStrand(s.k, e.currentTarget) }, swatch(s.k), s.label)));
+  strandsEl.append(E('span', { class: 'strand strand--static' }, (() => {
+    const s = S('svg', { viewBox: '0 0 30 12', class: 'sw', 'aria-hidden': 'true' });
+    S('rect', { x: 2, y: 1.5, width: 26, height: 9, rx: 2.5, class: 'z-sw' }, s);
+    return s;
+  })(), 'Trust boundary'));
+
+  function toggleStrand(k, btn) {
+    const on = state.hidden.has(k);
+    if (on) state.hidden.delete(k); else state.hidden.add(k);
+    btn.setAttribute('aria-pressed', String(on));
+    svg.classList.toggle('hide-' + k, !on);
+    if (state.view === 'map') renderOverlay(false); else renderSeq();
+  }
+
+  const playBtn = $('#play'), prevBtn = $('#prev'), nextBtn = $('#next'), countEl = $('#count');
+  let timer = 0;
+  function renderControls() {
+    flowsEl.querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.flow || null) === state.flow)));
+    const flow = FLOW[state.flow];
+    const n = flow ? flow.steps.length : 0;
+    prevBtn.disabled = !flow || state.step < 0;
+    nextBtn.disabled = !flow || state.step >= n - 1;
+    playBtn.disabled = !flow;
+    playBtn.querySelector('.lbl').textContent = state.playing ? 'Pause' : (flow && state.step >= n - 1 ? 'Replay' : 'Play');
+    playBtn.querySelector('use').setAttribute('href', state.playing ? '#i-pause' : '#i-play');
+    playBtn.setAttribute('aria-pressed', String(state.playing));
+    countEl.textContent = !flow ? 'No flow' : state.step < 0 ? 'Overview' : `Step ${state.step + 1} / ${n}`;
+    $('#bar-fill').style.width = flow ? `${((state.step + 1) / n) * 100}%` : '0%';
+    $('#v-map').setAttribute('aria-pressed', String(state.view === 'map'));
+    $('#v-seq').setAttribute('aria-pressed', String(state.view === 'seq'));
+    $('#follow').setAttribute('aria-pressed', String(state.follow));
+  }
+  function schedule() {
+    clearTimeout(timer);
+    if (!state.playing) return;
+    const flow = FLOW[state.flow];
+    if (!flow) return;
+    if (state.step >= flow.steps.length - 1) { state.playing = false; renderControls(); return; }
+    const st = flow.steps[Math.max(0, state.step)];
+    const words = state.step < 0 ? 12 : st.x.split(/\s+/).length;
+    const dur = state.step < 0 ? 1200 : Math.max(3400, 2200 + words * 68 + st.h.length * 430);
+    timer = setTimeout(() => { go(state.flow, state.step + 1, true); }, dur / state.speed);
+  }
+  function go(flowId, step, fromPlay) {
+    const changed = flowId !== state.flow;
+    if (!fromPlay) { state.playing = state.playing && !changed; }
+    state.flow = flowId; state.step = step; state.sel = null;
+    if (changed) {
+      try { history.replaceState(null, '', flowId ? '#' + flowId : location.pathname + location.search); } catch (e) { /* the hash is a convenience */ }
+    }
+    render(true);
+    schedule();
+  }
+  function selectNode(id, focusPanel) { state.sel = { node: id }; state.playing = false; clearTimeout(timer); render(false, focusPanel); }
+  function selectCall(id, focusPanel) { state.sel = { call: id }; state.playing = false; clearTimeout(timer); render(true, focusPanel); }
+  function clearSel() { if (!state.sel) return; state.sel = null; render(true); }
+  function render(moveCamera, focusPanel) {
+    const keep = panel.contains(document.activeElement);
+    renderControls();
+    if (state.view === 'map') renderOverlay(moveCamera); else renderSeq();
+    renderPanel();
+    if (keep || focusPanel) { const t = $('#p-title'); if (t) t.focus({ preventScroll: true }); }
+    const f = FLOW[state.flow], live = $('#live');
+    if (live && !state.sel) live.textContent = !f ? '' : state.step < 0 ? `${f.name}: overview` : `Step ${state.step + 1} of ${f.steps.length}: ${f.steps[state.step].t}`;
+  }
+
+  playBtn.addEventListener('click', () => {
+    const flow = FLOW[state.flow];
+    if (!flow) return;
+    state.playing = !state.playing;
+    if (state.playing && state.step >= flow.steps.length - 1) { go(state.flow, 0, true); return; }
+    if (state.playing && state.step < 0) { go(state.flow, 0, true); return; }
+    renderControls(); schedule();
+  });
+  prevBtn.addEventListener('click', () => { if (FLOW[state.flow] && state.step > -1) { state.playing = false; go(state.flow, state.step - 1); } });
+  nextBtn.addEventListener('click', () => { const f = FLOW[state.flow]; if (f && state.step < f.steps.length - 1) { state.playing = false; go(state.flow, state.step + 1); } });
+  $('#speed').addEventListener('change', (e) => { state.speed = Number(e.target.value) || 1; schedule(); });
+  $('#v-map').addEventListener('click', () => setView2('map'));
+  $('#v-seq').addEventListener('click', () => setView2('seq'));
+  function setView2(v) {
+    if (state.view === v) return;
+    state.view = v;
+    svg.toggleAttribute('hidden', v !== 'map'); $('#zoom').hidden = v !== 'map'; $('.canvas-note').hidden = v !== 'map';
+    seqBox.hidden = v !== 'seq';
+    canvas.classList.toggle('is-seq', v === 'seq');
+    if (v === 'map') { canvas.scrollTo({ top: 0, left: 0 }); }
+    render(true);
+  }
+  $('#follow').addEventListener('click', () => { state.follow = !state.follow; renderControls(); if (state.follow) renderOverlay(true); });
+  $('#zoom-in').addEventListener('click', () => zoomBy(1.3));
+  $('#zoom-out').addEventListener('click', () => zoomBy(1 / 1.3));
+  $('#zoom-fit').addEventListener('click', () => moveTo(fullView()));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    const inStage = document.activeElement && $('#stage').contains(document.activeElement);
+    if (e.key === 'Escape' && state.sel) { clearSel(); return; }
+    if (!inStage || /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); nextBtn.click(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prevBtn.click(); }
+  });
+
+  /* drag to pan, with a mouse; touch keeps scrolling the page */
+  let drag = null, suppressClick = false;
+  svg.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    drag = { x: e.clientX, y: e.clientY, cam: Object.assign({}, cam), moved: false };
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+    if (!drag.moved) { drag.moved = true; canvas.classList.add('is-panning'); cancelAnimationFrame(camRAF); if (state.follow) { state.follow = false; renderControls(); } }
+    const r = svg.getBoundingClientRect(), s = Math.max(cam.w / r.width, cam.h / r.height);
+    setView({ x: drag.cam.x - dx * s, y: drag.cam.y - dy * s, w: drag.cam.w, h: drag.cam.h });
+  });
+  window.addEventListener('pointerup', () => {
+    if (drag && drag.moved) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 0); }
+    drag = null; canvas.classList.remove('is-panning');
+  });
+  svg.addEventListener('click', (e) => { if (!suppressClick && !e.target.closest('.node')) clearSel(); });
+
+  let resizeT = 0;
+  new ResizeObserver(() => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (state.view === 'map' && state.follow) renderOverlay(true); }, 160); }).observe(canvas);
+  window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (FLOW[id] && id !== state.flow) go(id, -1); });
+
+  /* ---------- the reference tables ---------- */
+  const groupOf = { tools: (c) => !!c.key || c.k === 'model' || c.from === 'assistant', store: (c) => c.k === 'store' || isDrawer(c.from) || isDrawer(c.to), people: (c) => ['chat', 'channel', 'staff'].includes(c.from), all: () => true };
+  const callsBody = $('#calls-body');
+  function renderCalls(filter) {
+    callsBody.textContent = '';
+    let g = null;
+    D.CALLS.filter(groupOf[filter]).forEach((c) => {
+      if (c.g !== g) { g = c.g; callsBody.append(E('tr', { class: 'grp' }, E('th', { colspan: 5, scope: 'colgroup' }, g))); }
+      callsBody.append(E('tr', null,
+        E('td', null, E('button', { type: 'button', class: 'tbl-call', onclick: () => { selectCall(c.id, true); $('#stage').scrollIntoView({ behavior: still() ? 'auto' : 'smooth', block: 'start' }); } },
+          swatch(c.k), E('code', null, c.name)), E('span', { class: 'tbl-ft' }, `${nameOf(c.from)} → ${nameOf(c.to)}`)),
+        E('td', null, E('code', { class: 'ep' }, c.ep)),
+        E('td', null, c.key ? E('span', null, E('code', null, c.key), E('br'), E('span', { class: 'scope' }, c.scope)) : E('span', { class: 'muted' }, '—')),
+        E('td', null, c.when),
+        E('td', null, c.note)));
+    });
+    document.querySelectorAll('#calls-filter button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.f === filter)));
+  }
+  document.querySelectorAll('#calls-filter button').forEach((b) => b.addEventListener('click', () => renderCalls(b.dataset.f)));
+  renderCalls('tools');
+
+  const keysHead = $('#keys-head'), keysBody = $('#keys-body');
+  keysHead.append(E('tr', null, E('th', { rowspan: 2, scope: 'col' }, 'Key · held by'), D.SCOPES.map(([sys, list]) => E('th', { colspan: list.length, scope: 'colgroup', class: 'sys-h' }, sys))));
+  keysHead.append(E('tr', null, D.SCOPES.map(([, list]) => list.map((sc) => E('th', { scope: 'col', class: 'sc-h' }, sc.split(':')[1])))));
+  D.KEYS.forEach((k) => {
+    keysBody.append(E('tr', null,
+      E('th', { scope: 'row' }, E('button', { type: 'button', class: 'tbl-call', onclick: () => { selectNode(k.node, true); $('#stage').scrollIntoView({ behavior: still() ? 'auto' : 'smooth', block: 'start' }); } }, E('code', null, k.key)), E('span', { class: 'tbl-ft' }, k.held)),
+      D.SCOPES.map(([, list]) => list.map((sc) => {
+        const has = k.scopes.includes(sc);
+        const kind = sc.endsWith(':write') ? 'w' : sc === 'network:feed' ? 'e' : 'r';
+        return E('td', { class: has ? 'has' : 'not' }, has ? E('span', { class: 'mark mark--' + kind, role: 'img', 'aria-label': sc }) : E('span', { class: 'vh' }, 'no'));
+      }))));
+  });
+
+  /* ---------- start ---------- */
+  const fromHash = location.hash.slice(1);
+  if (fromHash && FLOW[fromHash]) state.flow = fromHash;
+  layoutChips(); relayoutLanes();
+  setView(fullView());
+  render(false);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { layoutChips(); relayoutLanes(); if (state.view === 'map') renderOverlay(false); });
+  motion.addEventListener && motion.addEventListener('change', () => render(false));
+})();
+</script>
+</body>
+</html>
