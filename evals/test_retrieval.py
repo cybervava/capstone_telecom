@@ -461,11 +461,11 @@ async def test_a_model_beside_the_search_chooses_among_what_it_found(
             " every question the model was asked answered by the model itself."
         ),
         headline=(
-            f"With {tally.model} choosing among the sections found, the right section for"
-            f" {by_model.right} of {by_model.total} independent descriptions"
-            f" ({by_model.right_percent}%); the search and the keyword rules alone:"
-            f" {by_rules.right} of {by_rules.total} ({by_rules.right_percent}%), on the same"
-            f" {len(models)} router models. Answers from another model's guide:"
+            f"With {tally.model} choosing among the sections found, the right section in"
+            f" {by_model.right} of {by_model.total} answers ({by_model.right_percent}%):"
+            f" {len(gold)} independent descriptions, each on the same {len(models)} router"
+            f" models. The search and the keyword rules alone: {by_rules.right} of"
+            f" {by_rules.total} ({by_rules.right_percent}%). Answers from another model's guide:"
             f" {by_model.other_model}. {tally.summary()}"
         ),
         met=met,

@@ -154,8 +154,8 @@ It writes `retrieval_openai`: how often the section is right with the model and 
 rules alone on the same router models (three by default, `RETRIEVAL_LLM_ROUTERS`, since every
 description is one call for each), what became of the passages the model pointed to (quoted,
 none offered, or left out and why), and every description the model sent to another section
-than the rules. As run on 25 November with `gpt-5.4-mini`: the right section for 144 of 144
-descriptions over three router models, against 129 of 144 (89.58%) for the search and the rules
+than the rules. As run on 25 November with `gpt-5.4-mini`: the right section in 144 of 144
+answers (48 descriptions, each on three router models), against 129 of 144 (89.58%) for the search and the rules
 alone, in 1.4 s at the median. Every sentence it pointed at in a guide was found and quoted
 (144 of 144), and 117 of its 144 pointers into a customer's words; of the other 27, 17 were
 not a whole clause of the message, 3 were too short, 4 said something that has no place in an

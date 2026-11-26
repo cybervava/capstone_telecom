@@ -49,7 +49,7 @@ A model reads; it does not write. Retrieval stays what it was, a model is asked 
 
 | Claim | Evidence |
 |---|---|
-| The model chooses better than the rules | `evals/reports/retrieval_openai.md` (25 Nov, `gpt-5.4-mini-2026-03-17`): the right section for 144 of 144 independent descriptions on three router models, against 129 of 144 (89.58%) by the search and the rules alone; 1.4 s at the median, 3.2 s at the slowest. All 144 guide sentences it pointed at were found and quoted, and 117 of its 144 pointers into the customer's words; the rest were left out, each with its reason |
+| The model chooses better than the rules | `evals/reports/retrieval_openai.md` (25 Nov, `gpt-5.4-mini-2026-03-17`): the right section in 144 of 144 answers (48 independent descriptions, each on three router models), against 129 of 144 (89.58%) by the search and the rules alone; 1.4 s at the median, 3.2 s at the slowest. All 144 guide sentences it pointed at were found and quoted, and 117 of its 144 pointers into the customer's words; the rest were left out, each with its reason |
 | Nothing a model writes is sent; a passage is a whole clause or sentence of its source | `tests/unit/guardrails/test_grounding.py`; `tests/unit/agents/test_troubleshooting.py` |
 | A model that is talked round achieves nothing | The attack suite's family K (`evals/reports/attack_suite.md`): sentences of its own as quotations, a planted sentence said back, a section it was not shown. `scripts/attack_suite_can_fail.py` takes the lookup and the checks out and the attacks report it |
 | No detail of the customer reaches the model with this question | `tests/unit/llm/test_model_payloads.py` (300 customers, both providers, both questions); attack G1 |

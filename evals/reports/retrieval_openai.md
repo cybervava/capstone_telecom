@@ -4,7 +4,7 @@
 
 **Target.** No brief target. Every answer from the customer's own router model, right section for at least 70.0% of the independent descriptions, and every question the model was asked answered by the model itself.
 
-**Result (met).** With gpt-5.4-mini-2026-03-17 choosing among the sections found, the right section for 144 of 144 independent descriptions (100.0%); the search and the keyword rules alone: 129 of 144 (89.58%), on the same 3 router models. Answers from another model's guide: 0. Readings by the model: 144 of 144 (served by gpt-5.4-mini-2026-03-17; 1.4 s median, 3.2 s the slowest).
+**Result (met).** With gpt-5.4-mini-2026-03-17 choosing among the sections found, the right section in 144 of 144 answers (100.0%): 48 independent descriptions, each on the same 3 router models. The search and the keyword rules alone: 129 of 144 (89.58%). Answers from another model's guide: 0. Readings by the model: 144 of 144 (served by gpt-5.4-mini-2026-03-17; 1.4 s median, 3.2 s the slowest).
 
 Written by the run of 2026-11-25T18:59:18+00:00. Measured on synthetic stand-in data (assumption A1); not a measurement of a real network or of real customers. Language-model provider: openai.
 

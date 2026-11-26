@@ -18,7 +18,7 @@ const CHANGES = [
   [
     "8  A model beside the guide search\nADR 0002, client decision D13",
     "The search finds the sections of the customer's own router guide. A model names the one that fits and points at the words that show why. Code checks both.",
-    "Keyword rules miss a fault told in other words. With gpt-5.4-mini: the right section for 144 of 144 independent descriptions, against 129 by the rules alone.",
+    "Keyword rules miss a fault told in other words. With gpt-5.4-mini: the right section in 144 of 144 answers, 48 descriptions on three router models; 129 by the rules alone.",
     "One more call in a conversation, about 1.4 s and a fee. Without a model, or if it fails, the search chooses as before. The steps stay the guide's own words.",
   ],
   [
